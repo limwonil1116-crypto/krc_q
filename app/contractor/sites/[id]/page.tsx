@@ -1,0 +1,45 @@
+import { eq } from "drizzle-orm";
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { constructionSites, organizations } from "@/lib/db/schema";
+import { SiteForm } from "@/components/site/site-form";
+
+export const dynamic = "force-dynamic";
+
+export default async function SiteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, id)).limit(1);
+  const site = rows[0];
+  if (!site) notFound();
+
+  const clientOrgs =
+    "contractor" === "contractor"
+      ? await db
+          .select({ id: organizations.id, name: organizations.name })
+          .from(organizations)
+          .where(eq(organizations.type, "client_agency"))
+      : [];
+
+  const initial = {
+    clientOrgId: site.clientOrgId ?? "",
+    districtName: site.districtName ?? "",
+    projectName: site.projectName ?? "",
+    executor: site.executor ?? "",
+    workType: site.workType ?? "",
+    supervisorName: site.supervisorName ?? "",
+    supervisorPhone: site.supervisorPhone ?? "",
+    supervisorEmail: site.supervisorEmail ?? "",
+    address: site.address ?? "",
+    lat: site.lat != null ? Number(site.lat) : null,
+    lng: site.lng != null ? Number(site.lng) : null,
+    startedOn: site.startedOn ?? "",
+    endedOn: site.endedOn ?? "",
+    siteCode: site.siteCode ?? "",
+  };
+
+  return <SiteForm clientOrgs={clientOrgs} mode="contractor" siteId={site.id} initial={initial} />;
+}

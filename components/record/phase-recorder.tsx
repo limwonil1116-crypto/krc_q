@@ -1,0 +1,653 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Label } from "@/components/ui/label";
+import { ActionButton } from "@/components/kit/buttons";
+import { Button } from "@/components/ui/button";
+
+type Phase = {
+  id: string;
+  code: string;
+  name: string;
+  guideText: string | null;
+  sortOrder: number;
+  minPhotoCount: number;
+  minVideoCount: number;
+  isRequired: boolean;
+};
+type SubType = { id: string; name: string };
+type Rec = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  title: string | null;
+  textDescription: string | null;
+  voiceMemoText: string | null;
+  notApplicable: boolean;
+  notApplicableReason: string | null;
+  status: string;
+};
+type Asset = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  assetType: string;
+  fileName: string;
+  mimeType: string;
+};
+
+const GUIDE_IMG = new Set(["F1", "F2", "F3", "F4", "F5"]);
+const WD = ["일", "월", "화", "수", "목", "금", "토"];
+
+function ymd(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function parseYmd(s: string) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function addDays(s: string, n: number) {
+  const d = parseYmd(s);
+  d.setDate(d.getDate() + n);
+  return ymd(d);
+}
+function todayStr() {
+  return ymd(new Date());
+}
+
+function Calendar({
+  selected,
+  marked,
+  submitted,
+  onSelect,
+}: {
+  selected: string;
+  marked: Set<string>;
+  submitted: Set<string>;
+  onSelect: (d: string) => void;
+}) {
+  const init = selected ? parseYmd(selected) : new Date();
+  const [vy, setVy] = useState(init.getFullYear());
+  const [vm, setVm] = useState(init.getMonth());
+
+  useEffect(() => {
+    if (selected) {
+      const d = parseYmd(selected);
+      setVy(d.getFullYear());
+      setVm(d.getMonth());
+    }
+  }, [selected]);
+
+  const startWeekday = new Date(vy, vm, 1).getDay();
+  const daysInMonth = new Date(vy, vm + 1, 0).getDate();
+  const today = todayStr();
+  const cells: (string | null)[] = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(ymd(new Date(vy, vm, d)));
+
+  function prevMonth() {
+    if (vm === 0) {
+      setVy(vy - 1);
+      setVm(11);
+    } else setVm(vm - 1);
+  }
+  function nextMonth() {
+    if (vm === 11) {
+      setVy(vy + 1);
+      setVm(0);
+    } else setVm(vm + 1);
+  }
+
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <button type="button" onClick={prevMonth} className="rounded-md px-3 py-1 text-lg text-[#1E3A5F] hover:bg-neutral-100">
+          ◀
+        </button>
+        <div className="font-semibold text-[#1E3A5F]">
+          {vy}년 {vm + 1}월
+        </div>
+        <button type="button" onClick={nextMonth} className="rounded-md px-3 py-1 text-lg text-[#1E3A5F] hover:bg-neutral-100">
+          ▶
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+        {WD.map((w, i) => (
+          <div key={w} className={i === 0 ? "text-red-500" : i === 6 ? "text-blue-500" : "text-neutral-400"}>
+            {w}
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {cells.map((c, i) =>
+          c === null ? (
+            <div key={i} />
+          ) : (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelect(c)}
+              className="flex min-h-[48px] flex-col gap-0.5 rounded-lg p-1 text-left hover:bg-neutral-100"
+            >
+              <span
+                className={
+                  "flex h-5 w-5 items-center justify-center rounded-full text-[11px] " +
+                  (c === selected
+                    ? "bg-[#1E3A5F] font-bold text-white"
+                    : c === today
+                    ? "font-bold text-[#1E3A5F]"
+                    : "text-neutral-700")
+                }
+              >
+                {Number(c.split("-")[2])}
+              </span>
+              {(submitted.has(c) || marked.has(c)) && (
+                <span
+                  className={
+                    "truncate rounded px-1 py-0.5 text-[9px] font-semibold text-white " +
+                    (submitted.has(c) ? "bg-green-600" : "bg-[#6B73C9]")
+                  }
+                >
+                  {submitted.has(c) ? "제출됨" : "기록"}
+                </span>
+              )}
+            </button>
+          )
+        )}
+      </div>
+      <div className="mt-2 flex items-center justify-center gap-3 text-xs text-neutral-500">
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#6B73C9]" /> 기록
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-600" /> 제출됨
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function PhaseRecorder({
+  siteStructureId,
+  structureName,
+  typeName,
+  subTypes,
+  phases,
+  records,
+  assets,
+  videoHref,
+}: {
+  siteStructureId: string;
+  structureName: string;
+  typeName: string;
+  subTypes: SubType[];
+  phases: Phase[];
+  records: Rec[];
+  assets: Asset[];
+  videoHref: string;
+}) {
+  const router = useRouter();
+
+  const [subTypeId, setSubTypeId] = useState<string>(subTypes[0]?.id || "");
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr());
+  const [open, setOpen] = useState<string | null>(null);
+  const [guide, setGuide] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    textDescription: "",
+    notApplicable: false,
+    notApplicableReason: "",
+  });
+
+  const markedDates = useMemo(() => {
+    const set = new Set<string>();
+    records.filter((r) => r.subTypeId === subTypeId).forEach((r) => r.inspectionDate && set.add(r.inspectionDate));
+    assets.filter((a) => a.subTypeId === subTypeId).forEach((a) => a.inspectionDate && set.add(a.inspectionDate));
+    return set;
+  }, [records, assets, subTypeId]);
+
+  const submittedDates = useMemo(() => {
+    const set = new Set<string>();
+    records
+      .filter((r) => r.subTypeId === subTypeId && r.status === "submitted")
+      .forEach((r) => r.inspectionDate && set.add(r.inspectionDate));
+    return set;
+  }, [records, subTypeId]);
+
+  const recMap = new Map<string, Rec>();
+  records
+    .filter((r) => r.subTypeId === subTypeId && (r.inspectionDate || "") === selectedDate)
+    .forEach((r) => recMap.set(r.phaseTemplateId, r));
+  const assetMap = new Map<string, Asset[]>();
+  assets
+    .filter((a) => a.subTypeId === subTypeId && (a.inspectionDate || "") === selectedDate)
+    .forEach((a) => {
+      const arr = assetMap.get(a.phaseTemplateId) || [];
+      arr.push(a);
+      assetMap.set(a.phaseTemplateId, arr);
+    });
+
+  const submittedCurrent = Array.from(recMap.values()).some((r) => r.status === "submitted");
+  const hasCurrent = recMap.size > 0 || assetMap.size > 0;
+
+  async function submitInspection(action: "submit" | "cancel") {
+    if (action === "submit" && !confirm("이 검측일자 기록을 제출할까요? 제출 후에도 '제출 취소'로 다시 수정할 수 있습니다.")) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/records/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate, action }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || ("처리 실패 (" + res.status + ")"));
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      alert("처리 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function changeSubType(id: string) {
+    setSubTypeId(id);
+    setOpen(null);
+    setGuide(null);
+    setError("");
+  }
+  function changeDate(d: string) {
+    setSelectedDate(d);
+    setOpen(null);
+    setGuide(null);
+    setError("");
+  }
+
+  function openPhase(p: Phase) {
+    const r = recMap.get(p.id);
+    setForm({
+      textDescription: r?.textDescription ?? "",
+      notApplicable: r?.notApplicable ?? false,
+      notApplicableReason: r?.notApplicableReason ?? "",
+    });
+    setError("");
+    setOpen(p.id);
+  }
+
+  async function saveText(p: Phase) {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, phaseTemplateId: p.id, inspectionDate: selectedDate, ...form }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        setError(data.error || ("서버 오류 (" + res.status + ")"));
+        return;
+      }
+      setOpen(null);
+      router.refresh();
+    } catch (e) {
+      setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function upload(phaseId: string, assetType: "photo" | "video", file: File) {
+    setBusy(phaseId);
+    try {
+      const fd = new FormData();
+      fd.append("siteStructureId", siteStructureId);
+      fd.append("subTypeId", subTypeId);
+      fd.append("phaseTemplateId", phaseId);
+      fd.append("inspectionDate", selectedDate);
+      fd.append("assetType", assetType);
+      fd.append("file", file);
+      const res = await fetch("/api/records/assets", { method: "POST", body: fd });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || ("업로드 실패 (" + res.status + ")"));
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      alert("업로드 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function removeAsset(id: string) {
+    if (!confirm("이 파일을 삭제할까요?")) return;
+    try {
+      const res = await fetch(`/api/assets/${id}`, { method: "DELETE" });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "삭제 실패");
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("삭제 중 오류가 발생했습니다.");
+    }
+  }
+
+  const taCls =
+    "min-h-[80px] w-full rounded-md border border-neutral-300 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30";
+  const uploadBtn =
+    "inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-[#1E3A5F] hover:bg-neutral-50";
+
+  function statusBadge(r: Rec | undefined) {
+    if (!r) return <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">미작성</span>;
+    if (r.notApplicable) return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">해당없음</span>;
+    return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">기록됨</span>;
+  }
+
+  return (
+    <div className="space-y-4 pb-4">
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-bold text-[#1E3A5F]">{structureName}</h1>
+          <p className="text-sm text-neutral-500">{typeName} · 세부항목별 검측 기록</p>
+        </div>
+        <Link
+          href={videoHref}
+          className="whitespace-nowrap rounded-md bg-[#F37021] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#DA631C]"
+        >
+          ▶ 영상 미리보기
+        </Link>
+      </div>
+
+      {subTypeId && (
+        <>
+          {/* 캘린더 (메인) */}
+          <Calendar selected={selectedDate} marked={markedDates} submitted={submittedDates} onSelect={changeDate} />
+
+          {/* 날짜 좌우 화살표 */}
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => changeDate(addDays(selectedDate, -1))}
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+            >
+              ◀ 전날
+            </button>
+            <span className="min-w-[110px] text-center font-semibold text-[#1E3A5F]">{selectedDate}</span>
+            <button
+              type="button"
+              onClick={() => changeDate(addDays(selectedDate, 1))}
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+            >
+              다음날 ▶
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* 세부 항목 선택 (캘린더·날짜 아래) */}
+      <div className="space-y-2 rounded-2xl border border-neutral-200 bg-white p-3">
+        <Label>세부 항목 (공종)</Label>
+        {subTypes.length === 0 ? (
+          <p className="text-sm text-neutral-500">이 대분류에는 세부 항목이 없습니다.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {subTypes.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => changeSubType(t.id)}
+                className={
+                  "rounded-full px-3 py-1.5 text-sm font-semibold " +
+                  (t.id === subTypeId ? "bg-[#1E3A5F] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
+                }
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {!subTypeId ? (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
+          먼저 세부 항목을 선택하세요.
+        </div>
+      ) : phases.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
+          단계 템플릿이 없습니다.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {phases.map((p, i) => {
+            const r = recMap.get(p.id);
+            const list = assetMap.get(p.id) || [];
+            const photos = list.filter((a) => a.assetType === "photo");
+            const videos = list.filter((a) => a.assetType === "video");
+            const isOpen = open === p.id;
+            const uploading = busy === p.id;
+            return (
+              <div key={p.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E3A5F] text-xs font-bold text-white">
+                      {i + 1}
+                    </span>
+                    <span className="font-semibold text-[#1E293B]">{p.name}</span>
+                  </div>
+                  {statusBadge(r)}
+                </div>
+
+                <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                  <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>
+                  <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>
+                  <button
+                    type="button"
+                    className="rounded bg-[#EEF3F9] px-1.5 py-0.5 text-[#1E3A5F]"
+                    onClick={() => setGuide(guide === p.id ? null : p.id)}
+                  >
+                    촬영 가이드 보기 {guide === p.id ? "▲" : "▼"}
+                  </button>
+                </div>
+
+                {guide === p.id && (
+                  <div className="mt-2 space-y-2">
+                    {GUIDE_IMG.has(p.code) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={`/guides/${p.code.toLowerCase()}.jpg`}
+                        alt={`${p.name} 촬영 예시`}
+                        className="w-full rounded-lg border border-neutral-200"
+                      />
+                    )}
+                    {p.guideText && (
+                      <p className="whitespace-pre-line rounded-lg bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-600">
+                        {p.guideText}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="mt-3 space-y-2 border-t border-neutral-100 pt-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className={uploadBtn}>
+                      📷 사진 추가
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) upload(p.id, "photo", f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    <label className={uploadBtn}>
+                      🎬 영상 추가
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) upload(p.id, "video", f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    {uploading && <span className="text-xs text-neutral-500">업로드 중...</span>}
+                  </div>
+
+                  {list.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {photos.map((a) => (
+                        <div key={a.id} className="relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={`/api/assets/${a.id}/raw`}
+                            alt={a.fileName}
+                            className="h-16 w-16 rounded-md border border-neutral-200 object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeAsset(a.id)}
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
+                            aria-label="삭제"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      {videos.map((a) => (
+                        <div key={a.id} className="relative">
+                          <a
+                            href={`/api/assets/${a.id}/raw`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex h-16 w-16 flex-col items-center justify-center rounded-md border border-neutral-200 bg-neutral-900 text-white"
+                          >
+                            <span className="text-lg leading-none">▶</span>
+                            <span className="mt-0.5 text-[9px]">영상</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => removeAsset(a.id)}
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
+                            aria-label="삭제"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {isOpen ? (
+                  <div className="mt-3 space-y-3 border-t border-neutral-100 pt-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={form.notApplicable}
+                        onChange={(e) => setForm((f) => ({ ...f, notApplicable: e.target.checked }))}
+                      />
+                      이 단계는 해당 없음
+                    </label>
+                    {form.notApplicable ? (
+                      <div className="space-y-1">
+                        <Label>해당없음 사유</Label>
+                        <textarea
+                          className={taCls}
+                          value={form.notApplicableReason}
+                          onChange={(e) => setForm((f) => ({ ...f, notApplicableReason: e.target.value }))}
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Label>설명내용</Label>
+                        <textarea
+                          className={taCls}
+                          value={form.textDescription}
+                          onChange={(e) => setForm((f) => ({ ...f, textDescription: e.target.value }))}
+                        />
+                      </div>
+                    )}
+                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(null)}>
+                        취소
+                      </Button>
+                      <ActionButton className="flex-1" onClick={() => saveText(p)} disabled={loading}>
+                        {loading ? "저장 중..." : "기록 저장"}
+                      </ActionButton>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3">
+                    <Button type="button" variant="outline" className="w-full" onClick={() => openPhase(p)}>
+                      {r ? "텍스트 기록 수정" : "텍스트 기록 작성"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {hasCurrent && (
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+              {submittedCurrent ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-green-700">✓ 제출됨 ({selectedDate})</span>
+                  <Button type="button" variant="outline" onClick={() => submitInspection("cancel")} disabled={submitting}>
+                    {submitting ? "처리 중..." : "제출 취소"}
+                  </Button>
+                </div>
+              ) : (
+                <ActionButton className="w-full" onClick={() => submitInspection("submit")} disabled={submitting}>
+                  {submitting ? "제출 중..." : `이 검측일자(${selectedDate}) 제출`}
+                </ActionButton>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

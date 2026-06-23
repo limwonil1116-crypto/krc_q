@@ -1,0 +1,33 @@
+import { google } from "googleapis";
+import { Readable } from "node:stream";
+
+function driveClient() {
+  const oauth2 = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  );
+  oauth2.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+  return google.drive({ version: "v3", auth: oauth2 });
+}
+
+export async function uploadToDrive(params: { name: string; mimeType: string; buffer: Buffer }) {
+  const drive = driveClient();
+  const folder = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  const res = await drive.files.create({
+    requestBody: { name: params.name, parents: folder ? [folder] : undefined },
+    media: { mimeType: params.mimeType, body: Readable.from(params.buffer) },
+    fields: "id, name, webViewLink",
+  });
+  return { id: res.data.id as string, webViewLink: (res.data.webViewLink as string) || "" };
+}
+
+export async function deleteFromDrive(fileId: string) {
+  const drive = driveClient();
+  await drive.files.delete({ fileId });
+}
+
+export async function getDriveStream(fileId: string): Promise<NodeJS.ReadableStream> {
+  const drive = driveClient();
+  const res = await drive.files.get({ fileId, alt: "media" }, { responseType: "stream" });
+  return res.data as unknown as NodeJS.ReadableStream;
+}
