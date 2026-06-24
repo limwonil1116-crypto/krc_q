@@ -367,6 +367,30 @@ export function PhaseRecorder({
     }
   }
 
+  async function resetPhase(p: Phase) {
+    if (!confirm(`'${p.name}' 단계의 기록과 첨부 파일을 모두 삭제하고 초기화할까요?`)) return;
+    try {
+      const res = await fetch("/api/records/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, phaseTemplateId: p.id, inspectionDate: selectedDate }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "초기화 실패");
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("초기화 중 오류가 발생했습니다.");
+    }
+  }
+
   const taCls =
     "min-h-[80px] w-full rounded-md border border-neutral-300 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
   const uploadBtn =
@@ -620,10 +644,15 @@ export function PhaseRecorder({
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-3">
-                    <Button type="button" variant="outline" className="w-full" onClick={() => openPhase(p)}>
+                  <div className="mt-3 flex gap-2">
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => openPhase(p)}>
                       {r ? "텍스트 기록 수정" : "텍스트 기록 작성"}
                     </Button>
+                    {(r || list.length > 0) && (
+                      <Button type="button" variant="outline" className="text-red-600" onClick={() => resetPhase(p)}>
+                        초기화
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>

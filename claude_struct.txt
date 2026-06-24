@@ -1,0 +1,1279 @@
+
+
+##### FILE: components/site/structure-manager.tsx #####
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { StepSection } from "@/components/kit/step-section";
+import { SelectableCard } from "@/components/kit/selectable-card";
+import { ActionButton } from "@/components/kit/buttons";
+import { KakaoMapPicker } from "@/components/kit/kakao-map-picker";
+
+const CAT_ICON: Record<string, string> = {
+  FILLDAM: "🏞️",
+  TUNNEL: "🚇",
+  WEIR: "🌊",
+  PUMP: "⚙️",
+  CHANNEL: "💧",
+  PIPELINE: "🛢️",
+  LANDFILL: "⛰️",
+  LANDADJ: "🟫",
+  FARMROAD: "🛣️",
+  CULVERT: "🕳️",
+  SLUICEGATE: "🚪",
+};
+
+const NAME_SAMPLE: Record<string, string> = {
+  FILLDAM: "예: 00저수지",
+  TUNNEL: "예: 00간선",
+  WEIR: "예: 00보",
+  PUMP: "예: 00양수장, 00배수장",
+  CHANNEL: "예: 00배수간선, 00용수지거",
+  PIPELINE: "예: 00배수간선, 00용수지거",
+  LANDFILL: "예: 00유역",
+  LANDADJ: "예: 00배수간선, 00용수지거",
+  FARMROAD: "예: 00농도",
+  CULVERT: "예: 00암거",
+  SLUICEGATE: "예: 00배수문",
+};
+
+type Cat = { id: string; code: string; name: string };
+type S = {
+  id: string;
+  name: string;
+  structureTypeId: string;
+  locationDescription: string | null;
+  status: string;
+  typeName: string;
+  parentName: string | null;
+};
+
+export function StructureManager({
+  siteId,
+  structureBase,
+  categories,
+  structures,
+}: {
+  siteId: string;
+  structureBase: string;
+  categories: Cat[];
+  structures: S[];
+}) {
+  const router = useRouter();
+  const [catId, setCatId] = useState("");
+  const [name, setName] = useState("");
+  const [loc, setLoc] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [mapVal, setMapVal] = useState<{ lat: number | null; lng: number | null; address: string }>({
+    lat: null,
+    lng: null,
+    address: "",
+  });
+
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editLoc, setEditLoc] = useState("");
+  const [editErr, setEditErr] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+
+  function pickCat(c: Cat) {
+    setCatId(c.id);
+  }
+
+  async function add() {
+    setError("");
+    if (!catId) {
+      setError("대분류를 선택하세요.");
+      return;
+    }
+    if (!name.trim()) {
+      setError("구조물 이름을 입력하세요.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/sites/${siteId}/structures`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ structureTypeId: catId, name: name.trim(), locationDescription: loc.trim() }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        setError(data.error || ("서버 오류 (" + res.status + ")"));
+        return;
+      }
+      setCatId("");
+      setName("");
+      setLoc("");
+      setMapVal({ lat: null, lng: null, address: "" });
+      router.refresh();
+    } catch (e) {
+      setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function startEdit(s: S) {
+    setEditId(s.id);
+    setEditName(s.name);
+    setEditLoc(s.locationDescription ?? "");
+    setEditErr("");
+  }
+
+  async function saveEdit(id: string) {
+    setEditErr("");
+    if (!editName.trim()) {
+      setEditErr("이름을 입력하세요.");
+      return;
+    }
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/sites/${siteId}/structures/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim(), locationDescription: editLoc.trim() }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        setEditErr(data.error || ("서버 오류 (" + res.status + ")"));
+        return;
+      }
+      setEditId(null);
+      router.refresh();
+    } catch (e) {
+      setEditErr("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
+  async function remove(id: string) {
+    if (!confirm("이 구조물을 삭제할까요? 관련 기록도 함께 삭제됩니다.")) return;
+    try {
+      const res = await fetch(`/api/sites/${siteId}/structures/${id}`, { method: "DELETE" });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "삭제 실패");
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("삭제 중 오류가 발생했습니다.");
+    }
+  }
+
+  const sampleHolder = catId
+    ? NAME_SAMPLE[categories.find((c) => c.id === catId)?.code || ""] || "구조물 이름"
+    : "먼저 대분류를 선택하세요";
+
+  return (
+    <div className="space-y-4 pb-4">
+      <h1 className="text-xl font-bold text-[#0033A0]">구조물 등록 및 조회</h1>
+
+      <StepSection step="STEP 04" title="구조물(대분류) 등록" desc="대분류를 선택하고 이름을 붙여 추가하세요. 세부 항목은 등록 후 기록 화면에서 선택합니다.">
+        <Label>대분류</Label>
+        <div className="mt-1 grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {categories.map((c) => (
+            <SelectableCard
+              key={c.id}
+              label={c.name}
+              icon={CAT_ICON[c.code] || "🏗️"}
+              selected={catId === c.id}
+              onClick={() => pickCat(c)}
+            />
+          ))}
+        </div>
+
+        <div className="mt-3 space-y-3">
+          <div className="space-y-1">
+            <Label>구조물 이름 *</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={sampleHolder} />
+          </div>
+          <div className="space-y-1">
+            <Label>위치 설명 (지도에서 선택)</Label>
+            <Input
+              value={loc}
+              onChange={(e) => setLoc(e.target.value)}
+              placeholder="지도를 클릭하거나 주소를 검색하세요 (직접 입력도 가능)"
+            />
+            <div className="pt-2">
+              <KakaoMapPicker
+                value={mapVal}
+                onChange={(v) => {
+                  setMapVal(v);
+                  setLoc(v.address);
+                }}
+              />
+            </div>
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <ActionButton className="w-full" onClick={add} disabled={loading}>
+            {loading ? "추가 중..." : "+ 구조물 추가"}
+          </ActionButton>
+        </div>
+      </StepSection>
+
+      <StepSection step="등록됨" title={`등록된 구조물 (${structures.length})`}>
+        {structures.length === 0 ? (
+          <p className="text-sm text-neutral-500">아직 추가된 구조물이 없습니다.</p>
+        ) : (
+          <div className="space-y-2">
+            {structures.map((s) => (
+              <div key={s.id} className="rounded-xl border border-neutral-200 bg-white p-3">
+                {editId === s.id ? (
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <Label>구조물 이름 *</Label>
+                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>위치 설명</Label>
+                      <Input value={editLoc} onChange={(e) => setEditLoc(e.target.value)} />
+                    </div>
+                    {editErr && <p className="text-sm text-red-600">{editErr}</p>}
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" className="flex-1" onClick={() => setEditId(null)}>
+                        취소
+                      </Button>
+                      <ActionButton className="flex-1" onClick={() => saveEdit(s.id)} disabled={editLoading}>
+                        {editLoading ? "저장 중..." : "저장"}
+                      </ActionButton>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-semibold text-[#0A2540]">{s.name}</div>
+                        <div className="text-xs text-neutral-500">
+                          {s.typeName}
+                          {s.locationDescription ? ` · ${s.locationDescription}` : ""}
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <Button type="button" variant="outline" onClick={() => startEdit(s)}>
+                          수정
+                        </Button>
+                        <Button type="button" variant="outline" className="text-red-600" onClick={() => remove(s.id)}>
+                          삭제
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <Link
+                        href={`${structureBase}/${s.id}`}
+                        className="whitespace-nowrap rounded-md bg-[#0033A0] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#002A80]"
+                      >
+                        세부항목·검측 기록 →
+                      </Link>
+                      <Link
+                        href={`${structureBase}/${s.id}/video`}
+                        className="whitespace-nowrap rounded-md bg-[#FE5000] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#E04800]"
+                      >
+                        ▶ 영상 미리보기
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </StepSection>
+    </div>
+  );
+}
+
+
+##### FILE: components/site/sites-table.tsx #####
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+
+type Site = {
+  id: string;
+  districtName: string;
+  projectName: string;
+  executor: string | null;
+  workType: string | null;
+  address: string;
+  status: string;
+  supervisorName: string | null;
+  createdAt: string;
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  draft: "작성중",
+  active: "진행중",
+  completed: "완료",
+  archived: "보관",
+};
+
+export function SitesTable({ sites, basePath }: { sites: Site[]; basePath: string }) {
+  const [q, setQ] = useState("");
+  const [sort, setSort] = useState("created_desc");
+
+  const rows = useMemo(() => {
+    const kw = q.trim().toLowerCase();
+    const filtered = sites.filter((s) => {
+      if (!kw) return true;
+      return [s.districtName, s.projectName, s.executor, s.workType, s.address, s.supervisorName]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(kw);
+    });
+    const cmp = (a: Site, b: Site) => {
+      switch (sort) {
+        case "created_asc":
+          return a.createdAt.localeCompare(b.createdAt);
+        case "district":
+          return a.districtName.localeCompare(b.districtName, "ko");
+        case "project":
+          return a.projectName.localeCompare(b.projectName, "ko");
+        default:
+          return b.createdAt.localeCompare(a.createdAt);
+      }
+    };
+    return [...filtered].sort(cmp);
+  }, [sites, q, sort]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="지구명·사업·시행자·주소 검색"
+          className="h-9 w-full rounded-md border border-neutral-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30 sm:max-w-xs"
+        />
+        <select
+          className="h-9 rounded-md border border-neutral-300 bg-white px-2 text-sm"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
+          <option value="created_desc">등록일 최신순</option>
+          <option value="created_asc">등록일 오래된순</option>
+          <option value="district">지구명 가나다순</option>
+          <option value="project">사업명 가나다순</option>
+        </select>
+      </div>
+
+      <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+        <table className="w-full min-w-[680px] text-sm">
+          <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
+            <tr>
+              <th className="px-3 py-2">지구명</th>
+              <th className="px-3 py-2">사업</th>
+              <th className="px-3 py-2">사업시행자</th>
+              <th className="px-3 py-2">주소</th>
+              <th className="px-3 py-2">상태</th>
+              <th className="px-3 py-2 text-right">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-3 py-10 text-center text-neutral-400">
+                  {sites.length === 0 ? "등록된 현장이 없습니다." : "검색 결과가 없습니다."}
+                </td>
+              </tr>
+            ) : (
+              rows.map((s) => (
+                <tr key={s.id} className="border-t border-neutral-100 hover:bg-neutral-50/60">
+                  <td className="px-3 py-2 font-semibold text-[#0A2540]">{s.districtName}</td>
+                  <td className="px-3 py-2">{s.projectName}</td>
+                  <td className="px-3 py-2 text-neutral-600">{s.executor || "-"}</td>
+                  <td className="px-3 py-2 text-neutral-500">{s.address}</td>
+                  <td className="px-3 py-2">
+                    <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                      {STATUS_LABEL[s.status] || s.status}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex justify-end gap-1.5">
+                      <Link
+                        href={`${basePath}/${s.id}/structures`}
+                        className="whitespace-nowrap rounded-md bg-[#FE5000] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#E04800]"
+                      >
+                        구조물 등록 및 조회
+                      </Link>
+                      <Link
+                        href={`${basePath}/${s.id}`}
+                        className="whitespace-nowrap rounded-md border border-[#0033A0] px-2.5 py-1 text-xs font-semibold text-[#0033A0] hover:bg-[#EAF0FB]"
+                      >
+                        수정·조회
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+
+##### FILE: components/record/phase-recorder.tsx #####
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Label } from "@/components/ui/label";
+import { ActionButton } from "@/components/kit/buttons";
+import { Button } from "@/components/ui/button";
+
+type Phase = {
+  id: string;
+  code: string;
+  name: string;
+  guideText: string | null;
+  sortOrder: number;
+  minPhotoCount: number;
+  minVideoCount: number;
+  isRequired: boolean;
+};
+type SubType = { id: string; name: string };
+type Rec = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  title: string | null;
+  textDescription: string | null;
+  voiceMemoText: string | null;
+  notApplicable: boolean;
+  notApplicableReason: string | null;
+  status: string;
+};
+type Asset = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  assetType: string;
+  fileName: string;
+  mimeType: string;
+};
+
+const GUIDE_IMG = new Set(["F1", "F2", "F3", "F4", "F5"]);
+const WD = ["일", "월", "화", "수", "목", "금", "토"];
+
+function ymd(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function parseYmd(s: string) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function addDays(s: string, n: number) {
+  const d = parseYmd(s);
+  d.setDate(d.getDate() + n);
+  return ymd(d);
+}
+function todayStr() {
+  return ymd(new Date());
+}
+
+function Calendar({
+  selected,
+  marked,
+  submitted,
+  onSelect,
+}: {
+  selected: string;
+  marked: Set<string>;
+  submitted: Set<string>;
+  onSelect: (d: string) => void;
+}) {
+  const init = selected ? parseYmd(selected) : new Date();
+  const [vy, setVy] = useState(init.getFullYear());
+  const [vm, setVm] = useState(init.getMonth());
+
+  useEffect(() => {
+    if (selected) {
+      const d = parseYmd(selected);
+      setVy(d.getFullYear());
+      setVm(d.getMonth());
+    }
+  }, [selected]);
+
+  const startWeekday = new Date(vy, vm, 1).getDay();
+  const daysInMonth = new Date(vy, vm + 1, 0).getDate();
+  const today = todayStr();
+  const cells: (string | null)[] = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(ymd(new Date(vy, vm, d)));
+
+  function prevMonth() {
+    if (vm === 0) {
+      setVy(vy - 1);
+      setVm(11);
+    } else setVm(vm - 1);
+  }
+  function nextMonth() {
+    if (vm === 11) {
+      setVy(vy + 1);
+      setVm(0);
+    } else setVm(vm + 1);
+  }
+
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <button type="button" onClick={prevMonth} className="rounded-md px-3 py-1 text-lg text-[#0033A0] hover:bg-neutral-100">
+          ◀
+        </button>
+        <div className="font-semibold text-[#0033A0]">
+          {vy}년 {vm + 1}월
+        </div>
+        <button type="button" onClick={nextMonth} className="rounded-md px-3 py-1 text-lg text-[#0033A0] hover:bg-neutral-100">
+          ▶
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+        {WD.map((w, i) => (
+          <div key={w} className={i === 0 ? "text-red-500" : i === 6 ? "text-blue-500" : "text-neutral-400"}>
+            {w}
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {cells.map((c, i) =>
+          c === null ? (
+            <div key={i} />
+          ) : (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelect(c)}
+              className="flex min-h-[48px] flex-col gap-0.5 rounded-lg p-1 text-left hover:bg-neutral-100"
+            >
+              <span
+                className={
+                  "flex h-5 w-5 items-center justify-center rounded-full text-[11px] " +
+                  (c === selected
+                    ? "bg-[#0033A0] font-bold text-white"
+                    : c === today
+                    ? "font-bold text-[#0033A0]"
+                    : "text-neutral-700")
+                }
+              >
+                {Number(c.split("-")[2])}
+              </span>
+              {(submitted.has(c) || marked.has(c)) && (
+                <span
+                  className={
+                    "truncate rounded px-1 py-0.5 text-[9px] font-semibold text-white " +
+                    (submitted.has(c) ? "bg-green-600" : "bg-[#0033A0]")
+                  }
+                >
+                  {submitted.has(c) ? "제출됨" : "기록"}
+                </span>
+              )}
+            </button>
+          )
+        )}
+      </div>
+      <div className="mt-2 flex items-center justify-center gap-3 text-xs text-neutral-500">
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#0033A0]" /> 기록
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-600" /> 제출됨
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function PhaseRecorder({
+  siteStructureId,
+  structureName,
+  typeName,
+  subTypes,
+  phases,
+  records,
+  assets,
+  videoHref,
+}: {
+  siteStructureId: string;
+  structureName: string;
+  typeName: string;
+  subTypes: SubType[];
+  phases: Phase[];
+  records: Rec[];
+  assets: Asset[];
+  videoHref: string;
+}) {
+  const router = useRouter();
+
+  const [subTypeId, setSubTypeId] = useState<string>(subTypes[0]?.id || "");
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr());
+  const [open, setOpen] = useState<string | null>(null);
+  const [guide, setGuide] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    textDescription: "",
+    notApplicable: false,
+    notApplicableReason: "",
+  });
+
+  const markedDates = useMemo(() => {
+    const set = new Set<string>();
+    records.filter((r) => r.subTypeId === subTypeId).forEach((r) => r.inspectionDate && set.add(r.inspectionDate));
+    assets.filter((a) => a.subTypeId === subTypeId).forEach((a) => a.inspectionDate && set.add(a.inspectionDate));
+    return set;
+  }, [records, assets, subTypeId]);
+
+  const submittedDates = useMemo(() => {
+    const set = new Set<string>();
+    records
+      .filter((r) => r.subTypeId === subTypeId && r.status === "submitted")
+      .forEach((r) => r.inspectionDate && set.add(r.inspectionDate));
+    return set;
+  }, [records, subTypeId]);
+
+  const recMap = new Map<string, Rec>();
+  records
+    .filter((r) => r.subTypeId === subTypeId && (r.inspectionDate || "") === selectedDate)
+    .forEach((r) => recMap.set(r.phaseTemplateId, r));
+  const assetMap = new Map<string, Asset[]>();
+  assets
+    .filter((a) => a.subTypeId === subTypeId && (a.inspectionDate || "") === selectedDate)
+    .forEach((a) => {
+      const arr = assetMap.get(a.phaseTemplateId) || [];
+      arr.push(a);
+      assetMap.set(a.phaseTemplateId, arr);
+    });
+
+  const submittedCurrent = Array.from(recMap.values()).some((r) => r.status === "submitted");
+  const hasCurrent = recMap.size > 0 || assetMap.size > 0;
+
+  async function submitInspection(action: "submit" | "cancel") {
+    if (action === "submit" && !confirm("이 검측일자 기록을 제출할까요? 제출 후에도 '제출 취소'로 다시 수정할 수 있습니다.")) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/records/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate, action }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || ("처리 실패 (" + res.status + ")"));
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      alert("처리 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function changeSubType(id: string) {
+    setSubTypeId(id);
+    setOpen(null);
+    setGuide(null);
+    setError("");
+  }
+  function changeDate(d: string) {
+    setSelectedDate(d);
+    setOpen(null);
+    setGuide(null);
+    setError("");
+  }
+
+  function openPhase(p: Phase) {
+    const r = recMap.get(p.id);
+    setForm({
+      textDescription: r?.textDescription ?? "",
+      notApplicable: r?.notApplicable ?? false,
+      notApplicableReason: r?.notApplicableReason ?? "",
+    });
+    setError("");
+    setOpen(p.id);
+  }
+
+  async function saveText(p: Phase) {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, phaseTemplateId: p.id, inspectionDate: selectedDate, ...form }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        setError(data.error || ("서버 오류 (" + res.status + ")"));
+        return;
+      }
+      setOpen(null);
+      router.refresh();
+    } catch (e) {
+      setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function upload(phaseId: string, assetType: "photo" | "video", file: File) {
+    setBusy(phaseId);
+    try {
+      const fd = new FormData();
+      fd.append("siteStructureId", siteStructureId);
+      fd.append("subTypeId", subTypeId);
+      fd.append("phaseTemplateId", phaseId);
+      fd.append("inspectionDate", selectedDate);
+      fd.append("assetType", assetType);
+      fd.append("file", file);
+      const res = await fetch("/api/records/assets", { method: "POST", body: fd });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || ("업로드 실패 (" + res.status + ")"));
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      alert("업로드 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function removeAsset(id: string) {
+    if (!confirm("이 파일을 삭제할까요?")) return;
+    try {
+      const res = await fetch(`/api/assets/${id}`, { method: "DELETE" });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "삭제 실패");
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("삭제 중 오류가 발생했습니다.");
+    }
+  }
+
+  const taCls =
+    "min-h-[80px] w-full rounded-md border border-neutral-300 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
+  const uploadBtn =
+    "inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-[#0033A0] hover:bg-neutral-50";
+
+  function statusBadge(r: Rec | undefined) {
+    if (!r) return <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">미작성</span>;
+    if (r.notApplicable) return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">해당없음</span>;
+    return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">기록됨</span>;
+  }
+
+  return (
+    <div className="space-y-4 pb-4">
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-bold text-[#0033A0]">{structureName}</h1>
+          <p className="text-sm text-neutral-500">{typeName} · 세부항목별 검측 기록</p>
+        </div>
+        <Link
+          href={videoHref}
+          className="whitespace-nowrap rounded-md bg-[#FE5000] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#E04800]"
+        >
+          ▶ 영상 미리보기
+        </Link>
+      </div>
+
+      {subTypeId && (
+        <>
+          {/* 캘린더 (메인) */}
+          <Calendar selected={selectedDate} marked={markedDates} submitted={submittedDates} onSelect={changeDate} />
+
+          {/* 날짜 좌우 화살표 */}
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => changeDate(addDays(selectedDate, -1))}
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+            >
+              ◀ 전날
+            </button>
+            <span className="min-w-[110px] text-center font-semibold text-[#0033A0]">{selectedDate}</span>
+            <button
+              type="button"
+              onClick={() => changeDate(addDays(selectedDate, 1))}
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+            >
+              다음날 ▶
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* 세부 항목 선택 (캘린더·날짜 아래) */}
+      <div className="space-y-2 rounded-2xl border border-neutral-200 bg-white p-3">
+        <Label>세부 항목 (공종)</Label>
+        {subTypes.length === 0 ? (
+          <p className="text-sm text-neutral-500">이 대분류에는 세부 항목이 없습니다.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {subTypes.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => changeSubType(t.id)}
+                className={
+                  "rounded-full px-3 py-1.5 text-sm font-semibold " +
+                  (t.id === subTypeId ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
+                }
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {!subTypeId ? (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
+          먼저 세부 항목을 선택하세요.
+        </div>
+      ) : phases.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
+          단계 템플릿이 없습니다.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {phases.map((p, i) => {
+            const r = recMap.get(p.id);
+            const list = assetMap.get(p.id) || [];
+            const photos = list.filter((a) => a.assetType === "photo");
+            const videos = list.filter((a) => a.assetType === "video");
+            const isOpen = open === p.id;
+            const uploading = busy === p.id;
+            return (
+              <div key={p.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0033A0] text-xs font-bold text-white">
+                      {i + 1}
+                    </span>
+                    <span className="font-semibold text-[#0A2540]">{p.name}</span>
+                  </div>
+                  {statusBadge(r)}
+                </div>
+
+                <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                  <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>
+                  <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>
+                  <button
+                    type="button"
+                    className="rounded bg-[#EAF0FB] px-1.5 py-0.5 text-[#0033A0]"
+                    onClick={() => setGuide(guide === p.id ? null : p.id)}
+                  >
+                    촬영 가이드 보기 {guide === p.id ? "▲" : "▼"}
+                  </button>
+                </div>
+
+                {guide === p.id && (
+                  <div className="mt-2 space-y-2">
+                    {GUIDE_IMG.has(p.code) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={`/guides/${p.code.toLowerCase()}.jpg`}
+                        alt={`${p.name} 촬영 예시`}
+                        className="w-full rounded-lg border border-neutral-200"
+                      />
+                    )}
+                    {p.guideText && (
+                      <p className="whitespace-pre-line rounded-lg bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-600">
+                        {p.guideText}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="mt-3 space-y-2 border-t border-neutral-100 pt-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className={uploadBtn}>
+                      📷 사진 추가
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) upload(p.id, "photo", f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    <label className={uploadBtn}>
+                      🎬 영상 추가
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) upload(p.id, "video", f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    {uploading && <span className="text-xs text-neutral-500">업로드 중...</span>}
+                  </div>
+
+                  {list.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {photos.map((a) => (
+                        <div key={a.id} className="relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={`/api/assets/${a.id}/raw`}
+                            alt={a.fileName}
+                            className="h-16 w-16 rounded-md border border-neutral-200 object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeAsset(a.id)}
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
+                            aria-label="삭제"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      {videos.map((a) => (
+                        <div key={a.id} className="relative">
+                          <a
+                            href={`/api/assets/${a.id}/raw`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex h-16 w-16 flex-col items-center justify-center rounded-md border border-neutral-200 bg-neutral-900 text-white"
+                          >
+                            <span className="text-lg leading-none">▶</span>
+                            <span className="mt-0.5 text-[9px]">영상</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => removeAsset(a.id)}
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
+                            aria-label="삭제"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {isOpen ? (
+                  <div className="mt-3 space-y-3 border-t border-neutral-100 pt-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={form.notApplicable}
+                        onChange={(e) => setForm((f) => ({ ...f, notApplicable: e.target.checked }))}
+                      />
+                      이 단계는 해당 없음
+                    </label>
+                    {form.notApplicable ? (
+                      <div className="space-y-1">
+                        <Label>해당없음 사유</Label>
+                        <textarea
+                          className={taCls}
+                          value={form.notApplicableReason}
+                          onChange={(e) => setForm((f) => ({ ...f, notApplicableReason: e.target.value }))}
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Label>설명내용</Label>
+                        <textarea
+                          className={taCls}
+                          value={form.textDescription}
+                          onChange={(e) => setForm((f) => ({ ...f, textDescription: e.target.value }))}
+                        />
+                      </div>
+                    )}
+                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(null)}>
+                        취소
+                      </Button>
+                      <ActionButton className="flex-1" onClick={() => saveText(p)} disabled={loading}>
+                        {loading ? "저장 중..." : "기록 저장"}
+                      </ActionButton>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3">
+                    <Button type="button" variant="outline" className="w-full" onClick={() => openPhase(p)}>
+                      {r ? "텍스트 기록 수정" : "텍스트 기록 작성"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {hasCurrent && (
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+              {submittedCurrent ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-green-700">✓ 제출됨 ({selectedDate})</span>
+                  <Button type="button" variant="outline" onClick={() => submitInspection("cancel")} disabled={submitting}>
+                    {submitting ? "처리 중..." : "제출 취소"}
+                  </Button>
+                </div>
+              ) : (
+                <ActionButton className="w-full" onClick={() => submitInspection("submit")} disabled={submitting}>
+                  {submitting ? "제출 중..." : `이 검측일자(${selectedDate}) 제출`}
+                </ActionButton>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+##### FILE: lib/db/schema.ts #####
+import {
+  pgTable,
+  uuid,
+  varchar,
+  text,
+  timestamp,
+  numeric,
+  date,
+  boolean,
+  integer,
+  bigint,
+} from "drizzle-orm/pg-core";
+
+export const organizations = pgTable("organizations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 150 }).notNull(),
+  type: text("type").$type<"contractor" | "client_agency" | "admin_org">().notNull(),
+  businessNumber: varchar("business_number", { length: 30 }),
+  representativeName: varchar("representative_name", { length: 80 }),
+  phone: varchar("phone", { length: 30 }),
+  email: varchar("email", { length: 255 }),
+  address: text("address"),
+  headquarters: varchar("headquarters", { length: 50 }),
+  branch: varchar("branch", { length: 50 }),
+  status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).unique(),
+  passwordHash: text("password_hash"),
+  kakaoId: varchar("kakao_id", { length: 64 }),
+  name: varchar("name", { length: 80 }).notNull(),
+  phone: varchar("phone", { length: 30 }),
+  role: text("role").$type<"contractor" | "supervisor" | "client" | "admin">().notNull(),
+  status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const organizationMembers = pgTable("organization_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  memberRole: text("member_role").$type<"owner" | "manager" | "viewer" | "staff">().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const structureTypes = pgTable("structure_types", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  parentId: uuid("parent_id"),
+  isRequiredCheck: boolean("is_required_check").notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const phaseTemplates = pgTable("phase_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  structureTypeId: uuid("structure_type_id").notNull().references(() => structureTypes.id, { onDelete: "cascade" }),
+  code: varchar("code", { length: 50 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  guideText: text("guide_text"),
+  sortOrder: integer("sort_order").notNull(),
+  isRequired: boolean("is_required").notNull().default(true),
+  minPhotoCount: integer("min_photo_count").notNull().default(0),
+  minVideoCount: integer("min_video_count").notNull().default(0),
+  audioRequired: boolean("audio_required").notNull().default(false),
+  textRequired: boolean("text_required").notNull().default(false),
+  allowNotApplicable: boolean("allow_not_applicable").notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const constructionSites = pgTable("construction_sites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientOrgId: uuid("client_org_id"),
+  contractorOrgId: uuid("contractor_org_id"),
+  siteCode: varchar("site_code", { length: 100 }),
+  districtName: varchar("district_name", { length: 150 }).notNull(),
+  projectName: varchar("project_name", { length: 200 }).notNull(),
+  executor: varchar("executor", { length: 50 }),
+  workType: varchar("work_type", { length: 100 }),
+  address: text("address").notNull(),
+  lat: numeric("lat", { precision: 10, scale: 7 }),
+  lng: numeric("lng", { precision: 10, scale: 7 }),
+  startedOn: date("started_on"),
+  endedOn: date("ended_on"),
+  supervisorName: varchar("supervisor_name", { length: 80 }),
+  supervisorPhone: varchar("supervisor_phone", { length: 30 }),
+  supervisorEmail: varchar("supervisor_email", { length: 255 }),
+  status: text("status").$type<"draft" | "active" | "completed" | "archived">().notNull().default("draft"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+export const siteParticipants = pgTable("site_participants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  participantRole: text("participant_role")
+    .$type<"contractor_manager" | "supervisor" | "client_viewer" | "client_manager">()
+    .notNull(),
+  receiveEmail: boolean("receive_email").notNull().default(true),
+  receivePush: boolean("receive_push").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const siteStructures = pgTable("site_structures", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
+  structureTypeId: uuid("structure_type_id").notNull().references(() => structureTypes.id),
+  name: varchar("name", { length: 150 }).notNull(),
+  locationDescription: text("location_description"),
+  hasStructure: boolean("has_structure").notNull().default(true),
+  notApplicableReason: text("not_applicable_reason"),
+  status: text("status").$type<"active" | "not_applicable" | "completed" | "archived">().notNull().default("active"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const constructionRecords = pgTable("construction_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
+  siteStructureId: uuid("site_structure_id").notNull().references(() => siteStructures.id, { onDelete: "cascade" }),
+  phaseTemplateId: uuid("phase_template_id").notNull().references(() => phaseTemplates.id),
+  inspectionDate: date("inspection_date"),
+  subTypeId: uuid("sub_type_id"),
+  title: varchar("title", { length: 200 }),
+  textDescription: text("text_description"),
+  voiceMemoText: text("voice_memo_text"),
+  notApplicable: boolean("not_applicable").notNull().default(false),
+  notApplicableReason: text("not_applicable_reason"),
+  status: text("status").$type<"draft" | "ready" | "submitted" | "revision_requested" | "approved">().notNull().default("draft"),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+export const recordAssets = pgTable("record_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  recordId: uuid("record_id").notNull().references(() => constructionRecords.id, { onDelete: "cascade" }),
+  assetType: text("asset_type").$type<"photo" | "video" | "audio" | "document">().notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileUrl: text("file_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+  fileSizeBytes: bigint("file_size_bytes", { mode: "number" }).notNull(),
+  durationSeconds: numeric("duration_seconds", { precision: 10, scale: 2 }),
+  width: integer("width"),
+  height: integer("height"),
+  capturedAt: timestamp("captured_at", { withTimezone: true }),
+  gpsLat: numeric("gps_lat", { precision: 10, scale: 7 }),
+  gpsLng: numeric("gps_lng", { precision: 10, scale: 7 }),
+  caption: text("caption"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  uploadStatus: text("upload_status").$type<"uploading" | "uploaded" | "failed" | "deleted">().notNull().default("uploading"),
+  checksum: varchar("checksum", { length: 128 }),
+  storageProvider: text("storage_provider").$type<"google_drive" | "supabase" | "vercel_blob">().notNull().default("google_drive"),
+  storageFileId: text("storage_file_id"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});

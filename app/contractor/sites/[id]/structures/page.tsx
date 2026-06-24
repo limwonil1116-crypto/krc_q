@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { constructionSites, structureTypes, siteStructures } from "@/lib/db/schema";
+import { constructionSites, structureTypes, siteStructures, constructionRecords } from "@/lib/db/schema";
 import { StructureManager } from "@/components/site/structure-manager";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +40,28 @@ export default async function StructuresPage({ params }: { params: Promise<{ id:
     .where(eq(siteStructures.siteId, id))
     .orderBy(siteStructures.createdAt);
 
+  // 현장의 모든 구조물 검측일자 (구조물별 캘린더 표시용)
+  const recRows = await db
+    .selectDistinct({
+      siteStructureId: constructionRecords.siteStructureId,
+      inspectionDate: constructionRecords.inspectionDate,
+      status: constructionRecords.status,
+    })
+    .from(constructionRecords)
+    .where(eq(constructionRecords.siteId, id));
+
+  const recordsByStructure: Record<string, { date: string; submitted: boolean }[]> = {};
+  for (const r of recRows) {
+    if (!r.inspectionDate) continue;
+    const arr = (recordsByStructure[r.siteStructureId] ||= []);
+    const existing = arr.find((x) => x.date === r.inspectionDate);
+    if (existing) {
+      if (r.status === "submitted") existing.submitted = true;
+    } else {
+      arr.push({ date: r.inspectionDate, submitted: r.status === "submitted" });
+    }
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
@@ -50,7 +72,7 @@ export default async function StructuresPage({ params }: { params: Promise<{ id:
           href={`/api/sites/${site.id}/download`}
           className="whitespace-nowrap rounded-md border border-[#0033A0] px-3 py-1.5 text-xs font-semibold text-[#0033A0] hover:bg-[#EAF0FB]"
         >
-          ⬇ 현장 전체 다운로드(ZIP)
+          📦 현장 전체 다운로드(ZIP)
         </a>
       </div>
       <StructureManager
@@ -58,6 +80,7 @@ export default async function StructuresPage({ params }: { params: Promise<{ id:
         structureBase={`/contractor/sites/${site.id}/structures`}
         categories={categories}
         structures={structures}
+        recordsByStructure={recordsByStructure}
       />
     </div>
   );
