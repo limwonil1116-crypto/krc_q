@@ -25,6 +25,11 @@ type Rec = {
   inspectionDate: string | null;
   title: string | null;
   textDescription: string | null;
+  inspectionContent: string | null;
+  inspectionPartFromMain: number | null;
+  inspectionPartFromSub: number | null;
+  inspectionPartToMain: number | null;
+  inspectionPartToSub: number | null;
   voiceMemoText: string | null;
   notApplicable: boolean;
   notApplicableReason: string | null;
@@ -202,6 +207,11 @@ export function PhaseRecorder({
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     textDescription: "",
+    inspectionContent: "",
+    partFromMain: "",
+    partFromSub: "",
+    partToMain: "",
+    partToSub: "",
     notApplicable: false,
     notApplicableReason: "",
   });
@@ -283,6 +293,11 @@ export function PhaseRecorder({
     const r = recMap.get(p.id);
     setForm({
       textDescription: r?.textDescription ?? "",
+      inspectionContent: r?.inspectionContent ?? "",
+      partFromMain: r?.inspectionPartFromMain != null ? String(r.inspectionPartFromMain) : "",
+      partFromSub: r?.inspectionPartFromSub != null ? String(r.inspectionPartFromSub) : "",
+      partToMain: r?.inspectionPartToMain != null ? String(r.inspectionPartToMain) : "",
+      partToSub: r?.inspectionPartToSub != null ? String(r.inspectionPartToSub) : "",
       notApplicable: r?.notApplicable ?? false,
       notApplicableReason: r?.notApplicableReason ?? "",
     });
@@ -297,7 +312,20 @@ export function PhaseRecorder({
       const res = await fetch("/api/records", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ siteStructureId, subTypeId, phaseTemplateId: p.id, inspectionDate: selectedDate, ...form }),
+        body: JSON.stringify({
+          siteStructureId,
+          subTypeId,
+          phaseTemplateId: p.id,
+          inspectionDate: selectedDate,
+          textDescription: form.textDescription,
+          notApplicable: form.notApplicable,
+          notApplicableReason: form.notApplicableReason,
+          inspectionContent: form.inspectionContent,
+          inspectionPartFromMain: form.partFromMain === "" ? null : Number(form.partFromMain),
+          inspectionPartFromSub: form.partFromSub === "" ? null : Number(form.partFromSub),
+          inspectionPartToMain: form.partToMain === "" ? null : Number(form.partToMain),
+          inspectionPartToSub: form.partToSub === "" ? null : Number(form.partToSub),
+        }),
       });
       let data: { ok?: boolean; error?: string } = {};
       try {
@@ -315,6 +343,30 @@ export function PhaseRecorder({
       setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function resetPhase(p: Phase) {
+    if (!confirm(`'${p.name}' 단계의 기록과 첨부 파일을 모두 삭제하고 초기화할까요?`)) return;
+    try {
+      const res = await fetch("/api/records/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, phaseTemplateId: p.id, inspectionDate: selectedDate }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "초기화 실패");
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("초기화 중 오류가 발생했습니다.");
     }
   }
 
@@ -367,32 +419,12 @@ export function PhaseRecorder({
     }
   }
 
-  async function resetPhase(p: Phase) {
-    if (!confirm(`'${p.name}' 단계의 기록과 첨부 파일을 모두 삭제하고 초기화할까요?`)) return;
-    try {
-      const res = await fetch("/api/records/reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ siteStructureId, subTypeId, phaseTemplateId: p.id, inspectionDate: selectedDate }),
-      });
-      let data: { ok?: boolean; error?: string } = {};
-      try {
-        data = await res.json();
-      } catch {
-        // ignore
-      }
-      if (!res.ok || !data.ok) {
-        alert(data.error || "초기화 실패");
-        return;
-      }
-      router.refresh();
-    } catch {
-      alert("초기화 중 오류가 발생했습니다.");
-    }
-  }
-
   const taCls =
-    "min-h-[80px] w-full rounded-md border border-neutral-300 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
+    "min-h-[80px] w-full rounded-md border border-neutral-300 bg-white p-2 text-base focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
+  const inpCls =
+    "h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
+  const numCls =
+    "h-11 w-16 rounded-md border border-neutral-300 bg-white text-center text-base focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
   const uploadBtn =
     "inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-[#0033A0] hover:bg-neutral-50";
 
@@ -419,10 +451,7 @@ export function PhaseRecorder({
 
       {subTypeId && (
         <>
-          {/* 캘린더 (메인) */}
           <Calendar selected={selectedDate} marked={markedDates} submitted={submittedDates} onSelect={changeDate} />
-
-          {/* 날짜 좌우 화살표 */}
           <div className="flex items-center justify-center gap-3">
             <button
               type="button"
@@ -443,7 +472,6 @@ export function PhaseRecorder({
         </>
       )}
 
-      {/* 세부 항목 선택 (캘린더·날짜 아래) */}
       <div className="space-y-2 rounded-2xl border border-neutral-200 bg-white p-3">
         <Label>세부 항목 (공종)</Label>
         {subTypes.length === 0 ? (
@@ -624,13 +652,59 @@ export function PhaseRecorder({
                         />
                       </div>
                     ) : (
-                      <div className="space-y-1">
-                        <Label>설명내용</Label>
-                        <textarea
-                          className={taCls}
-                          value={form.textDescription}
-                          onChange={(e) => setForm((f) => ({ ...f, textDescription: e.target.value }))}
-                        />
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <Label>검측내용</Label>
+                          <input
+                            className={inpCls}
+                            value={form.inspectionContent}
+                            onChange={(e) => setForm((f) => ({ ...f, inspectionContent: e.target.value }))}
+                            placeholder="예: 00공사"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label>검측부위</Label>
+                          <div className="flex flex-wrap items-center gap-1 text-base">
+                            <span className="font-semibold text-neutral-600">NO.</span>
+                            <input
+                              className={numCls}
+                              inputMode="numeric"
+                              value={form.partFromMain}
+                              onChange={(e) => setForm((f) => ({ ...f, partFromMain: e.target.value.replace(/[^0-9]/g, "") }))}
+                            />
+                            <span className="font-semibold">+</span>
+                            <input
+                              className={numCls}
+                              inputMode="numeric"
+                              value={form.partFromSub}
+                              onChange={(e) => setForm((f) => ({ ...f, partFromSub: e.target.value.replace(/[^0-9]/g, "") }))}
+                            />
+                            <span className="px-1 font-bold text-neutral-500">~</span>
+                            <span className="font-semibold text-neutral-600">NO.</span>
+                            <input
+                              className={numCls}
+                              inputMode="numeric"
+                              value={form.partToMain}
+                              onChange={(e) => setForm((f) => ({ ...f, partToMain: e.target.value.replace(/[^0-9]/g, "") }))}
+                            />
+                            <span className="font-semibold">+</span>
+                            <input
+                              className={numCls}
+                              inputMode="numeric"
+                              value={form.partToSub}
+                              onChange={(e) => setForm((f) => ({ ...f, partToSub: e.target.value.replace(/[^0-9]/g, "") }))}
+                            />
+                          </div>
+                          <p className="text-xs text-neutral-400">예: NO.0+00 ~ NO.0+00 (측점 구간)</p>
+                        </div>
+                        <div className="space-y-1">
+                          <Label>설명내용</Label>
+                          <textarea
+                            className={taCls}
+                            value={form.textDescription}
+                            onChange={(e) => setForm((f) => ({ ...f, textDescription: e.target.value }))}
+                          />
+                        </div>
                       </div>
                     )}
                     {error && <p className="text-sm text-red-600">{error}</p>}

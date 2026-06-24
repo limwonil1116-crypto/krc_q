@@ -1,0 +1,672 @@
+
+
+##### FILE: components/site/site-form.tsx #####
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { StepSection } from "@/components/kit/step-section";
+import { BottomBar } from "@/components/kit/bottom-bar";
+import { ActionButton } from "@/components/kit/buttons";
+import { KakaoMapPicker } from "@/components/kit/kakao-map-picker";
+
+const PROJECT_TYPES = [
+  "다목적용수", "체계재편", "논범용화", "배수개선", "경지정리", "대행위탁사업",
+  "방조제개보수", "수리시설개보수", "수질개선", "지역개발", "기타",
+];
+const EXECUTORS = [
+  "천안지사", "공주지사", "보령지사", "아산지사", "서산태안지사", "논산지사",
+  "세종대전금산지사", "부여지사", "서천지사", "청양지사", "홍성지사", "예산지사", "당진지사",
+];
+const WORK_TYPES = ["철근콘크리트", "토목", "건축", "조경", "기타"];
+
+type InitialSite = {
+  clientOrgId?: string | null;
+  districtName?: string;
+  projectName?: string;
+  executor?: string | null;
+  workType?: string | null;
+  supervisorName?: string | null;
+  supervisorPhone?: string | null;
+  supervisorEmail?: string | null;
+  address?: string;
+  lat?: number | null;
+  lng?: number | null;
+  startedOn?: string | null;
+  endedOn?: string | null;
+  siteCode?: string | null;
+};
+
+type Form = {
+  clientOrgId: string;
+  districtName: string;
+  project: string;
+  projectEtc: string;
+  executor: string;
+  workType: string;
+  supervisorName: string;
+  supervisorPhone: string;
+  supervisorEmail: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  startedOn: string;
+  endedOn: string;
+  siteCode: string;
+};
+
+function buildInitial(initial?: InitialSite): Form {
+  const pn = initial?.projectName ?? "";
+  const isPreset = PROJECT_TYPES.includes(pn) && pn !== "기타";
+  return {
+    clientOrgId: initial?.clientOrgId ?? "",
+    districtName: initial?.districtName ?? "",
+    project: isPreset ? pn : pn ? "기타" : "",
+    projectEtc: isPreset ? "" : pn,
+    executor: initial?.executor ?? "",
+    workType: initial?.workType ?? "",
+    supervisorName: initial?.supervisorName ?? "",
+    supervisorPhone: initial?.supervisorPhone ?? "",
+    supervisorEmail: initial?.supervisorEmail ?? "",
+    address: initial?.address ?? "",
+    lat: initial?.lat ?? null,
+    lng: initial?.lng ?? null,
+    startedOn: initial?.startedOn ?? "",
+    endedOn: initial?.endedOn ?? "",
+    siteCode: initial?.siteCode ?? "",
+  };
+}
+
+export function SiteForm({
+  clientOrgs,
+  mode = "contractor",
+  siteId,
+  initial,
+}: {
+  clientOrgs: { id: string; name: string }[];
+  mode?: "contractor" | "client";
+  siteId?: string;
+  initial?: InitialSite;
+}) {
+  const router = useRouter();
+  const isEdit = !!siteId;
+  const listPath = mode === "client" ? "/client/sites" : "/contractor/sites";
+  const [f, setF] = useState<Form>(buildInitial(initial));
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const onText =
+    (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setF((p) => ({ ...p, [k]: e.target.value } as Form));
+
+  async function submit() {
+    setError("");
+    const projectName = f.project === "기타" ? f.projectEtc.trim() : f.project;
+    if (!f.districtName || !projectName || !f.address) {
+      setError("지구명, 사업, 현장 주소는 필수입니다.");
+      return;
+    }
+    if (!f.project) {
+      setError("사업을 선택해 주세요.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload = {
+        clientOrgId: f.clientOrgId,
+        districtName: f.districtName,
+        projectName,
+        executor: f.executor,
+        workType: f.workType,
+        supervisorName: f.supervisorName,
+        supervisorPhone: f.supervisorPhone,
+        supervisorEmail: f.supervisorEmail,
+        address: f.address,
+        lat: f.lat,
+        lng: f.lng,
+        startedOn: f.startedOn,
+        endedOn: f.endedOn,
+        siteCode: f.siteCode,
+      };
+      const res = await fetch(isEdit ? `/api/sites/${siteId}` : "/api/sites", {
+        method: isEdit ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // 빈 응답 방어
+      }
+      if (!res.ok || !data.ok) {
+        setError(data.error || ("서버 오류 (" + res.status + ")"));
+        return;
+      }
+      router.push(listPath);
+      router.refresh();
+    } catch (err) {
+      setError("요청 실패: " + (err instanceof Error ? err.message : "네트워크 오류"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const selectCls =
+    "h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
+
+  return (
+    <div className="space-y-4 pb-4">
+      <h1 className="text-xl font-bold text-[#0033A0]">{isEdit ? "현장 수정" : "현장 등록"}</h1>
+
+      <StepSection step="STEP 01" title="사업 정보">
+        <div className="space-y-3">
+          {mode === "contractor" && (
+            <div className="space-y-1">
+              <Label>발주청</Label>
+              <select className={selectCls} value={f.clientOrgId} onChange={onText("clientOrgId")}>
+                <option value="">선택하세요</option>
+                {clientOrgs.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="space-y-1">
+            <Label>지구명 *</Label>
+            <Input value={f.districtName} onChange={onText("districtName")} />
+          </div>
+          <div className="space-y-1">
+            <Label>사업 *</Label>
+            <select className={selectCls} value={f.project} onChange={onText("project")}>
+              <option value="">선택하세요</option>
+              {PROJECT_TYPES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+          {f.project === "기타" && (
+            <div className="space-y-1">
+              <Label>사업명 직접 입력 *</Label>
+              <Input value={f.projectEtc} onChange={onText("projectEtc")} placeholder="사업명을 입력하세요" />
+            </div>
+          )}
+          <div className="space-y-1">
+            <Label>사업시행자</Label>
+            <select className={selectCls} value={f.executor} onChange={onText("executor")}>
+              <option value="">선택하세요</option>
+              {EXECUTORS.map((x) => (
+                <option key={x} value={x}>
+                  {x}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label>공종 분류</Label>
+            <select className={selectCls} value={f.workType} onChange={onText("workType")}>
+              <option value="">선택하세요</option>
+              {WORK_TYPES.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </StepSection>
+
+      <StepSection step="STEP 02" title="공감소장 정보" desc="제출 알림이 이 이메일로 발송됩니다.">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>공감소장 이름</Label>
+            <Input value={f.supervisorName} onChange={onText("supervisorName")} />
+          </div>
+          <div className="space-y-1">
+            <Label>핸드폰</Label>
+            <Input value={f.supervisorPhone} onChange={onText("supervisorPhone")} />
+          </div>
+          <div className="space-y-1">
+            <Label>이메일</Label>
+            <Input type="email" value={f.supervisorEmail} onChange={onText("supervisorEmail")} />
+          </div>
+        </div>
+      </StepSection>
+
+      <StepSection step="STEP 03" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
+        <KakaoMapPicker
+          value={{ lat: f.lat, lng: f.lng, address: f.address }}
+          onChange={(v) => setF((p) => ({ ...p, lat: v.lat, lng: v.lng, address: v.address }))}
+        />
+        <div className="mt-3 space-y-1">
+          <Label>현장 주소 *</Label>
+          <Input value={f.address} onChange={onText("address")} />
+        </div>
+      </StepSection>
+
+      <StepSection step="STEP 04" title="공사 기간 · 코드">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label>시작일</Label>
+            <Input type="date" value={f.startedOn} onChange={onText("startedOn")} />
+          </div>
+          <div className="space-y-1">
+            <Label>종료일</Label>
+            <Input type="date" value={f.endedOn} onChange={onText("endedOn")} />
+          </div>
+        </div>
+        <div className="mt-3 space-y-1">
+          <Label>현장 코드 / 사업관리번호</Label>
+          <Input value={f.siteCode} onChange={onText("siteCode")} />
+        </div>
+      </StepSection>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <BottomBar>
+        <Button type="button" variant="outline" className="flex-1" onClick={() => router.push(listPath)}>
+          취소
+        </Button>
+        <ActionButton className="flex-1" onClick={submit} disabled={loading}>
+          {loading ? "저장 중..." : isEdit ? "수정 저장" : "저장"}
+        </ActionButton>
+      </BottomBar>
+    </div>
+  );
+}
+
+
+##### FILE: components/record/video-composer.tsx #####
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+
+type Phase = { id: string; code: string; name: string; sortOrder: number };
+type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null };
+type Asset = {
+  id: string;
+  phaseTemplateId: string;
+  inspectionDate: string | null;
+  assetType: string;
+  fileName: string;
+  mimeType: string;
+};
+type Meta = {
+  projectName: string;
+  districtName: string;
+  address: string;
+  workType: string | null;
+  executor: string | null;
+  structureName: string;
+  typeName: string;
+};
+
+type Slide =
+  | { kind: "title" }
+  | { kind: "section"; label: string; text: string | null }
+  | { kind: "image"; src: string; caption: string }
+  | { kind: "video"; src: string; caption: string };
+
+const TITLE_MS = 4200;
+const SECTION_MS = 2600;
+const IMAGE_MS = 3200;
+
+export function VideoComposer({
+  meta,
+  phases,
+  records,
+  assets,
+  dates,
+}: {
+  meta: Meta;
+  phases: Phase[];
+  records: Rec[];
+  assets: Asset[];
+  dates: string[];
+}) {
+  const [date, setDate] = useState(dates[0] || "");
+  const [idx, setIdx] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const slides = useMemo<Slide[]>(() => {
+    if (!date) return [];
+    const recMap = new Map(records.filter((r) => r.inspectionDate === date).map((r) => [r.phaseTemplateId, r]));
+    const byPhase = new Map<string, Asset[]>();
+    assets
+      .filter((a) => a.inspectionDate === date)
+      .forEach((a) => {
+        const arr = byPhase.get(a.phaseTemplateId) || [];
+        arr.push(a);
+        byPhase.set(a.phaseTemplateId, arr);
+      });
+    const out: Slide[] = [{ kind: "title" }];
+    [...phases]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .forEach((p, i) => {
+        const r = recMap.get(p.id);
+        const list = byPhase.get(p.id) || [];
+        const photos = list.filter((a) => a.assetType === "photo");
+        const videos = list.filter((a) => a.assetType === "video");
+        if (list.length > 0 || (r && r.textDescription)) {
+          out.push({ kind: "section", label: `${i + 1}. ${p.name}`, text: r?.textDescription ?? null });
+        }
+        photos.forEach((a) => out.push({ kind: "image", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+        videos.forEach((a) => out.push({ kind: "video", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+      });
+    return out;
+  }, [date, phases, records, assets]);
+
+  useEffect(() => {
+    setIdx(0);
+    setPlaying(false);
+  }, [date]);
+
+  const cur = slides[idx];
+  const total = slides.length;
+
+  useEffect(() => {
+    if (!playing || !cur) return;
+    if (cur.kind === "video") return; // 영상은 종료 시 자동 넘김
+    const ms = cur.kind === "title" ? TITLE_MS : cur.kind === "section" ? SECTION_MS : IMAGE_MS;
+    const t = setTimeout(() => {
+      setIdx((i) => {
+        if (i + 1 < total) return i + 1;
+        setPlaying(false);
+        return i;
+      });
+    }, ms);
+    return () => clearTimeout(t);
+  }, [playing, idx, cur, total]);
+
+  useEffect(() => {
+    if (cur?.kind === "video" && playing && videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [idx, playing, cur]);
+
+  function go(n: number) {
+    setIdx((i) => Math.min(Math.max(i + n, 0), Math.max(total - 1, 0)));
+  }
+
+  return (
+    <div className="space-y-4 pb-4">
+      <div>
+        <h1 className="text-xl font-bold text-[#0033A0]">자동 영상 미리보기</h1>
+        <p className="text-sm text-neutral-500">{meta.structureName} · {meta.typeName}</p>
+      </div>
+
+      {dates.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-neutral-500">검측일자</span>
+          {dates.map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDate(d)}
+              className={
+                "rounded-full px-3 py-1 text-xs font-semibold " +
+                (d === date ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
+              }
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {total === 0 ? (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
+          이 검측일자에 등록된 사진/영상/기록이 없습니다. 단계별 기록에서 먼저 자료를 등록하세요.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
+            {cur?.kind === "title" && (
+              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#0033A0] to-[#002266] px-6 text-center text-white">
+                <div className="text-xs font-semibold tracking-widest text-[#FE5000]">한국농어촌공사 · 현장기록</div>
+                <div className="mt-3 text-2xl font-bold">{meta.structureName}</div>
+                <div className="mt-2 text-sm text-white/90">
+                  {meta.projectName}{meta.districtName ? ` · ${meta.districtName}` : ""}
+                </div>
+                <div className="mt-1 text-xs text-white/70">{meta.address}</div>
+                <div className="mt-1 text-xs text-white/70">
+                  {[meta.workType, meta.executor].filter(Boolean).join(" · ")}
+                </div>
+                <div className="mt-4 rounded-full bg-white/15 px-3 py-1 text-xs">검측일자 {date}</div>
+              </div>
+            )}
+
+            {cur?.kind === "section" && (
+              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#002A80] to-[#0033A0] px-8 text-center text-white">
+                <div className="text-3xl font-bold">{cur.label}</div>
+                {cur.text && <div className="mt-3 max-w-xl text-sm leading-relaxed text-white/85">{cur.text}</div>}
+              </div>
+            )}
+
+            {cur?.kind === "image" && (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cur.src} alt={cur.caption} className="h-full w-full object-contain" />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-sm font-semibold text-white">
+                  {cur.caption}
+                </div>
+              </>
+            )}
+
+            {cur?.kind === "video" && (
+              <>
+                <video
+                  ref={videoRef}
+                  src={cur.src}
+                  controls
+                  playsInline
+                  className="h-full w-full bg-black object-contain"
+                  onEnded={() => {
+                    if (playing) {
+                      setIdx((i) => {
+                        if (i + 1 < total) return i + 1;
+                        setPlaying(false);
+                        return i;
+                      });
+                    }
+                  }}
+                />
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-sm font-semibold text-white">
+                  {cur.caption}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* 진행 표시 */}
+          <div className="flex flex-wrap gap-1">
+            {slides.map((s, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setIdx(i)}
+                className={"h-1.5 flex-1 rounded-full " + (i <= idx ? "bg-[#FE5000]" : "bg-neutral-200")}
+                aria-label={`슬라이드 ${i + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* 컨트롤 */}
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+            >
+              ⏮ 이전
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (idx >= total - 1) setIdx(0);
+                setPlaying((p) => !p);
+              }}
+              className="rounded-md bg-[#0033A0] px-5 py-1.5 text-sm font-semibold text-white hover:bg-[#002A80]"
+            >
+              {playing ? "⏸ 일시정지" : "▶ 자동재생"}
+            </button>
+            <button
+              type="button"
+              onClick={() => go(1)}
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+            >
+              다음 ⏭
+            </button>
+          </div>
+          <p className="text-center text-xs text-neutral-400">
+            {idx + 1} / {total} · 자동 구성 미리보기 (최종 MP4 내보내기는 다음 단계에서 추가됩니다)
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+##### FILE: app/api/sites/route.ts #####
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { constructionSites, siteParticipants } from "@/lib/db/schema";
+import { getMyOrgId } from "@/lib/org";
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.user?.role;
+    if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+      return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+    }
+    const userId = session.user.id;
+    const orgId = await getMyOrgId(userId);
+    if (!orgId) {
+      return NextResponse.json({ error: "소속 기관 정보를 찾을 수 없습니다." }, { status: 400 });
+    }
+
+    const b = await req.json();
+    const districtName = (b.districtName ?? "").trim();
+    const projectName = (b.projectName ?? "").trim();
+    const address = (b.address ?? "").trim();
+    if (!districtName || !projectName || !address) {
+      return NextResponse.json({ error: "지구명/사업/주소는 필수입니다." }, { status: 400 });
+    }
+
+    const [site] = await db
+      .insert(constructionSites)
+      .values({
+        clientOrgId: role === "client" ? orgId : (b.clientOrgId || null),
+        contractorOrgId: role === "contractor" ? orgId : null,
+        siteCode: (b.siteCode ?? "").trim() || null,
+        districtName,
+        projectName,
+        executor: (b.executor ?? "").trim() || null,
+        workType: (b.workType ?? "").trim() || null,
+        address,
+        lat: b.lat != null ? String(b.lat) : null,
+        lng: b.lng != null ? String(b.lng) : null,
+        startedOn: b.startedOn || null,
+        endedOn: b.endedOn || null,
+        supervisorName: (b.supervisorName ?? "").trim() || null,
+        supervisorPhone: (b.supervisorPhone ?? "").trim() || null,
+        supervisorEmail: (b.supervisorEmail ?? "").trim() || null,
+        status: "active",
+        createdBy: userId,
+      })
+      .returning();
+
+    await db.insert(siteParticipants).values({
+      siteId: site.id,
+      userId,
+      participantRole: role === "client" ? "client_manager" : "contractor_manager",
+    });
+
+    return NextResponse.json({ ok: true, id: site.id });
+  } catch (e) {
+    console.error("[sites] error:", e);
+    const msg = e instanceof Error ? e.message : "알 수 없는 오류";
+    return NextResponse.json({ error: "현장 저장 오류: " + msg }, { status: 500 });
+  }
+}
+
+
+##### FILE: app/api/sites/[id]/route.ts #####
+import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { constructionSites } from "@/lib/db/schema";
+import { getMyOrgId } from "@/lib/org";
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const session = await auth();
+    const role = session?.user?.role;
+    if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+      return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+    }
+    const userId = session.user.id;
+    const orgId = await getMyOrgId(userId);
+
+    const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, id)).limit(1);
+    const site = rows[0];
+    if (!site) {
+      return NextResponse.json({ error: "현장을 찾을 수 없습니다." }, { status: 404 });
+    }
+    const owns =
+      site.createdBy === userId ||
+      (orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+    if (!owns) {
+      return NextResponse.json({ error: "수정 권한이 없습니다." }, { status: 403 });
+    }
+
+    const b = await req.json();
+    const districtName = (b.districtName ?? "").trim();
+    const projectName = (b.projectName ?? "").trim();
+    const address = (b.address ?? "").trim();
+    if (!districtName || !projectName || !address) {
+      return NextResponse.json({ error: "지구명/사업/주소는 필수입니다." }, { status: 400 });
+    }
+
+    await db
+      .update(constructionSites)
+      .set({
+        clientOrgId: role === "contractor" ? (b.clientOrgId || null) : site.clientOrgId,
+        siteCode: (b.siteCode ?? "").trim() || null,
+        districtName,
+        projectName,
+        executor: (b.executor ?? "").trim() || null,
+        workType: (b.workType ?? "").trim() || null,
+        address,
+        lat: b.lat != null ? String(b.lat) : null,
+        lng: b.lng != null ? String(b.lng) : null,
+        startedOn: b.startedOn || null,
+        endedOn: b.endedOn || null,
+        supervisorName: (b.supervisorName ?? "").trim() || null,
+        supervisorPhone: (b.supervisorPhone ?? "").trim() || null,
+        supervisorEmail: (b.supervisorEmail ?? "").trim() || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(constructionSites.id, id));
+
+    return NextResponse.json({ ok: true, id });
+  } catch (e) {
+    console.error("[sites:patch] error:", e);
+    const msg = e instanceof Error ? e.message : "알 수 없는 오류";
+    return NextResponse.json({ error: "현장 수정 오류: " + msg }, { status: 500 });
+  }
+}

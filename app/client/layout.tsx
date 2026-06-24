@@ -13,7 +13,6 @@ export default async function RoleLayout({ children }: { children: React.ReactNo
         <div className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/krc-logo-white.png" alt="한국농어촌공사" className="h-5 w-auto sm:h-6" />
-          <span className="hidden text-sm text-white/80 sm:inline">· 발주청</span>
         </div>
         <div className="flex items-center gap-3 text-sm">
           <span>{session.user.name}</span>

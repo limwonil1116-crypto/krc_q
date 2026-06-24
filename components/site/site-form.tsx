@@ -26,15 +26,18 @@ type InitialSite = {
   projectName?: string;
   executor?: string | null;
   workType?: string | null;
+  workTypes?: string | null;
   supervisorName?: string | null;
   supervisorPhone?: string | null;
   supervisorEmail?: string | null;
+  siteManagerName?: string | null;
+  siteManagerPhone?: string | null;
+  siteManagerEmail?: string | null;
   address?: string;
   lat?: number | null;
   lng?: number | null;
   startedOn?: string | null;
   endedOn?: string | null;
-  siteCode?: string | null;
 };
 
 type Form = {
@@ -43,37 +46,48 @@ type Form = {
   project: string;
   projectEtc: string;
   executor: string;
-  workType: string;
+  workTypes: string[];
   supervisorName: string;
   supervisorPhone: string;
   supervisorEmail: string;
+  siteManagerName: string;
+  siteManagerPhone: string;
+  siteManagerEmail: string;
   address: string;
   lat: number | null;
   lng: number | null;
   startedOn: string;
   endedOn: string;
-  siteCode: string;
 };
 
 function buildInitial(initial?: InitialSite): Form {
   const pn = initial?.projectName ?? "";
   const isPreset = PROJECT_TYPES.includes(pn) && pn !== "기타";
+  // 공종: workTypes(콤마) 우선, 없으면 기존 단일 workType
+  let wt: string[] = [];
+  if (initial?.workTypes) {
+    wt = initial.workTypes.split(",").map((s) => s.trim()).filter(Boolean);
+  } else if (initial?.workType) {
+    wt = initial.workType.split(/[,/]/).map((s) => s.trim()).filter(Boolean);
+  }
   return {
     clientOrgId: initial?.clientOrgId ?? "",
     districtName: initial?.districtName ?? "",
     project: isPreset ? pn : pn ? "기타" : "",
     projectEtc: isPreset ? "" : pn,
     executor: initial?.executor ?? "",
-    workType: initial?.workType ?? "",
+    workTypes: wt,
     supervisorName: initial?.supervisorName ?? "",
     supervisorPhone: initial?.supervisorPhone ?? "",
     supervisorEmail: initial?.supervisorEmail ?? "",
+    siteManagerName: initial?.siteManagerName ?? "",
+    siteManagerPhone: initial?.siteManagerPhone ?? "",
+    siteManagerEmail: initial?.siteManagerEmail ?? "",
     address: initial?.address ?? "",
     lat: initial?.lat ?? null,
     lng: initial?.lng ?? null,
     startedOn: initial?.startedOn ?? "",
     endedOn: initial?.endedOn ?? "",
-    siteCode: initial?.siteCode ?? "",
   };
 }
 
@@ -99,6 +113,13 @@ export function SiteForm({
     (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setF((p) => ({ ...p, [k]: e.target.value } as Form));
 
+  function toggleWork(w: string) {
+    setF((p) => ({
+      ...p,
+      workTypes: p.workTypes.includes(w) ? p.workTypes.filter((x) => x !== w) : [...p.workTypes, w],
+    }));
+  }
+
   async function submit() {
     setError("");
     const projectName = f.project === "기타" ? f.projectEtc.trim() : f.project;
@@ -117,16 +138,19 @@ export function SiteForm({
         districtName: f.districtName,
         projectName,
         executor: f.executor,
-        workType: f.workType,
+        workType: f.workTypes.join(", "),
+        workTypes: f.workTypes.join(","),
         supervisorName: f.supervisorName,
         supervisorPhone: f.supervisorPhone,
         supervisorEmail: f.supervisorEmail,
+        siteManagerName: f.siteManagerName,
+        siteManagerPhone: f.siteManagerPhone,
+        siteManagerEmail: f.siteManagerEmail,
         address: f.address,
         lat: f.lat,
         lng: f.lng,
         startedOn: f.startedOn,
         endedOn: f.endedOn,
-        siteCode: f.siteCode,
       };
       const res = await fetch(isEdit ? `/api/sites/${siteId}` : "/api/sites", {
         method: isEdit ? "PATCH" : "POST",
@@ -153,7 +177,7 @@ export function SiteForm({
   }
 
   const selectCls =
-    "h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
+    "h-12 w-full rounded-md border border-neutral-300 bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
 
   return (
     <div className="space-y-4 pb-4">
@@ -207,15 +231,26 @@ export function SiteForm({
             </select>
           </div>
           <div className="space-y-1">
-            <Label>공종 분류</Label>
-            <select className={selectCls} value={f.workType} onChange={onText("workType")}>
-              <option value="">선택하세요</option>
-              {WORK_TYPES.map((w) => (
-                <option key={w} value={w}>
-                  {w}
-                </option>
-              ))}
-            </select>
+            <Label>공종 분류 (중복 선택 가능)</Label>
+            <div className="flex flex-wrap gap-2">
+              {WORK_TYPES.map((w) => {
+                const on = f.workTypes.includes(w);
+                return (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => toggleWork(w)}
+                    className={
+                      "rounded-full px-4 py-2 text-base font-semibold transition " +
+                      (on ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
+                    }
+                  >
+                    {on ? "✓ " : ""}
+                    {w}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </StepSection>
@@ -237,7 +272,24 @@ export function SiteForm({
         </div>
       </StepSection>
 
-      <StepSection step="STEP 03" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
+      <StepSection step="STEP 03" title="현장소장 정보">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>현장소장 이름</Label>
+            <Input value={f.siteManagerName} onChange={onText("siteManagerName")} />
+          </div>
+          <div className="space-y-1">
+            <Label>핸드폰</Label>
+            <Input value={f.siteManagerPhone} onChange={onText("siteManagerPhone")} />
+          </div>
+          <div className="space-y-1">
+            <Label>이메일</Label>
+            <Input type="email" value={f.siteManagerEmail} onChange={onText("siteManagerEmail")} />
+          </div>
+        </div>
+      </StepSection>
+
+      <StepSection step="STEP 04" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
         <KakaoMapPicker
           value={{ lat: f.lat, lng: f.lng, address: f.address }}
           onChange={(v) => setF((p) => ({ ...p, lat: v.lat, lng: v.lng, address: v.address }))}
@@ -248,7 +300,7 @@ export function SiteForm({
         </div>
       </StepSection>
 
-      <StepSection step="STEP 04" title="공사 기간 · 코드">
+      <StepSection step="STEP 05" title="공사 기간">
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label>시작일</Label>
@@ -258,10 +310,6 @@ export function SiteForm({
             <Label>종료일</Label>
             <Input type="date" value={f.endedOn} onChange={onText("endedOn")} />
           </div>
-        </div>
-        <div className="mt-3 space-y-1">
-          <Label>현장 코드 / 사업관리번호</Label>
-          <Input value={f.siteCode} onChange={onText("siteCode")} />
         </div>
       </StepSection>
 

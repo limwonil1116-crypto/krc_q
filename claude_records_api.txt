@@ -1,3 +1,6 @@
+
+
+##### FILE: app/api/records/route.ts #####
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
@@ -47,11 +50,6 @@ export async function POST(req: Request) {
     const values = {
       subTypeId,
       inspectionDate,
-      inspectionContent: notApplicable ? null : (b.inspectionContent ?? "").trim() || null,
-      inspectionPartFromMain: notApplicable ? null : (typeof b.inspectionPartFromMain === "number" ? b.inspectionPartFromMain : null),
-      inspectionPartFromSub: notApplicable ? null : (typeof b.inspectionPartFromSub === "number" ? b.inspectionPartFromSub : null),
-      inspectionPartToMain: notApplicable ? null : (typeof b.inspectionPartToMain === "number" ? b.inspectionPartToMain : null),
-      inspectionPartToSub: notApplicable ? null : (typeof b.inspectionPartToSub === "number" ? b.inspectionPartToSub : null),
       title: (b.title ?? "").trim() || null,
       textDescription: notApplicable ? null : (b.textDescription ?? "").trim() || null,
       voiceMemoText: notApplicable ? null : (b.voiceMemoText ?? "").trim() || null,
