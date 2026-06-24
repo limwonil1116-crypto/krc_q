@@ -37,7 +37,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ assetId:
   }
 
   const nodeStream = await getDriveStream(a.storageFileId);
-  const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
+  const webStream = Readable.toWeb(nodeStream as unknown as Readable) as unknown as ReadableStream;
   return new Response(webStream, {
     headers: {
       "Content-Type": a.mimeType,
