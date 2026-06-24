@@ -309,7 +309,7 @@ export function PhaseRecorder({
     setOpen(p.id);
   }
 
-  async function saveText(p: Phase) {
+  async function saveText(p: Phase, i: number) {
     setError("");
     setLoading(true);
     try {
@@ -324,11 +324,11 @@ export function PhaseRecorder({
           textDescription: form.textDescription,
           notApplicable: form.notApplicable,
           notApplicableReason: form.notApplicableReason,
-          inspectionContent: form.inspectionContent,
-          inspectionPartFromMain: form.partFromMain === "" ? null : Number(form.partFromMain),
-          inspectionPartFromSub: form.partFromSub === "" ? null : Number(form.partFromSub),
-          inspectionPartToMain: form.partToMain === "" ? null : Number(form.partToMain),
-          inspectionPartToSub: form.partToSub === "" ? null : Number(form.partToSub),
+          inspectionContent: i === 0 ? form.inspectionContent : null,
+          inspectionPartFromMain: i === 0 && form.partFromMain !== "" ? Number(form.partFromMain) : null,
+          inspectionPartFromSub: i === 0 && form.partFromSub !== "" ? Number(form.partFromSub) : null,
+          inspectionPartToMain: i === 0 && form.partToMain !== "" ? Number(form.partToMain) : null,
+          inspectionPartToSub: i === 0 && form.partToSub !== "" ? Number(form.partToSub) : null,
         }),
       });
       let data: { ok?: boolean; error?: string } = {};
@@ -657,50 +657,54 @@ export function PhaseRecorder({
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div className="space-y-1">
-                          <Label>검측내용</Label>
-                          <input
-                            className={inpCls}
-                            value={form.inspectionContent}
-                            onChange={(e) => setForm((f) => ({ ...f, inspectionContent: e.target.value }))}
-                            placeholder="예: 00공사"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label>검측부위</Label>
-                          <div className="flex flex-wrap items-center gap-1 text-base">
-                            <span className="font-semibold text-neutral-600">NO.</span>
-                            <input
-                              className={numCls}
-                              inputMode="numeric"
-                              value={form.partFromMain}
-                              onChange={(e) => setForm((f) => ({ ...f, partFromMain: e.target.value.replace(/[^0-9]/g, "") }))}
-                            />
-                            <span className="font-semibold">+</span>
-                            <input
-                              className={numCls}
-                              inputMode="numeric"
-                              value={form.partFromSub}
-                              onChange={(e) => setForm((f) => ({ ...f, partFromSub: e.target.value.replace(/[^0-9]/g, "") }))}
-                            />
-                            <span className="px-1 font-bold text-neutral-500">~</span>
-                            <span className="font-semibold text-neutral-600">NO.</span>
-                            <input
-                              className={numCls}
-                              inputMode="numeric"
-                              value={form.partToMain}
-                              onChange={(e) => setForm((f) => ({ ...f, partToMain: e.target.value.replace(/[^0-9]/g, "") }))}
-                            />
-                            <span className="font-semibold">+</span>
-                            <input
-                              className={numCls}
-                              inputMode="numeric"
-                              value={form.partToSub}
-                              onChange={(e) => setForm((f) => ({ ...f, partToSub: e.target.value.replace(/[^0-9]/g, "") }))}
-                            />
-                          </div>
-                          <p className="text-xs text-neutral-400">예: NO.0+00 ~ NO.0+00 (측점 구간)</p>
-                        </div>
+                        {i === 0 && (
+                          <>
+                            <div className="space-y-1">
+                              <Label>검측내용</Label>
+                              <input
+                                className={inpCls}
+                                value={form.inspectionContent}
+                                onChange={(e) => setForm((f) => ({ ...f, inspectionContent: e.target.value }))}
+                                placeholder="예: 00공사"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label>검측부위</Label>
+                              <div className="flex flex-wrap items-center gap-1 text-base">
+                                <span className="font-semibold text-neutral-600">NO.</span>
+                                <input
+                                  className={numCls}
+                                  inputMode="numeric"
+                                  value={form.partFromMain}
+                                  onChange={(e) => setForm((f) => ({ ...f, partFromMain: e.target.value.replace(/[^0-9]/g, "") }))}
+                                />
+                                <span className="font-semibold">+</span>
+                                <input
+                                  className={numCls}
+                                  inputMode="numeric"
+                                  value={form.partFromSub}
+                                  onChange={(e) => setForm((f) => ({ ...f, partFromSub: e.target.value.replace(/[^0-9]/g, "") }))}
+                                />
+                                <span className="px-1 font-bold text-neutral-500">~</span>
+                                <span className="font-semibold text-neutral-600">NO.</span>
+                                <input
+                                  className={numCls}
+                                  inputMode="numeric"
+                                  value={form.partToMain}
+                                  onChange={(e) => setForm((f) => ({ ...f, partToMain: e.target.value.replace(/[^0-9]/g, "") }))}
+                                />
+                                <span className="font-semibold">+</span>
+                                <input
+                                  className={numCls}
+                                  inputMode="numeric"
+                                  value={form.partToSub}
+                                  onChange={(e) => setForm((f) => ({ ...f, partToSub: e.target.value.replace(/[^0-9]/g, "") }))}
+                                />
+                              </div>
+                              <p className="text-xs text-neutral-400">예: NO.0+00 ~ NO.0+00 (측점 구간)</p>
+                            </div>
+                          </>
+                        )}
                         <div className="space-y-1">
                           <Label>설명내용</Label>
                           <textarea
@@ -716,7 +720,7 @@ export function PhaseRecorder({
                       <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(null)}>
                         취소
                       </Button>
-                      <ActionButton className="flex-1" onClick={() => saveText(p)} disabled={loading}>
+                      <ActionButton className="flex-1" onClick={() => saveText(p, i)} disabled={loading}>
                         {loading ? "저장 중..." : "기록 저장"}
                       </ActionButton>
                     </div>
