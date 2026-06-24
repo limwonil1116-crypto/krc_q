@@ -4,7 +4,7 @@ export default function Page() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-[#1E3A5F]">담당 현장 현황</h1>
+        <h1 className="text-xl font-bold text-[#0033A0]">담당 현장 현황</h1>
         <p className="text-sm text-neutral-500">신규 제출과 생성 영상을 확인하세요.</p>
       </div>
       <div className="grid grid-cols-3 gap-2">

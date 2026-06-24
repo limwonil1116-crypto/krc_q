@@ -4,7 +4,7 @@ export default function Page() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-[#1E3A5F]">관리자 콘솔</h1>
+        <h1 className="text-xl font-bold text-[#0033A0]">관리자 콘솔</h1>
         <p className="text-sm text-neutral-500">승인·마스터·생성 상태를 관리합니다.</p>
       </div>
       <div className="grid grid-cols-4 gap-2">

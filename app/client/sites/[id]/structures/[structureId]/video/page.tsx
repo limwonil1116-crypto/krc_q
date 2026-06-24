@@ -105,7 +105,7 @@ export default async function VideoPage({
       <div className="flex justify-end">
         <a
           href={`/api/structures/${ss.id}/download`}
-          className="whitespace-nowrap rounded-md border border-[#1E3A5F] px-3 py-1.5 text-xs font-semibold text-[#1E3A5F] hover:bg-[#EEF3F9]"
+          className="whitespace-nowrap rounded-md border border-[#0033A0] px-3 py-1.5 text-xs font-semibold text-[#0033A0] hover:bg-[#EAF0FB]"
         >
           ⬇ 이 구조물 전체 다운로드(ZIP)
         </a>

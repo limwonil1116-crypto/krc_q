@@ -9,8 +9,12 @@ export default async function RoleLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      <header className="flex items-center justify-between border-b bg-[#1E3A5F] px-4 py-3 text-white">
-        <div className="font-semibold">현장기록 자동영상화 · 공감소장</div>
+      <header className="flex items-center justify-between border-b border-white/10 bg-[#0033A0] px-4 py-3 text-white">
+        <div className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/krc-logo-white.png" alt="한국농어촌공사" className="h-5 w-auto sm:h-6" />
+          <span className="hidden text-sm text-white/80 sm:inline">· 공감소장</span>
+        </div>
         <div className="flex items-center gap-3 text-sm">
           <span>{session.user.name}</span>
           <form

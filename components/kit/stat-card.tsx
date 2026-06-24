@@ -10,11 +10,11 @@ export function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
-      <div className={accent ? "text-2xl font-bold text-[#F37021]" : "text-2xl font-bold text-[#1E3A5F]"}>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4 text-center">
+      <div className={accent ? "text-4xl font-extrabold text-[#FE5000]" : "text-4xl font-extrabold text-[#0033A0]"}>
         {value}
       </div>
-      <div className="mt-1 text-xs text-neutral-500">{label}</div>
+      <div className="mt-1 text-sm font-medium text-neutral-500">{label}</div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import Link from "next/link";
 export function BottomNav({ home }: { home: string }) {
   const router = useRouter();
   const btn =
-    "flex h-11 w-16 items-center justify-center rounded-xl bg-neutral-100 text-[#1E3A5F] hover:bg-neutral-200 active:scale-95 transition";
+    "flex h-11 w-16 items-center justify-center rounded-xl bg-neutral-100 text-[#0033A0] hover:bg-neutral-200 active:scale-95 transition";
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex max-w-5xl items-center justify-center gap-3 px-4 py-2">

@@ -37,11 +37,10 @@ export default function LoginPage() {
 
   return (
     <Card className="w-full max-w-sm overflow-hidden border-neutral-200 p-0">
-      <div className="bg-[#1E3A5F] px-6 py-8 text-center text-white">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F37021] text-2xl">
-          📹
-        </div>
-        <div className="text-lg font-bold">현장기록 자동영상화</div>
+      <div className="bg-[#0033A0] px-6 py-8 text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/krc-logo-white.png" alt="한국농어촌공사" className="mx-auto h-8 w-auto" />
+        <div className="mt-4 text-base font-bold text-white">현장기록 자동영상화 시스템</div>
         <div className="mt-1 text-xs text-white/70">한국농어촌공사 공사기록 플랫폼</div>
       </div>
       <CardContent className="space-y-4 p-6">

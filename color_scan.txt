@@ -1,0 +1,38 @@
+==== 색상별 사용 횟수 ====
+#1E3A5F : 53
+#16304d : 3
+#F37021 : 10
+#DA631C : 4
+#EEF3F9 : 6
+#6B73C9 : 2
+#1E293B : 4
+#0f2238 : 1
+
+==== 색상이 들어간 파일 목록 ====
+app/(auth)/login/page.tsx
+app/(auth)/signup/page.tsx
+app/admin/layout.tsx
+app/admin/page.tsx
+app/client/layout.tsx
+app/client/page.tsx
+app/client/sites/[id]/structures/[structureId]/video/page.tsx
+app/client/sites/[id]/structures/page.tsx
+app/client/sites/page.tsx
+app/contractor/layout.tsx
+app/contractor/page.tsx
+app/contractor/sites/[id]/structures/[structureId]/video/page.tsx
+app/contractor/sites/[id]/structures/page.tsx
+app/contractor/sites/page.tsx
+app/supervisor/layout.tsx
+app/supervisor/page.tsx
+components/kit/bottom-nav.tsx
+components/kit/buttons.tsx
+components/kit/selectable-card.tsx
+components/kit/stat-card.tsx
+components/kit/step-section.tsx
+components/onboarding-form.tsx
+components/record/phase-recorder.tsx
+components/record/video-composer.tsx
+components/site/site-form.tsx
+components/site/sites-table.tsx
+components/site/structure-manager.tsx

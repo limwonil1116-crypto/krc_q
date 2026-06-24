@@ -34,7 +34,7 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
       setF((p) => ({ ...p, [k]: e.target.value }));
 
   const selectCls =
-    "h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30";
+    "h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
 
   async function submit() {
     setError("");
@@ -92,7 +92,7 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
 
   return (
     <Card className="w-full max-w-md overflow-hidden border-neutral-200 p-0">
-      <div className="bg-[#1E3A5F] px-6 py-7 text-center text-white">
+      <div className="bg-[#0033A0] px-6 py-7 text-center text-white">
         <div className="text-lg font-bold">회원가입</div>
         <div className="mt-1 text-xs text-white/70">카카오 인증 완료 · 정보를 입력해 주세요</div>
       </div>

@@ -188,7 +188,7 @@ export function StructureManager({
 
   return (
     <div className="space-y-4 pb-4">
-      <h1 className="text-xl font-bold text-[#1E3A5F]">구조물 등록 및 조회</h1>
+      <h1 className="text-xl font-bold text-[#0033A0]">구조물 등록 및 조회</h1>
 
       <StepSection step="STEP 04" title="구조물(대분류) 등록" desc="대분류를 선택하고 이름을 붙여 추가하세요. 세부 항목은 등록 후 기록 화면에서 선택합니다.">
         <Label>대분류</Label>
@@ -264,7 +264,7 @@ export function StructureManager({
                   <>
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <div className="font-semibold text-[#1E293B]">{s.name}</div>
+                        <div className="font-semibold text-[#0A2540]">{s.name}</div>
                         <div className="text-xs text-neutral-500">
                           {s.typeName}
                           {s.locationDescription ? ` · ${s.locationDescription}` : ""}
@@ -282,13 +282,13 @@ export function StructureManager({
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <Link
                         href={`${structureBase}/${s.id}`}
-                        className="whitespace-nowrap rounded-md bg-[#1E3A5F] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#16304d]"
+                        className="whitespace-nowrap rounded-md bg-[#0033A0] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#002A80]"
                       >
                         세부항목·검측 기록 →
                       </Link>
                       <Link
                         href={`${structureBase}/${s.id}/video`}
-                        className="whitespace-nowrap rounded-md bg-[#F37021] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#DA631C]"
+                        className="whitespace-nowrap rounded-md bg-[#FE5000] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#E04800]"
                       >
                         ▶ 영상 미리보기
                       </Link>

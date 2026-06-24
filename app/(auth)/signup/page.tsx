@@ -52,7 +52,7 @@ export default function SignupPage() {
   if (done) {
     return (
       <Card className="w-full max-w-md overflow-hidden border-neutral-200 p-0">
-        <div className="bg-[#1E3A5F] px-6 py-7 text-center text-white">
+        <div className="bg-[#0033A0] px-6 py-7 text-center text-white">
           <div className="text-lg font-bold">가입 신청 완료</div>
         </div>
         <CardContent className="space-y-4 p-6">
@@ -67,7 +67,7 @@ export default function SignupPage() {
 
   return (
     <Card className="w-full max-w-md overflow-hidden border-neutral-200 p-0">
-      <div className="bg-[#1E3A5F] px-6 py-7 text-center text-white">
+      <div className="bg-[#0033A0] px-6 py-7 text-center text-white">
         <div className="text-lg font-bold">회원가입 (시공사)</div>
         <div className="mt-1 text-xs text-white/70">가입 후 운영자 승인이 필요합니다</div>
       </div>
@@ -88,7 +88,7 @@ export default function SignupPage() {
         </ActionButton>
         <p className="text-center text-sm text-neutral-500">
           이미 계정이 있으신가요?{" "}
-          <a href="/login" className="font-semibold text-[#F37021] underline">
+          <a href="/login" className="font-semibold text-[#FE5000] underline">
             로그인
           </a>
         </p>

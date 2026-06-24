@@ -114,7 +114,7 @@ export function VideoComposer({
   return (
     <div className="space-y-4 pb-4">
       <div>
-        <h1 className="text-xl font-bold text-[#1E3A5F]">자동 영상 미리보기</h1>
+        <h1 className="text-xl font-bold text-[#0033A0]">자동 영상 미리보기</h1>
         <p className="text-sm text-neutral-500">{meta.structureName} · {meta.typeName}</p>
       </div>
 
@@ -128,7 +128,7 @@ export function VideoComposer({
               onClick={() => setDate(d)}
               className={
                 "rounded-full px-3 py-1 text-xs font-semibold " +
-                (d === date ? "bg-[#1E3A5F] text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
+                (d === date ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
               }
             >
               {d}
@@ -145,8 +145,8 @@ export function VideoComposer({
         <div className="space-y-3">
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
             {cur?.kind === "title" && (
-              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#1E3A5F] to-[#0f2238] px-6 text-center text-white">
-                <div className="text-xs font-semibold tracking-widest text-[#F37021]">한국농어촌공사 · 현장기록</div>
+              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#0033A0] to-[#002266] px-6 text-center text-white">
+                <div className="text-xs font-semibold tracking-widest text-[#FE5000]">한국농어촌공사 · 현장기록</div>
                 <div className="mt-3 text-2xl font-bold">{meta.structureName}</div>
                 <div className="mt-2 text-sm text-white/90">
                   {meta.projectName}{meta.districtName ? ` · ${meta.districtName}` : ""}
@@ -160,7 +160,7 @@ export function VideoComposer({
             )}
 
             {cur?.kind === "section" && (
-              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#16304d] to-[#1E3A5F] px-8 text-center text-white">
+              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#002A80] to-[#0033A0] px-8 text-center text-white">
                 <div className="text-3xl font-bold">{cur.label}</div>
                 {cur.text && <div className="mt-3 max-w-xl text-sm leading-relaxed text-white/85">{cur.text}</div>}
               </div>
@@ -208,7 +208,7 @@ export function VideoComposer({
                 key={i}
                 type="button"
                 onClick={() => setIdx(i)}
-                className={"h-1.5 flex-1 rounded-full " + (i <= idx ? "bg-[#F37021]" : "bg-neutral-200")}
+                className={"h-1.5 flex-1 rounded-full " + (i <= idx ? "bg-[#FE5000]" : "bg-neutral-200")}
                 aria-label={`슬라이드 ${i + 1}`}
               />
             ))}
@@ -229,7 +229,7 @@ export function VideoComposer({
                 if (idx >= total - 1) setIdx(0);
                 setPlaying((p) => !p);
               }}
-              className="rounded-md bg-[#1E3A5F] px-5 py-1.5 text-sm font-semibold text-white hover:bg-[#16304d]"
+              className="rounded-md bg-[#0033A0] px-5 py-1.5 text-sm font-semibold text-white hover:bg-[#002A80]"
             >
               {playing ? "⏸ 일시정지" : "▶ 자동재생"}
             </button>

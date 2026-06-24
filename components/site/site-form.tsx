@@ -153,11 +153,11 @@ export function SiteForm({
   }
 
   const selectCls =
-    "h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30";
+    "h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
 
   return (
     <div className="space-y-4 pb-4">
-      <h1 className="text-xl font-bold text-[#1E3A5F]">{isEdit ? "현장 수정" : "현장 등록"}</h1>
+      <h1 className="text-xl font-bold text-[#0033A0]">{isEdit ? "현장 수정" : "현장 등록"}</h1>
 
       <StepSection step="STEP 01" title="사업 정보">
         <div className="space-y-3">

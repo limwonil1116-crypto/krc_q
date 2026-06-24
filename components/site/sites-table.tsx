@@ -58,7 +58,7 @@ export function SitesTable({ sites, basePath }: { sites: Site[]; basePath: strin
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="지구명·사업·시행자·주소 검색"
-          className="h-9 w-full rounded-md border border-neutral-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30 sm:max-w-xs"
+          className="h-9 w-full rounded-md border border-neutral-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30 sm:max-w-xs"
         />
         <select
           className="h-9 rounded-md border border-neutral-300 bg-white px-2 text-sm"
@@ -94,7 +94,7 @@ export function SitesTable({ sites, basePath }: { sites: Site[]; basePath: strin
             ) : (
               rows.map((s) => (
                 <tr key={s.id} className="border-t border-neutral-100 hover:bg-neutral-50/60">
-                  <td className="px-3 py-2 font-semibold text-[#1E293B]">{s.districtName}</td>
+                  <td className="px-3 py-2 font-semibold text-[#0A2540]">{s.districtName}</td>
                   <td className="px-3 py-2">{s.projectName}</td>
                   <td className="px-3 py-2 text-neutral-600">{s.executor || "-"}</td>
                   <td className="px-3 py-2 text-neutral-500">{s.address}</td>
@@ -107,13 +107,13 @@ export function SitesTable({ sites, basePath }: { sites: Site[]; basePath: strin
                     <div className="flex justify-end gap-1.5">
                       <Link
                         href={`${basePath}/${s.id}/structures`}
-                        className="whitespace-nowrap rounded-md bg-[#F37021] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#DA631C]"
+                        className="whitespace-nowrap rounded-md bg-[#FE5000] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#E04800]"
                       >
                         구조물 등록 및 조회
                       </Link>
                       <Link
                         href={`${basePath}/${s.id}`}
-                        className="whitespace-nowrap rounded-md border border-[#1E3A5F] px-2.5 py-1 text-xs font-semibold text-[#1E3A5F] hover:bg-[#EEF3F9]"
+                        className="whitespace-nowrap rounded-md border border-[#0033A0] px-2.5 py-1 text-xs font-semibold text-[#0033A0] hover:bg-[#EAF0FB]"
                       >
                         수정·조회
                       </Link>

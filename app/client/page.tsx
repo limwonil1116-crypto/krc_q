@@ -35,7 +35,7 @@ export default async function Page() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[#1E3A5F]">한국농어촌공사 현장</h1>
+        <h1 className="text-xl font-bold text-[#0033A0]">한국농어촌공사 현장</h1>
         <Link href="/client/sites/new">
           <ActionButton>+ 현장 등록</ActionButton>
         </Link>

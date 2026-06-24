@@ -105,13 +105,13 @@ function Calendar({
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-3">
       <div className="mb-2 flex items-center justify-between">
-        <button type="button" onClick={prevMonth} className="rounded-md px-3 py-1 text-lg text-[#1E3A5F] hover:bg-neutral-100">
+        <button type="button" onClick={prevMonth} className="rounded-md px-3 py-1 text-lg text-[#0033A0] hover:bg-neutral-100">
           ◀
         </button>
-        <div className="font-semibold text-[#1E3A5F]">
+        <div className="font-semibold text-[#0033A0]">
           {vy}년 {vm + 1}월
         </div>
-        <button type="button" onClick={nextMonth} className="rounded-md px-3 py-1 text-lg text-[#1E3A5F] hover:bg-neutral-100">
+        <button type="button" onClick={nextMonth} className="rounded-md px-3 py-1 text-lg text-[#0033A0] hover:bg-neutral-100">
           ▶
         </button>
       </div>
@@ -137,9 +137,9 @@ function Calendar({
                 className={
                   "flex h-5 w-5 items-center justify-center rounded-full text-[11px] " +
                   (c === selected
-                    ? "bg-[#1E3A5F] font-bold text-white"
+                    ? "bg-[#0033A0] font-bold text-white"
                     : c === today
-                    ? "font-bold text-[#1E3A5F]"
+                    ? "font-bold text-[#0033A0]"
                     : "text-neutral-700")
                 }
               >
@@ -149,7 +149,7 @@ function Calendar({
                 <span
                   className={
                     "truncate rounded px-1 py-0.5 text-[9px] font-semibold text-white " +
-                    (submitted.has(c) ? "bg-green-600" : "bg-[#6B73C9]")
+                    (submitted.has(c) ? "bg-green-600" : "bg-[#0033A0]")
                   }
                 >
                   {submitted.has(c) ? "제출됨" : "기록"}
@@ -161,7 +161,7 @@ function Calendar({
       </div>
       <div className="mt-2 flex items-center justify-center gap-3 text-xs text-neutral-500">
         <span className="flex items-center gap-1">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#6B73C9]" /> 기록
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#0033A0]" /> 기록
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-600" /> 제출됨
@@ -368,9 +368,9 @@ export function PhaseRecorder({
   }
 
   const taCls =
-    "min-h-[80px] w-full rounded-md border border-neutral-300 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30";
+    "min-h-[80px] w-full rounded-md border border-neutral-300 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
   const uploadBtn =
-    "inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-[#1E3A5F] hover:bg-neutral-50";
+    "inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-[#0033A0] hover:bg-neutral-50";
 
   function statusBadge(r: Rec | undefined) {
     if (!r) return <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">미작성</span>;
@@ -382,12 +382,12 @@ export function PhaseRecorder({
     <div className="space-y-4 pb-4">
       <div className="flex items-end justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-[#1E3A5F]">{structureName}</h1>
+          <h1 className="text-xl font-bold text-[#0033A0]">{structureName}</h1>
           <p className="text-sm text-neutral-500">{typeName} · 세부항목별 검측 기록</p>
         </div>
         <Link
           href={videoHref}
-          className="whitespace-nowrap rounded-md bg-[#F37021] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#DA631C]"
+          className="whitespace-nowrap rounded-md bg-[#FE5000] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#E04800]"
         >
           ▶ 영상 미리보기
         </Link>
@@ -407,7 +407,7 @@ export function PhaseRecorder({
             >
               ◀ 전날
             </button>
-            <span className="min-w-[110px] text-center font-semibold text-[#1E3A5F]">{selectedDate}</span>
+            <span className="min-w-[110px] text-center font-semibold text-[#0033A0]">{selectedDate}</span>
             <button
               type="button"
               onClick={() => changeDate(addDays(selectedDate, 1))}
@@ -433,7 +433,7 @@ export function PhaseRecorder({
                 onClick={() => changeSubType(t.id)}
                 className={
                   "rounded-full px-3 py-1.5 text-sm font-semibold " +
-                  (t.id === subTypeId ? "bg-[#1E3A5F] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
+                  (t.id === subTypeId ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
                 }
               >
                 {t.name}
@@ -464,10 +464,10 @@ export function PhaseRecorder({
               <div key={p.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E3A5F] text-xs font-bold text-white">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0033A0] text-xs font-bold text-white">
                       {i + 1}
                     </span>
-                    <span className="font-semibold text-[#1E293B]">{p.name}</span>
+                    <span className="font-semibold text-[#0A2540]">{p.name}</span>
                   </div>
                   {statusBadge(r)}
                 </div>
@@ -477,7 +477,7 @@ export function PhaseRecorder({
                   <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>
                   <button
                     type="button"
-                    className="rounded bg-[#EEF3F9] px-1.5 py-0.5 text-[#1E3A5F]"
+                    className="rounded bg-[#EAF0FB] px-1.5 py-0.5 text-[#0033A0]"
                     onClick={() => setGuide(guide === p.id ? null : p.id)}
                   >
                     촬영 가이드 보기 {guide === p.id ? "▲" : "▼"}
