@@ -16,13 +16,10 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
   const site = rows[0];
   if (!site) notFound();
 
-  const clientOrgs =
-    "contractor" === "contractor"
-      ? await db
-          .select({ id: organizations.id, name: organizations.name })
-          .from(organizations)
-          .where(eq(organizations.type, "client_agency"))
-      : [];
+  const clientOrgs = await db
+    .select({ id: organizations.id, name: organizations.name })
+    .from(organizations)
+    .where(eq(organizations.type, "client_agency"));
 
   const initial = {
     clientOrgId: site.clientOrgId ?? "",
