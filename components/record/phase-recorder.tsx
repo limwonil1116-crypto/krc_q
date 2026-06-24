@@ -136,7 +136,10 @@ function Calendar({
               key={i}
               type="button"
               onClick={() => onSelect(c)}
-              className="flex min-h-[48px] flex-col gap-0.5 rounded-lg p-1 text-left hover:bg-neutral-100"
+              className={
+                "flex min-h-[56px] flex-col gap-1 rounded-lg p-1 text-left hover:bg-neutral-100 " +
+                (c === selected ? "ring-2 ring-[#0033A0]" : "")
+              }
             >
               <span
                 className={
@@ -150,26 +153,27 @@ function Calendar({
               >
                 {Number(c.split("-")[2])}
               </span>
-              {(submitted.has(c) || marked.has(c)) && (
-                <span
-                  className={
-                    "truncate rounded px-1 py-0.5 text-[9px] font-semibold text-white " +
-                    (submitted.has(c) ? "bg-green-600" : "bg-[#0033A0]")
-                  }
-                >
-                  {submitted.has(c) ? "제출됨" : "기록"}
+              {submitted.has(c) ? (
+                <span className="flex items-center gap-1 truncate rounded bg-green-100 px-1 py-0.5 text-[9px] font-semibold text-green-700">
+                  <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-green-500" />
+                  제출완료
                 </span>
-              )}
+              ) : marked.has(c) ? (
+                <span className="flex items-center gap-1 truncate rounded bg-orange-100 px-1 py-0.5 text-[9px] font-semibold text-orange-700">
+                  <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-orange-500" />
+                  기록중
+                </span>
+              ) : null}
             </button>
           )
         )}
       </div>
       <div className="mt-2 flex items-center justify-center gap-3 text-xs text-neutral-500">
         <span className="flex items-center gap-1">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#0033A0]" /> 기록
+          <span className="inline-block h-2 w-2 rounded-full bg-orange-500" /> 기록중
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-600" /> 제출됨
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> 제출완료
         </span>
       </div>
     </div>

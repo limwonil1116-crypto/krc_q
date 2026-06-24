@@ -41,8 +41,8 @@ const NAME_SAMPLE: Record<string, string> = {
 
 // 구조물별 고정 색 팔레트 (순환)
 const PALETTE = [
-  "#0033A0", "#FE5000", "#1E9E5A", "#7A4FE0", "#0098C3",
-  "#D81B60", "#C9A100", "#5A6B7B", "#E0552B", "#2E7D32",
+  "#E53935", "#FB8C00", "#FDD835", "#43A047", "#00ACC1",
+  "#1E88E5", "#3949AB", "#8E24AA", "#D81B60", "#6D4C41",
 ];
 
 type Cat = { id: string; code: string; name: string };
@@ -430,7 +430,13 @@ function SiteCalendar({
     <div className="space-y-3">
       {/* 범례 */}
       <div className="rounded-2xl border border-neutral-200 bg-white p-3">
-        <div className="mb-2 text-sm font-bold text-[#0A2540]">구조물별 색상</div>
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-sm font-bold text-[#0A2540]">구조물별 색상</span>
+          <span className="flex items-center gap-2 text-xs text-neutral-500">
+            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-orange-500" />기록중</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-green-500" />제출완료</span>
+          </span>
+        </div>
         {activeStructures.length === 0 ? (
           <p className="text-sm text-neutral-500">아직 기록된 검측일자가 없습니다.</p>
         ) : (
@@ -485,12 +491,15 @@ function SiteCalendar({
                       key={k}
                       type="button"
                       onClick={() => router.push(`${structureBase}/${it.s.id}`)}
-                      title={`${it.s.name}${it.submitted ? " (제출됨)" : ""}`}
-                      className="block w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-semibold text-white"
+                      title={`${it.s.name} (${it.s.typeName})${it.submitted ? " · 제출완료" : " · 기록중"}`}
+                      className="flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-left text-[9px] font-semibold text-white"
                       style={{ backgroundColor: it.color }}
                     >
-                      {it.submitted ? "✓ " : ""}
-                      {it.s.name}
+                      <span
+                        className="inline-block h-2 w-2 shrink-0 rounded-full border border-white"
+                        style={{ backgroundColor: it.submitted ? "#22c55e" : "#f97316" }}
+                      />
+                      <span className="truncate">{it.s.name}</span>
                     </button>
                   ))}
                 </div>

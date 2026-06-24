@@ -29,6 +29,8 @@ export default async function Page() {
     address: s.address,
     status: s.status,
     supervisorName: s.supervisorName,
+    startedOn: s.startedOn ?? null,
+    endedOn: s.endedOn ?? null,
     createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
   }));
 
