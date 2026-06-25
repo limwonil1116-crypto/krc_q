@@ -203,9 +203,8 @@ export function PhaseRecorder({
 
   const [subTypeId, setSubTypeId] = useState<string>(subTypes[0]?.id || "");
   const [selectedDate, setSelectedDate] = useState<string>(todayStr());
-  const [step, setStep] = useState(0); // 현재 단계 탭 인덱스
-  const [editing, setEditing] = useState(false); // 텍스트 기록 작성 모드
-  const [guideOpen, setGuideOpen] = useState(false);
+  const [open, setOpen] = useState<string | null>(null);
+  const [guide, setGuide] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -281,27 +280,20 @@ export function PhaseRecorder({
     }
   }
 
-  function resetTransient() {
-    setEditing(false);
-    setGuideOpen(false);
-    setError("");
-  }
   function changeSubType(id: string) {
     setSubTypeId(id);
-    setStep(0);
-    resetTransient();
+    setOpen(null);
+    setGuide(null);
+    setError("");
   }
   function changeDate(d: string) {
     setSelectedDate(d);
-    setStep(0);
-    resetTransient();
-  }
-  function goStep(idx: number) {
-    setStep(Math.min(Math.max(idx, 0), phases.length - 1));
-    resetTransient();
+    setOpen(null);
+    setGuide(null);
+    setError("");
   }
 
-  function openEdit(p: Phase) {
+  function openPhase(p: Phase) {
     const r = recMap.get(p.id);
     setForm({
       textDescription: r?.textDescription ?? "",
@@ -314,7 +306,7 @@ export function PhaseRecorder({
       notApplicableReason: r?.notApplicableReason ?? "",
     });
     setError("");
-    setEditing(true);
+    setOpen(p.id);
   }
 
   async function saveText(p: Phase, i: number) {
@@ -349,7 +341,7 @@ export function PhaseRecorder({
         setError(data.error || ("서버 오류 (" + res.status + ")"));
         return;
       }
-      setEditing(false);
+      setOpen(null);
       router.refresh();
     } catch (e) {
       setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
@@ -440,24 +432,11 @@ export function PhaseRecorder({
   const uploadBtn =
     "inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-[#0033A0] hover:bg-neutral-50";
 
-  function phaseDone(p: Phase) {
-    const r = recMap.get(p.id);
-    const list = assetMap.get(p.id) || [];
-    return !!r || list.length > 0;
-  }
   function statusBadge(r: Rec | undefined) {
     if (!r) return <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">미작성</span>;
     if (r.notApplicable) return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">해당없음</span>;
     return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">기록됨</span>;
   }
-
-  const p = phases[step];
-  const r = p ? recMap.get(p.id) : undefined;
-  const list = p ? assetMap.get(p.id) || [] : [];
-  const photos = list.filter((a) => a.assetType === "photo");
-  const videos = list.filter((a) => a.assetType === "video");
-  const uploading = p ? busy === p.id : false;
-  const isLast = step === phases.length - 1;
 
   return (
     <div className="space-y-4 pb-4">
@@ -524,288 +503,245 @@ export function PhaseRecorder({
         <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
           먼저 세부 항목을 선택하세요.
         </div>
-      ) : phases.length === 0 || !p ? (
+      ) : phases.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
           단계 템플릿이 없습니다.
         </div>
       ) : (
-        <>
-          {/* 단계 탭 */}
-          <div className="grid grid-cols-5 gap-1.5">
-            {phases.map((ph, idx) => {
-              const done = phaseDone(ph);
-              const active = idx === step;
-              return (
-                <button
-                  key={ph.id}
-                  type="button"
-                  onClick={() => goStep(idx)}
-                  className={
-                    "flex flex-col items-center gap-1.5 rounded-xl border px-0.5 py-2.5 text-center transition " +
-                    (active
-                      ? "border-[#0033A0] bg-[#0033A0] text-white shadow"
-                      : "border-neutral-200 bg-white text-neutral-600 hover:border-[#0033A0]")
-                  }
-                >
-                  <span
-                    className={
-                      "flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold " +
-                      (active ? "bg-white text-[#0033A0]" : done ? "bg-green-500 text-white" : "bg-neutral-200 text-neutral-500")
-                    }
-                  >
-                    {done && !active ? "✓" : idx + 1}
-                  </span>
-                  <span className="text-[13px] font-bold leading-tight break-keep">{ph.name}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* 현재 단계 카드 */}
-          <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0033A0] text-sm font-bold text-white">
-                  {step + 1}
-                </span>
-                <span className="text-lg font-bold text-[#0A2540]">{p.name}</span>
-              </div>
-              {statusBadge(r)}
-            </div>
-
-            <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-              <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>
-              <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>
-              <button
-                type="button"
-                className="rounded bg-[#EAF0FB] px-1.5 py-0.5 text-[#0033A0]"
-                onClick={() => setGuideOpen((v) => !v)}
-              >
-                촬영 가이드 보기 {guideOpen ? "▲" : "▼"}
-              </button>
-            </div>
-
-            {guideOpen && (
-              <div className="mt-2 space-y-2">
-                {GUIDE_IMG.has(p.code) && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`/guides/${p.code.toLowerCase()}.jpg`}
-                    alt={`${p.name} 촬영 예시`}
-                    className="w-full rounded-lg border border-neutral-200"
-                  />
-                )}
-                {p.guideText && (
-                  <p className="whitespace-pre-line rounded-lg bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-600">
-                    {p.guideText}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="mt-3 space-y-2 border-t border-neutral-100 pt-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <label className={uploadBtn}>
-                  📷 사진 추가
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploading}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) upload(p.id, "photo", f);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-                <label className={uploadBtn}>
-                  🎬 영상 추가
-                  <input
-                    type="file"
-                    accept="video/*"
-                    className="hidden"
-                    disabled={uploading}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) upload(p.id, "video", f);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-                {uploading && <span className="text-xs text-neutral-500">업로드 중...</span>}
-              </div>
-
-              {list.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {photos.map((a) => (
-                    <div key={a.id} className="relative">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`/api/assets/${a.id}/raw`}
-                        alt={a.fileName}
-                        className="h-16 w-16 rounded-md border border-neutral-200 object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeAsset(a.id)}
-                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
-                        aria-label="삭제"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                  {videos.map((a) => (
-                    <div key={a.id} className="relative">
-                      <a
-                        href={`/api/assets/${a.id}/raw`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex h-16 w-16 flex-col items-center justify-center rounded-md border border-neutral-200 bg-neutral-900 text-white"
-                      >
-                        <span className="text-lg leading-none">▶</span>
-                        <span className="mt-0.5 text-[9px]">영상</span>
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => removeAsset(a.id)}
-                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
-                        aria-label="삭제"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {editing ? (
-              <div className="mt-3 space-y-3 border-t border-neutral-100 pt-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={form.notApplicable}
-                    onChange={(e) => setForm((f) => ({ ...f, notApplicable: e.target.checked }))}
-                  />
-                  이 단계는 해당 없음
-                </label>
-                {form.notApplicable ? (
-                  <div className="space-y-1">
-                    <Label>해당없음 사유</Label>
-                    <textarea
-                      className={taCls}
-                      value={form.notApplicableReason}
-                      onChange={(e) => setForm((f) => ({ ...f, notApplicableReason: e.target.value }))}
-                    />
+        <div className="space-y-2">
+          {phases.map((p, i) => {
+            const r = recMap.get(p.id);
+            const list = assetMap.get(p.id) || [];
+            const photos = list.filter((a) => a.assetType === "photo");
+            const videos = list.filter((a) => a.assetType === "video");
+            const isOpen = open === p.id;
+            const uploading = busy === p.id;
+            return (
+              <div key={p.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0033A0] text-xs font-bold text-white">
+                      {i + 1}
+                    </span>
+                    <span className="font-semibold text-[#0A2540]">{p.name}</span>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {step === 0 && (
-                      <>
+                  {statusBadge(r)}
+                </div>
+
+                <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                  <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>
+                  <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>
+                  <button
+                    type="button"
+                    className="rounded bg-[#EAF0FB] px-1.5 py-0.5 text-[#0033A0]"
+                    onClick={() => setGuide(guide === p.id ? null : p.id)}
+                  >
+                    촬영 가이드 보기 {guide === p.id ? "▲" : "▼"}
+                  </button>
+                </div>
+
+                {guide === p.id && (
+                  <div className="mt-2 space-y-2">
+                    {GUIDE_IMG.has(p.code) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={`/guides/${p.code.toLowerCase()}.jpg`}
+                        alt={`${p.name} 촬영 예시`}
+                        className="w-full rounded-lg border border-neutral-200"
+                      />
+                    )}
+                    {p.guideText && (
+                      <p className="whitespace-pre-line rounded-lg bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-600">
+                        {p.guideText}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="mt-3 space-y-2 border-t border-neutral-100 pt-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className={uploadBtn}>
+                      📷 사진 추가
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) upload(p.id, "photo", f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    <label className={uploadBtn}>
+                      🎬 영상 추가
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) upload(p.id, "video", f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    {uploading && <span className="text-xs text-neutral-500">업로드 중...</span>}
+                  </div>
+
+                  {list.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {photos.map((a) => (
+                        <div key={a.id} className="relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={`/api/assets/${a.id}/raw`}
+                            alt={a.fileName}
+                            className="h-16 w-16 rounded-md border border-neutral-200 object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeAsset(a.id)}
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
+                            aria-label="삭제"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      {videos.map((a) => (
+                        <div key={a.id} className="relative">
+                          <a
+                            href={`/api/assets/${a.id}/raw`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex h-16 w-16 flex-col items-center justify-center rounded-md border border-neutral-200 bg-neutral-900 text-white"
+                          >
+                            <span className="text-lg leading-none">▶</span>
+                            <span className="mt-0.5 text-[9px]">영상</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => removeAsset(a.id)}
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
+                            aria-label="삭제"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {isOpen ? (
+                  <div className="mt-3 space-y-3 border-t border-neutral-100 pt-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={form.notApplicable}
+                        onChange={(e) => setForm((f) => ({ ...f, notApplicable: e.target.checked }))}
+                      />
+                      이 단계는 해당 없음
+                    </label>
+                    {form.notApplicable ? (
+                      <div className="space-y-1">
+                        <Label>해당없음 사유</Label>
+                        <textarea
+                          className={taCls}
+                          value={form.notApplicableReason}
+                          onChange={(e) => setForm((f) => ({ ...f, notApplicableReason: e.target.value }))}
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {i === 0 && (
+                          <>
+                            <div className="space-y-1">
+                              <Label>검측내용</Label>
+                              <input
+                                className={inpCls}
+                                value={form.inspectionContent}
+                                onChange={(e) => setForm((f) => ({ ...f, inspectionContent: e.target.value }))}
+                                placeholder="예: 00공사"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label>검측부위</Label>
+                              <div className="flex flex-wrap items-center gap-1 text-base">
+                                <span className="font-semibold text-neutral-600">NO.</span>
+                                <input
+                                  className={numCls}
+                                  inputMode="numeric"
+                                  value={form.partFromMain}
+                                  onChange={(e) => setForm((f) => ({ ...f, partFromMain: e.target.value.replace(/[^0-9]/g, "") }))}
+                                />
+                                <span className="font-semibold">+</span>
+                                <input
+                                  className={numCls}
+                                  inputMode="numeric"
+                                  value={form.partFromSub}
+                                  onChange={(e) => setForm((f) => ({ ...f, partFromSub: e.target.value.replace(/[^0-9]/g, "") }))}
+                                />
+                                <span className="px-1 font-bold text-neutral-500">~</span>
+                                <span className="font-semibold text-neutral-600">NO.</span>
+                                <input
+                                  className={numCls}
+                                  inputMode="numeric"
+                                  value={form.partToMain}
+                                  onChange={(e) => setForm((f) => ({ ...f, partToMain: e.target.value.replace(/[^0-9]/g, "") }))}
+                                />
+                                <span className="font-semibold">+</span>
+                                <input
+                                  className={numCls}
+                                  inputMode="numeric"
+                                  value={form.partToSub}
+                                  onChange={(e) => setForm((f) => ({ ...f, partToSub: e.target.value.replace(/[^0-9]/g, "") }))}
+                                />
+                              </div>
+                              <p className="text-xs text-neutral-400">예: NO.0+00 ~ NO.0+00 (측점 구간)</p>
+                            </div>
+                          </>
+                        )}
                         <div className="space-y-1">
-                          <Label>검측내용</Label>
-                          <input
-                            className={inpCls}
-                            value={form.inspectionContent}
-                            onChange={(e) => setForm((f) => ({ ...f, inspectionContent: e.target.value }))}
-                            placeholder="예: 00공사"
+                          <Label>설명내용</Label>
+                          <textarea
+                            className={taCls}
+                            value={form.textDescription}
+                            onChange={(e) => setForm((f) => ({ ...f, textDescription: e.target.value }))}
                           />
                         </div>
-                        <div className="space-y-1">
-                          <Label>검측부위</Label>
-                          <div className="flex flex-wrap items-center gap-1 text-base">
-                            <span className="font-semibold text-neutral-600">NO.</span>
-                            <input
-                              className={numCls}
-                              inputMode="numeric"
-                              value={form.partFromMain}
-                              onChange={(e) => setForm((f) => ({ ...f, partFromMain: e.target.value.replace(/[^0-9]/g, "") }))}
-                            />
-                            <span className="font-semibold">+</span>
-                            <input
-                              className={numCls}
-                              inputMode="numeric"
-                              value={form.partFromSub}
-                              onChange={(e) => setForm((f) => ({ ...f, partFromSub: e.target.value.replace(/[^0-9]/g, "") }))}
-                            />
-                            <span className="px-1 font-bold text-neutral-500">~</span>
-                            <span className="font-semibold text-neutral-600">NO.</span>
-                            <input
-                              className={numCls}
-                              inputMode="numeric"
-                              value={form.partToMain}
-                              onChange={(e) => setForm((f) => ({ ...f, partToMain: e.target.value.replace(/[^0-9]/g, "") }))}
-                            />
-                            <span className="font-semibold">+</span>
-                            <input
-                              className={numCls}
-                              inputMode="numeric"
-                              value={form.partToSub}
-                              onChange={(e) => setForm((f) => ({ ...f, partToSub: e.target.value.replace(/[^0-9]/g, "") }))}
-                            />
-                          </div>
-                          <p className="text-xs text-neutral-400">예: NO.0+00 ~ NO.0+00 (측점 구간)</p>
-                        </div>
-                      </>
+                      </div>
                     )}
-                    <div className="space-y-1">
-                      <Label>설명내용</Label>
-                      <textarea
-                        className={taCls}
-                        value={form.textDescription}
-                        onChange={(e) => setForm((f) => ({ ...f, textDescription: e.target.value }))}
-                      />
+                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(null)}>
+                        취소
+                      </Button>
+                      <ActionButton className="flex-1" onClick={() => saveText(p, i)} disabled={loading}>
+                        {loading ? "저장 중..." : "기록 저장"}
+                      </ActionButton>
                     </div>
                   </div>
-                )}
-                {error && <p className="text-sm text-red-600">{error}</p>}
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => setEditing(false)}>
-                    취소
-                  </Button>
-                  <ActionButton className="flex-1" onClick={() => saveText(p, step)} disabled={loading}>
-                    {loading ? "저장 중..." : "기록 저장"}
-                  </ActionButton>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3 flex gap-2">
-                <Button type="button" variant="outline" className="flex-1" onClick={() => openEdit(p)}>
-                  {r ? "텍스트 기록 수정" : "텍스트 기록 작성"}
-                </Button>
-                {(r || list.length > 0) && (
-                  <Button type="button" variant="outline" className="text-red-600" onClick={() => resetPhase(p)}>
-                    초기화
-                  </Button>
+                ) : (
+                  <div className="mt-3 flex gap-2">
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => openPhase(p)}>
+                      {r ? "텍스트 기록 수정" : "텍스트 기록 작성"}
+                    </Button>
+                    {(r || list.length > 0) && (
+                      <Button type="button" variant="outline" className="text-red-600" onClick={() => resetPhase(p)}>
+                        초기화
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
+            );
+          })}
 
-          {/* 단계 이동 */}
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => goStep(step - 1)}
-              disabled={step === 0}
-              className="min-w-[96px]"
-            >
-              ◀ 이전 단계
-            </Button>
-            {!isLast ? (
-              <ActionButton onClick={() => goStep(step + 1)} className="min-w-[96px]">
-                다음 단계 ▶
-              </ActionButton>
-            ) : (
-              <span className="text-sm font-semibold text-[#0033A0]">마지막 단계</span>
-            )}
-          </div>
-
-          {/* 제출 영역 (마지막 단계 또는 기록 존재 시) */}
-          {hasCurrent && (isLast || submittedCurrent) && (
+          {hasCurrent && (
             <div className="rounded-2xl border border-neutral-200 bg-white p-4">
               {submittedCurrent ? (
                 <div className="flex items-center justify-between gap-2">
@@ -821,7 +757,7 @@ export function PhaseRecorder({
               )}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

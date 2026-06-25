@@ -136,14 +136,14 @@ export default function LoginPage() {
       </div>
 
       <div className="relative z-10 flex w-full max-w-sm flex-col items-center">
-        <Card className="w-full overflow-hidden rounded-2xl border border-white/40 !bg-white/55 p-0 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)] ring-1 ring-white/20 backdrop-blur-lg">
-          <div className="bg-[#0033A0]/90 px-6 py-8 text-center backdrop-blur-sm">
+        <Card className="w-full overflow-hidden rounded-2xl border border-white/40 p-0 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)] ring-1 ring-white/20" style={{ backgroundColor: "rgba(255,255,255,0.38)" }}>
+          <div className="px-6 py-8 text-center" style={{ backgroundColor: "rgba(0,51,160,0.82)" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/krc-logo-white.png" alt="한국농어촌공사" className="mx-auto h-8 w-auto" />
             <div className="mt-4 text-xl font-extrabold tracking-tight text-white">KRC 건설공사실록</div>
             <div className="mt-1 text-xs text-white/70">동영상 기록관리 플랫폼</div>
           </div>
-          <CardContent className="space-y-4 !bg-transparent p-6">
+          <CardContent className="space-y-4 p-6" style={{ backgroundColor: "transparent" }}>
             {registered && (
               <div className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
                 가입이 완료되었습니다. 등록한 이메일/비밀번호로 로그인하세요.
