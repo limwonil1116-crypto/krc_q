@@ -71,16 +71,16 @@ const SPARK_CSS = `
 .krc-spark {
   position: absolute;
   bottom: 4%;
-  --rise: 70vh;
+  --rise: 520px;
   border-radius: 9999px;
   background: radial-gradient(circle at 35% 35%, #FFFBE6 0%, #FFE08A 38%, #FFC24B 70%, rgba(255,194,75,0) 100%);
-  box-shadow: 0 0 10px 2px rgba(255,210,110,0.95), 0 0 22px 7px rgba(255,170,50,0.55);
+  box-shadow: 0 0 14px 3px rgba(255,220,130,1), 0 0 30px 10px rgba(255,170,50,0.7);
   animation-name: krcEmberRise, krcFlicker;
   animation-timing-function: ease-out, ease-in-out;
   animation-iteration-count: infinite, infinite;
   will-change: transform, opacity;
 }
-@media (prefers-reduced-motion: reduce) { .krc-spark { display: none; } }
+@media (prefers-reduced-motion: reduce) { .krc-spark { animation: none !important; opacity: 0.9 !important; } }
 `;
 
 export default function LoginPage() {
@@ -119,8 +119,11 @@ export default function LoginPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/hq-bg.jpg" alt="한국농어촌공사 본사" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#001A52]/80 via-[#0033A0]/72 to-[#001233]/90" />
-        {/* 금속 불꽃 */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      </div>
+
+      {/* 금속 불꽃 (카드 위 레이어) */}
+      <div className="pointer-events-none fixed inset-0 z-20 overflow-hidden">
+        <div className="relative h-full w-full">
           {SPARKS.map((s, i) => (
             <span
               key={i}
