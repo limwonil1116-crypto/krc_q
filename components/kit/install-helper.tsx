@@ -25,6 +25,7 @@ export function InstallHelper() {
   const [ua, setUa] = useState("");
   const [showInApp, setShowInApp] = useState(false);
   const [iosGuide, setIosGuide] = useState(false);
+  const [androidGuide, setAndroidGuide] = useState(false);
   const [deferred, setDeferred] = useState<BIPEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -88,8 +89,8 @@ export function InstallHelper() {
 
   async function install() {
     if (!deferred) {
-      // iOS 사파리: 수동 안내
       if (isIOS(ua)) setIosGuide(true);
+      else if (isAndroid(ua)) setAndroidGuide(true);
       return;
     }
     await deferred.prompt();
@@ -132,18 +133,23 @@ export function InstallHelper() {
         </div>
       )}
 
-      {/* 설치 버튼 (인앱이 아닐 때) */}
-      {!showInApp && (deferred || isIOS(ua)) && (
-        <div className="mt-3 flex flex-col items-center gap-1">
+      {/* 설치 버튼 (우상단 고정) */}
+      {!showInApp && (deferred || isIOS(ua) || isAndroid(ua)) && (
+        <div className="fixed right-3 top-3 z-50 flex flex-col items-end gap-1">
           <button
             onClick={install}
-            className="flex items-center gap-2 rounded-full bg-[#FE5000] px-4 py-2 text-sm font-bold text-white shadow hover:bg-[#E04800]"
+            className="flex items-center gap-1.5 rounded-full bg-[#FE5000] px-3 py-2 text-xs font-bold text-white shadow-lg ring-2 ring-white/50 hover:bg-[#E04800]"
           >
-            📲 홈 화면에 앱 설치
+            📲 앱 설치
           </button>
           {iosGuide && (
-            <p className="max-w-xs text-center text-[11px] text-white/90">
-              Safari 하단의 <b>공유</b> 버튼 → <b>“홈 화면에 추가”</b>를 누르면 설치됩니다.
+            <p className="max-w-[200px] rounded-lg bg-black/70 px-2 py-1 text-right text-[11px] text-white">
+              Safari 하단 <b>공유</b> → <b>“홈 화면에 추가”</b>
+            </p>
+          )}
+          {androidGuide && (
+            <p className="max-w-[210px] rounded-lg bg-black/70 px-2 py-1 text-right text-[11px] text-white">
+              크롬 우측 상단 <b>⋮</b> → <b>“앱 설치”</b> 또는 <b>“홈 화면에 추가”</b>
             </p>
           )}
         </div>

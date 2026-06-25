@@ -56,33 +56,6 @@ const SPARKS = [
   { left: 65.0, delay: 3.8, dur: 4.2, drift: 21, size: 5 },
 ];
 
-const SPARK_CSS = `
-@keyframes krcEmberRise {
-  0%   { transform: translate(0, 0) scale(0.5); opacity: 0; }
-  8%   { opacity: 1; }
-  50%  { transform: translate(calc(var(--drift) * 0.6px), calc(var(--rise) * -0.5)) scale(1); opacity: 1; }
-  82%  { opacity: 0.85; }
-  100% { transform: translate(calc(var(--drift) * 1px), calc(var(--rise) * -1)) scale(0.25); opacity: 0; }
-}
-@keyframes krcFlicker {
-  0%,100% { filter: brightness(1); }
-  50%     { filter: brightness(1.8); }
-}
-.krc-spark {
-  position: absolute;
-  bottom: 4%;
-  --rise: 520px;
-  border-radius: 9999px;
-  background: radial-gradient(circle at 35% 35%, #FFFBE6 0%, #FFE08A 38%, #FFC24B 70%, rgba(255,194,75,0) 100%);
-  box-shadow: 0 0 14px 3px rgba(255,220,130,1), 0 0 30px 10px rgba(255,170,50,0.7);
-  animation-name: krcEmberRise, krcFlicker;
-  animation-timing-function: ease-out, ease-in-out;
-  animation-iteration-count: infinite, infinite;
-  will-change: transform, opacity;
-}
-@media (prefers-reduced-motion: reduce) { .krc-spark { animation: none !important; opacity: 0.9 !important; } }
-`;
-
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -112,8 +85,6 @@ export default function LoginPage() {
 
   return (
     <>
-      <style>{SPARK_CSS}</style>
-
       {/* 배경: 본사 사옥 + KRC 블루 오버레이 */}
       <div className="fixed inset-0 z-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
