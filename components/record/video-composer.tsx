@@ -114,7 +114,7 @@ export function VideoComposer({
   return (
     <div className="space-y-4 pb-4">
       <div>
-        <h1 className="text-xl font-bold text-[#0033A0]">자동 영상 미리보기</h1>
+        <h1 className="text-xl font-bold text-[#0033A0]">KRC 건설공사실록 · 영상 미리보기</h1>
         <p className="text-sm text-neutral-500">{meta.structureName} · {meta.typeName}</p>
       </div>
 
@@ -145,24 +145,64 @@ export function VideoComposer({
         <div className="space-y-3">
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
             {cur?.kind === "title" && (
-              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#0033A0] to-[#002266] px-6 text-center text-white">
-                <div className="text-xs font-semibold tracking-widest text-[#FE5000]">한국농어촌공사 · 현장기록</div>
-                <div className="mt-3 text-2xl font-bold">{meta.structureName}</div>
-                <div className="mt-2 text-sm text-white/90">
+              <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#001A52] px-6 text-center text-white">
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-[0.18]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+                    backgroundSize: "32px 32px",
+                  }}
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#0033A0]/85 to-[#001233]/92" />
+                <span className="pointer-events-none absolute left-3 top-3 h-6 w-6 border-l-2 border-t-2 border-[#FE5000]" />
+                <span className="pointer-events-none absolute right-3 top-3 h-6 w-6 border-r-2 border-t-2 border-[#FE5000]" />
+                <span className="pointer-events-none absolute bottom-3 left-3 h-6 w-6 border-b-2 border-l-2 border-[#FE5000]" />
+                <span className="pointer-events-none absolute bottom-3 right-3 h-6 w-6 border-b-2 border-r-2 border-[#FE5000]" />
+                <div className="absolute left-0 right-0 top-0 flex items-center justify-between bg-black/30 px-4 py-1.5 text-[10px] font-semibold tracking-widest text-white/80">
+                  <span>한국농어촌공사 · CONSTRUCTION INSPECTION RECORD</span>
+                  <span>검측일자 {date}</span>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/krc-logo-white.png" alt="KRC" className="relative z-10 mb-3 h-7 w-auto opacity-95" />
+                <div className="krc-stroke relative z-10 text-3xl font-extrabold tracking-tight">KRC 건설공사실록</div>
+                <div className="relative z-10 mt-1 h-0.5 w-16 rounded-full bg-[#FE5000]" />
+                <div className="relative z-10 mt-3 text-xl font-bold">{meta.structureName}</div>
+                <div className="relative z-10 mt-1 text-sm text-white/90">
                   {meta.projectName}{meta.districtName ? ` · ${meta.districtName}` : ""}
                 </div>
-                <div className="mt-1 text-xs text-white/70">{meta.address}</div>
-                <div className="mt-1 text-xs text-white/70">
-                  {[meta.workType, meta.executor].filter(Boolean).join(" · ")}
+                <div className="relative z-10 mt-0.5 text-xs text-white/70">{meta.address}</div>
+                <div className="absolute bottom-0 left-0 right-0 grid grid-cols-3 divide-x divide-white/20 border-t border-white/20 bg-black/30 text-[11px]">
+                  <div className="px-2 py-1.5">
+                    <div className="text-white/50">공종</div>
+                    <div className="truncate font-semibold">{meta.workType || meta.typeName || "-"}</div>
+                  </div>
+                  <div className="px-2 py-1.5">
+                    <div className="text-white/50">시행자</div>
+                    <div className="truncate font-semibold">{meta.executor || "-"}</div>
+                  </div>
+                  <div className="px-2 py-1.5">
+                    <div className="text-white/50">구조물</div>
+                    <div className="truncate font-semibold">{meta.typeName || "-"}</div>
+                  </div>
                 </div>
-                <div className="mt-4 rounded-full bg-white/15 px-3 py-1 text-xs">검측일자 {date}</div>
               </div>
             )}
 
             {cur?.kind === "section" && (
-              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#002A80] to-[#0033A0] px-8 text-center text-white">
-                <div className="text-3xl font-bold">{cur.label}</div>
-                {cur.text && <div className="mt-3 max-w-xl text-sm leading-relaxed text-white/85">{cur.text}</div>}
+              <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#002A80] px-8 text-center text-white">
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-[0.12]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+                    backgroundSize: "28px 28px",
+                  }}
+                />
+                <span className="pointer-events-none absolute left-3 top-3 h-5 w-5 border-l-2 border-t-2 border-[#FE5000]" />
+                <span className="pointer-events-none absolute bottom-3 right-3 h-5 w-5 border-b-2 border-r-2 border-[#FE5000]" />
+                <div className="krc-stroke relative z-10 text-3xl font-extrabold">{cur.label}</div>
+                {cur.text && <div className="relative z-10 mt-3 max-w-xl text-sm leading-relaxed text-white/90">{cur.text}</div>}
               </div>
             )}
 
@@ -170,7 +210,11 @@ export function VideoComposer({
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={cur.src} alt={cur.caption} className="h-full w-full object-contain" />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-sm font-semibold text-white">
+                <div className="pointer-events-none absolute left-3 top-3 rounded bg-[#0033A0]/85 px-2 py-1 text-[11px] font-bold text-white">
+                  KRC 건설공사실록 · {date}
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 bg-gradient-to-t from-black/75 to-transparent p-3 text-sm font-semibold text-white">
+                  <span className="inline-block h-4 w-1 rounded-full bg-[#FE5000]" />
                   {cur.caption}
                 </div>
               </>
@@ -194,7 +238,11 @@ export function VideoComposer({
                     }
                   }}
                 />
-                <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-sm font-semibold text-white">
+                <div className="pointer-events-none absolute left-3 top-3 z-10 rounded bg-[#0033A0]/85 px-2 py-1 text-[11px] font-bold text-white">
+                  KRC 건설공사실록 · {date}
+                </div>
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex items-center gap-2 bg-gradient-to-t from-black/75 to-transparent p-3 text-sm font-semibold text-white">
+                  <span className="inline-block h-4 w-1 rounded-full bg-[#FE5000]" />
                   {cur.caption}
                 </div>
               </>
