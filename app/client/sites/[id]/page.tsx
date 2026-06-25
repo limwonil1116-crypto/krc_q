@@ -40,6 +40,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
     startedOn: site.startedOn ?? "",
     endedOn: site.endedOn ?? "",
     siteCode: site.siteCode ?? "",
+    contractorLogoName: site.contractorLogoName ?? "",
   };
 
   return <SiteForm clientOrgs={clientOrgs} mode="client" siteId={site.id} initial={initial} />;

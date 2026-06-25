@@ -38,6 +38,7 @@ type InitialSite = {
   lng?: number | null;
   startedOn?: string | null;
   endedOn?: string | null;
+  contractorLogoName?: string | null;
 };
 
 type Form = {
@@ -108,6 +109,59 @@ export function SiteForm({
   const [f, setF] = useState<Form>(buildInitial(initial));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [logoName, setLogoName] = useState<string>(initial?.contractorLogoName ?? "");
+  const [logoVer, setLogoVer] = useState(0);
+  const [logoBusy, setLogoBusy] = useState(false);
+
+  async function uploadLogo(file: File) {
+    if (!siteId) return;
+    setLogoBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/sites/${siteId}/logo`, { method: "POST", body: fd });
+      let data: { ok?: boolean; error?: string; name?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "로고 업로드 실패");
+        return;
+      }
+      setLogoName(data.name || file.name);
+      setLogoVer((v) => v + 1);
+    } catch (e) {
+      alert("로고 업로드 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLogoBusy(false);
+    }
+  }
+
+  async function deleteLogo() {
+    if (!siteId || !confirm("시공사 로고를 삭제할까요?")) return;
+    setLogoBusy(true);
+    try {
+      const res = await fetch(`/api/sites/${siteId}/logo`, { method: "DELETE" });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "로고 삭제 실패");
+        return;
+      }
+      setLogoName("");
+      setLogoVer((v) => v + 1);
+    } catch (e) {
+      alert("로고 삭제 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLogoBusy(false);
+    }
+  }
 
   const onText =
     (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -288,6 +342,52 @@ export function SiteForm({
           </div>
         </div>
       </StepSection>
+
+      {isEdit && (
+        <StepSection step="로고" title="시공사 로고" desc="영상 첫 화면 하단에 농어촌공사 로고와 함께 표시됩니다. (4MB 이하 이미지)">
+          <div className="flex items-center gap-4">
+            <div className="flex h-20 w-32 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white">
+              {logoName ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`/api/sites/${siteId}/logo/raw?v=${logoVer}`}
+                  alt="시공사 로고"
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-xs text-neutral-400">로고 없음</span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-[#0033A0] hover:bg-neutral-50">
+                {logoBusy ? "처리 중..." : logoName ? "로고 변경" : "로고 업로드"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={logoBusy}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadLogo(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {logoName && (
+                <button
+                  type="button"
+                  onClick={deleteLogo}
+                  disabled={logoBusy}
+                  className="ml-2 rounded-md border border-neutral-300 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-neutral-50"
+                >
+                  삭제
+                </button>
+              )}
+              {logoName && <p className="text-xs text-neutral-500">{logoName}</p>}
+            </div>
+          </div>
+        </StepSection>
+      )}
 
       <StepSection step="STEP 04" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
         <KakaoMapPicker
