@@ -58,11 +58,11 @@ const SPARKS = [
 
 const SPARK_CSS = `
 @keyframes krcEmberRise {
-  0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
-  10%  { opacity: 1; }
-  50%  { transform: translate(calc(var(--drift) * 0.6px), -46vh) scale(1); opacity: 1; }
-  80%  { opacity: 0.8; }
-  100% { transform: translate(calc(var(--drift) * 1px), -92vh) scale(0.2); opacity: 0; }
+  0%   { transform: translate(0, 0) scale(0.5); opacity: 0; }
+  8%   { opacity: 1; }
+  50%  { transform: translate(calc(var(--drift) * 0.6px), calc(var(--rise) * -0.5)) scale(1); opacity: 1; }
+  82%  { opacity: 0.85; }
+  100% { transform: translate(calc(var(--drift) * 1px), calc(var(--rise) * -1)) scale(0.25); opacity: 0; }
 }
 @keyframes krcFlicker {
   0%,100% { filter: brightness(1); }
@@ -70,7 +70,8 @@ const SPARK_CSS = `
 }
 .krc-spark {
   position: absolute;
-  bottom: -16px;
+  bottom: 4%;
+  --rise: 70vh;
   border-radius: 9999px;
   background: radial-gradient(circle at 35% 35%, #FFFBE6 0%, #FFE08A 38%, #FFC24B 70%, rgba(255,194,75,0) 100%);
   box-shadow: 0 0 10px 2px rgba(255,210,110,0.95), 0 0 22px 7px rgba(255,170,50,0.55);
