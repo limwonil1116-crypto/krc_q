@@ -39,6 +39,7 @@ type InitialSite = {
   startedOn?: string | null;
   endedOn?: string | null;
   contractorLogoName?: string | null;
+  contractorCompany?: string | null;
 };
 
 type Form = {
@@ -51,6 +52,7 @@ type Form = {
   supervisorName: string;
   supervisorPhone: string;
   supervisorEmail: string;
+  contractorCompany: string;
   siteManagerName: string;
   siteManagerPhone: string;
   siteManagerEmail: string;
@@ -81,6 +83,7 @@ function buildInitial(initial?: InitialSite): Form {
     supervisorName: initial?.supervisorName ?? "",
     supervisorPhone: initial?.supervisorPhone ?? "",
     supervisorEmail: initial?.supervisorEmail ?? "",
+    contractorCompany: initial?.contractorCompany ?? "",
     siteManagerName: initial?.siteManagerName ?? "",
     siteManagerPhone: initial?.siteManagerPhone ?? "",
     siteManagerEmail: initial?.siteManagerEmail ?? "",
@@ -197,6 +200,7 @@ export function SiteForm({
         supervisorName: f.supervisorName,
         supervisorPhone: f.supervisorPhone,
         supervisorEmail: f.supervisorEmail,
+        contractorCompany: f.contractorCompany,
         siteManagerName: f.siteManagerName,
         siteManagerPhone: f.siteManagerPhone,
         siteManagerEmail: f.siteManagerEmail,
@@ -328,6 +332,14 @@ export function SiteForm({
 
       <StepSection step="STEP 03" title="현장소장 정보">
         <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>시공사 (회사명)</Label>
+            <Input
+              value={f.contractorCompany}
+              onChange={onText("contractorCompany")}
+              placeholder="예: 00건설(주)"
+            />
+          </div>
           <div className="space-y-1">
             <Label>현장소장 이름</Label>
             <Input value={f.siteManagerName} onChange={onText("siteManagerName")} />

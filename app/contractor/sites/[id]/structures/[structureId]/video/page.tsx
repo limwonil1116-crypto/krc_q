@@ -45,6 +45,8 @@ export default async function VideoPage({
       address: constructionSites.address,
       workType: constructionSites.workType,
       executor: constructionSites.executor,
+      contractorCompany: constructionSites.contractorCompany,
+      contractorLogoDriveId: constructionSites.contractorLogoDriveId,
     })
     .from(constructionSites)
     .where(eq(constructionSites.id, id))
@@ -98,6 +100,9 @@ export default async function VideoPage({
     executor: site?.executor ?? null,
     structureName: ss.name,
     typeName: ss.typeName,
+    contractorCompany: site?.contractorCompany ?? null,
+    hasLogo: !!site?.contractorLogoDriveId,
+    siteId: id,
   };
 
   return (

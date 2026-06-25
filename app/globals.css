@@ -138,3 +138,105 @@
   paint-order: stroke fill;
 }
 
+
+/* KRC 영상 타이틀 등장 애니메이션 */
+@keyframes krcRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes krcGrow {
+  from { width: 0; opacity: 0; }
+  to   { width: 4rem; opacity: 1; }
+}
+@keyframes krcGridShift {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 32px 32px, 32px 32px; }
+}
+@keyframes krcSweep {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  35%  { opacity: 0.5; }
+  70%  { transform: translateX(120%) skewX(-18deg); opacity: 0; }
+  100% { transform: translateX(120%) skewX(-18deg); opacity: 0; }
+}
+.krc-rise { opacity: 0; animation: krcRise 0.7s ease-out forwards; }
+.krc-grow { width: 0; animation: krcGrow 0.6s ease-out forwards; }
+.krc-grid { animation: krcGridShift 6s linear infinite; }
+.krc-sweep {
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+  animation: krcSweep 4.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .krc-rise, .krc-grow, .krc-grid, .krc-sweep { animation: none !important; opacity: 1 !important; width: auto !important; }
+}
+
+
+/* KRC 영상 타이틀 애니메이션 v2 (강화) */
+@keyframes krcPop {
+  0%   { opacity: 0; transform: translateY(24px) scale(0.86); filter: blur(6px); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.04); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes krcRise2 {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes krcGrow2 {
+  from { width: 0; opacity: 0; }
+  to   { width: 5rem; opacity: 1; }
+}
+@keyframes krcZoom {
+  from { transform: scale(1.18); }
+  to   { transform: scale(1); }
+}
+@keyframes krcSweep2 {
+  0%   { transform: translateX(-130%) skewX(-20deg); opacity: 0; }
+  20%  { opacity: 0.85; }
+  55%  { transform: translateX(130%) skewX(-20deg); opacity: 0; }
+  100% { transform: translateX(130%) skewX(-20deg); opacity: 0; }
+}
+@keyframes krcGridShift2 {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 40px 40px, 40px 40px; }
+}
+.krc-pop  { opacity: 0; animation: krcPop 0.9s cubic-bezier(0.22,1,0.36,1) forwards; }
+.krc-rise2 { opacity: 0; animation: krcRise2 0.8s cubic-bezier(0.22,1,0.36,1) forwards; }
+.krc-grow2 { width: 0; animation: krcGrow2 0.7s 0.4s ease-out forwards; }
+.krc-zoom { animation: krcZoom 7s ease-out forwards; }
+.krc-grid2 { animation: krcGridShift2 5s linear infinite; }
+.krc-sweep2 {
+  background: linear-gradient(100deg, transparent 28%, rgba(255,255,255,0.42) 50%, transparent 72%);
+  mix-blend-mode: screen;
+  animation: krcSweep2 3.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .krc-pop, .krc-rise2, .krc-grow2, .krc-zoom, .krc-grid2, .krc-sweep2 {
+    animation: none !important; opacity: 1 !important; width: auto !important; transform: none !important;
+  }
+}
+
+
+/* KRC 타이틀 빛줄기(광선) */
+@keyframes krcRaySpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@keyframes krcRayFade {
+  0% { opacity: 0; }
+  30% { opacity: 0.5; }
+  100% { opacity: 0.32; }
+}
+.krc-rays {
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(255,255,255,0.10) 0deg,
+    rgba(255,255,255,0.10) 6deg,
+    transparent 6deg,
+    transparent 18deg
+  );
+  mix-blend-mode: screen;
+  animation: krcRaySpin 24s linear infinite, krcRayFade 1.5s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .krc-rays { animation: none !important; opacity: 0.2 !important; }
+}
+

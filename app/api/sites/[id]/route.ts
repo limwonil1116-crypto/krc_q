@@ -46,6 +46,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         executor: (b.executor ?? "").trim() || null,
         workType: (b.workType ?? "").trim() || null,
         workTypes: (b.workTypes ?? "").trim() || null,
+        contractorCompany: (b.contractorCompany ?? "").trim() || null,
         siteManagerName: (b.siteManagerName ?? "").trim() || null,
         siteManagerPhone: (b.siteManagerPhone ?? "").trim() || null,
         siteManagerEmail: (b.siteManagerEmail ?? "").trim() || null,

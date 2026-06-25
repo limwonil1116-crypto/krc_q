@@ -97,6 +97,7 @@ export const constructionSites = pgTable("construction_sites", {
   siteManagerEmail: varchar("site_manager_email", { length: 255 }),
   contractorLogoDriveId: text("contractor_logo_drive_id"),
   contractorLogoName: varchar("contractor_logo_name", { length: 255 }),
+  contractorCompany: varchar("contractor_company", { length: 150 }),
   address: text("address").notNull(),
   lat: numeric("lat", { precision: 10, scale: 7 }),
   lng: numeric("lng", { precision: 10, scale: 7 }),
