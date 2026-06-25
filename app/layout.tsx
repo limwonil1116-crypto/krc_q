@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import type { Viewport } from "next";
 import { BusyProvider } from "@/components/kit/busy-overlay";
+import { InstallHelper } from "@/components/kit/install-helper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +16,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "현장기록 자동영상화 시스템",
-  description: "한국농어촌공사 공사기록 플랫폼",
+  title: "KRC 건설공사실록",
+  description: "한국농어촌공사 동영상 기록관리 플랫폼",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "건설공사실록" },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0033A0",
 };
 
 export default function RootLayout({
@@ -32,6 +44,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <BusyProvider>{children}</BusyProvider>
         </Suspense>
+        <InstallHelper />
       </body>
     </html>
   );
