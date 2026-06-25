@@ -10,73 +10,69 @@ import { PrimaryButton } from "@/components/kit/buttons";
 
 // 금속 불꽃(엠버) - 고정 시드값으로 SSR/CSR 일치
 const SPARKS = [
-  { left: 49.7, delay: 1.1, dur: 4.1, drift: -13, size: 7 },
-  { left: 24.0, delay: 4.0, dur: 5.2, drift: 10, size: 3 },
-  { left: 81.0, delay: 2.7, dur: 4.9, drift: 6, size: 4 },
-  { left: 59.2, delay: 4.3, dur: 6.1, drift: 19, size: 4 },
-  { left: 34.5, delay: 3.6, dur: 6.1, drift: -8, size: 6 },
-  { left: 50.0, delay: 4.3, dur: 5.0, drift: -5, size: 4 },
-  { left: 50.1, delay: 2.3, dur: 4.7, drift: 23, size: 3 },
-  { left: 50.0, delay: 5.0, dur: 5.4, drift: 25, size: 4 },
-  { left: 31.2, delay: 5.2, dur: 5.7, drift: 13, size: 5 },
-  { left: 50.3, delay: 5.4, dur: 6.4, drift: 8, size: 3 },
-  { left: 28.1, delay: 0.9, dur: 5.7, drift: -4, size: 5 },
-  { left: 50.8, delay: 0.8, dur: 5.5, drift: -6, size: 4 },
-  { left: 50.0, delay: 1.1, dur: 6.0, drift: -23, size: 4 },
-  { left: 49.9, delay: 3.0, dur: 6.1, drift: -19, size: 6 },
-  { left: 50.0, delay: 0.3, dur: 5.8, drift: 11, size: 7 },
-  { left: 55.6, delay: 3.3, dur: 4.8, drift: -21, size: 4 },
-  { left: 46.9, delay: 5.5, dur: 4.8, drift: 22, size: 5 },
-  { left: 47.8, delay: 2.7, dur: 4.3, drift: -13, size: 7 },
-  { left: 62.3, delay: 1.0, dur: 3.8, drift: -11, size: 5 },
-  { left: 63.5, delay: 1.9, dur: 4.7, drift: -8, size: 7 },
-  { left: 49.6, delay: 2.3, dur: 4.7, drift: -21, size: 3 },
-  { left: 77.9, delay: 4.0, dur: 4.8, drift: -3, size: 4 },
-  { left: 66.3, delay: 1.2, dur: 5.8, drift: -21, size: 6 },
-  { left: 54.0, delay: 1.2, dur: 6.0, drift: 9, size: 4 },
-  { left: 49.4, delay: 2.4, dur: 6.5, drift: 20, size: 5 },
-  { left: 86.7, delay: 1.4, dur: 5.1, drift: 21, size: 7 },
-  { left: 47.9, delay: 2.6, dur: 4.0, drift: 21, size: 5 },
-  { left: 70.4, delay: 2.3, dur: 5.6, drift: 6, size: 4 },
-  { left: 49.3, delay: 3.7, dur: 6.2, drift: 6, size: 6 },
-  { left: 49.9, delay: 2.1, dur: 6.3, drift: -8, size: 6 },
-  { left: 48.9, delay: 1.6, dur: 6.2, drift: 20, size: 6 },
-  { left: 37.0, delay: 3.5, dur: 5.6, drift: 13, size: 7 },
-  { left: 53.2, delay: 2.2, dur: 6.2, drift: 8, size: 3 },
-  { left: 28.6, delay: 2.9, dur: 3.6, drift: -10, size: 6 },
-  { left: 90.3, delay: 5.4, dur: 5.1, drift: 16, size: 4 },
-  { left: 45.2, delay: 4.7, dur: 4.9, drift: 3, size: 6 },
-  { left: 50.6, delay: 3.5, dur: 5.9, drift: 14, size: 4 },
-  { left: 55.0, delay: 5.5, dur: 6.0, drift: -22, size: 3 },
-  { left: 86.1, delay: 2.3, dur: 4.7, drift: 3, size: 6 },
-  { left: 50.3, delay: 1.6, dur: 5.9, drift: 26, size: 7 },
-  { left: 49.6, delay: 4.3, dur: 4.4, drift: -9, size: 4 },
-  { left: 73.9, delay: 4.8, dur: 5.7, drift: -6, size: 5 },
-  { left: 84.5, delay: 1.0, dur: 4.4, drift: -12, size: 5 },
-  { left: 65.0, delay: 3.8, dur: 4.2, drift: 21, size: 5 },
+  { left: 17.8, top: 67.1, delay: 4.4, dur: 6.4, dx: -38, dy: 33, size: 6 },
+  { left: 19.6, top: 52.1, delay: 5.5, dur: 4.6, dx: 14, dy: -36, size: 7 },
+  { left: 6.1, top: 95.8, delay: 5.2, dur: 8.0, dx: 13, dy: 26, size: 7 },
+  { left: 13.1, top: 91.5, delay: 2.6, dur: 5.1, dx: -15, dy: -24, size: 6 },
+  { left: 71.9, top: 40.3, delay: 1.1, dur: 7.2, dx: 35, dy: -14, size: 4 },
+  { left: 22.0, top: 93.1, delay: 6.3, dur: 7.5, dx: -15, dy: 27, size: 5 },
+  { left: 21.3, top: 88.9, delay: 6.2, dur: 6.1, dx: 37, dy: 20, size: 5 },
+  { left: 39.1, top: 5.5, delay: 0.7, dur: 7.4, dx: 12, dy: -26, size: 7 },
+  { left: 52.1, top: 56.2, delay: 2.2, dur: 8.4, dx: -17, dy: -28, size: 5 },
+  { left: 35.3, top: 58.5, delay: 2.1, dur: 4.9, dx: -36, dy: -32, size: 5 },
+  { left: 17.3, top: 6.4, delay: 3.6, dur: 7.1, dx: -23, dy: -37, size: 6 },
+  { left: 3.4, top: 35.2, delay: 3.5, dur: 7.2, dx: -16, dy: -23, size: 5 },
+  { left: 76.3, top: 47.9, delay: 5.9, dur: 4.7, dx: 29, dy: -23, size: 4 },
+  { left: 39.9, top: 83.9, delay: 4.5, dur: 5.1, dx: -31, dy: 13, size: 4 },
+  { left: 94.1, top: 51.9, delay: 5.1, dur: 4.6, dx: -35, dy: 33, size: 5 },
+  { left: 59.7, top: 42.6, delay: 4.1, dur: 7.9, dx: 16, dy: 16, size: 7 },
+  { left: 3.0, top: 66.7, delay: 6.7, dur: 4.6, dx: 29, dy: 19, size: 5 },
+  { left: 74.2, top: 78.5, delay: 1.0, dur: 5.1, dx: 14, dy: -29, size: 4 },
+  { left: 8.9, top: 14.1, delay: 2.0, dur: 5.7, dx: 22, dy: -28, size: 4 },
+  { left: 19.7, top: 38.1, delay: 5.0, dur: 6.7, dx: -28, dy: -33, size: 4 },
+  { left: 39.2, top: 83.4, delay: 2.8, dur: 6.8, dx: -19, dy: 31, size: 4 },
+  { left: 39.3, top: 31.8, delay: 6.3, dur: 5.7, dx: 37, dy: -26, size: 4 },
+  { left: 50.8, top: 71.3, delay: 6.8, dur: 5.7, dx: -14, dy: 37, size: 5 },
+  { left: 8.3, top: 64.2, delay: 2.9, dur: 8.0, dx: -28, dy: 25, size: 4 },
+  { left: 67.3, top: 68.6, delay: 3.3, dur: 6.6, dx: 14, dy: -13, size: 5 },
+  { left: 6.0, top: 28.6, delay: 4.1, dur: 6.1, dx: 24, dy: -22, size: 5 },
+  { left: 48.7, top: 61.8, delay: 6.7, dur: 4.8, dx: 16, dy: 31, size: 4 },
+  { left: 76.8, top: 61.3, delay: 5.3, dur: 7.2, dx: 18, dy: 22, size: 6 },
+  { left: 38.7, top: 51.8, delay: 5.0, dur: 8.1, dx: -20, dy: 35, size: 7 },
+  { left: 16.0, top: 54.5, delay: 0.6, dur: 5.7, dx: 31, dy: 38, size: 4 },
+  { left: 69.6, top: 22.1, delay: 2.3, dur: 7.1, dx: -19, dy: -20, size: 5 },
+  { left: 92.7, top: 92.9, delay: 6.3, dur: 6.5, dx: -28, dy: 31, size: 4 },
+  { left: 92.3, top: 46.4, delay: 3.1, dur: 7.0, dx: 29, dy: 28, size: 4 },
+  { left: 20.1, top: 92.4, delay: 0.2, dur: 7.7, dx: 12, dy: -22, size: 5 },
+  { left: 69.2, top: 25.3, delay: 0.1, dur: 6.7, dx: -37, dy: -24, size: 4 },
+  { left: 37.5, top: 15.6, delay: 5.5, dur: 7.8, dx: -20, dy: 22, size: 6 },
+  { left: 25.5, top: 56.5, delay: 5.8, dur: 6.8, dx: 35, dy: -29, size: 4 },
+  { left: 9.7, top: 86.7, delay: 5.2, dur: 7.5, dx: -16, dy: 33, size: 6 },
+  { left: 53.4, top: 48.7, delay: 4.8, dur: 7.2, dx: -19, dy: 19, size: 7 },
+  { left: 62.2, top: 85.8, delay: 0.5, dur: 4.8, dx: -30, dy: -21, size: 5 },
 ];
 
 const SPARK_CSS = `
-@keyframes krcEmberRise {
-  0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
-  10%  { opacity: 1; }
-  50%  { transform: translate(calc(var(--drift) * 0.6px), -46vh) scale(1); opacity: 1; }
-  80%  { opacity: 0.8; }
-  100% { transform: translate(calc(var(--drift) * 1px), -92vh) scale(0.2); opacity: 0; }
+@keyframes krcFloat {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(calc(var(--dx) * 0.6px), calc(var(--dy) * -0.7px)) scale(1.05); }
+  50%  { transform: translate(calc(var(--dx) * 1px), calc(var(--dy) * 0.4px)) scale(0.95); }
+  75%  { transform: translate(calc(var(--dx) * 0.3px), calc(var(--dy) * 1px)) scale(1.04); }
+  100% { transform: translate(0, 0) scale(1); }
 }
-@keyframes krcFlicker {
-  0%,100% { filter: brightness(1); }
-  50%     { filter: brightness(1.8); }
+@keyframes krcGlow {
+  0%,100% { opacity: 0.45; filter: brightness(1.05); }
+  50%     { opacity: 1; filter: brightness(1.9); }
 }
 .krc-spark {
   position: absolute;
-  bottom: -16px;
   border-radius: 9999px;
   background: radial-gradient(circle at 35% 35%, #FFFBE6 0%, #FFE08A 38%, #FFC24B 70%, rgba(255,194,75,0) 100%);
-  box-shadow: 0 0 10px 2px rgba(255,210,110,0.95), 0 0 22px 7px rgba(255,170,50,0.55);
-  animation-name: krcEmberRise, krcFlicker;
-  animation-timing-function: ease-out, ease-in-out;
+  box-shadow: 0 0 10px 2px rgba(255,210,110,0.95), 0 0 22px 7px rgba(255,170,50,0.5);
+  animation-name: krcFloat, krcGlow;
+  animation-timing-function: ease-in-out, ease-in-out;
   animation-iteration-count: infinite, infinite;
+  animation-direction: alternate, normal;
   will-change: transform, opacity;
 }
 @media (prefers-reduced-motion: reduce) { .krc-spark { display: none; } }
@@ -126,10 +122,12 @@ export default function LoginPage() {
               className="krc-spark"
               style={{
                 left: `${s.left}%`,
+                top: `${s.top}%`,
                 width: `${s.size}px`,
                 height: `${s.size}px`,
-                ["--drift" as string]: `${s.drift}`,
-                animationDuration: `${s.dur}s, 1.2s`,
+                ["--dx" as string]: `${s.dx}`,
+                ["--dy" as string]: `${s.dy}`,
+                animationDuration: `${s.dur}s, ${(s.dur * 0.7).toFixed(1)}s`,
                 animationDelay: `${s.delay}s, ${s.delay}s`,
               }}
             />
