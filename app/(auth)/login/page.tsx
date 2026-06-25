@@ -10,34 +10,46 @@ import { PrimaryButton } from "@/components/kit/buttons";
 
 // 금속 불꽃(엠버) - 고정 시드값으로 SSR/CSR 일치
 const SPARKS = [
-  { left: 33.4, top: 19.0, delay: 3.9, dur: 5.3, dx: -24, dy: -32, size: 3 },
-  { left: 6.5, top: 43.3, delay: 0.4, dur: 5.4, dx: 16, dy: -33, size: 5 },
-  { left: 92.1, top: 55.6, delay: 2.4, dur: 8.9, dx: -28, dy: -18, size: 3 },
-  { left: 53.8, top: 55.1, delay: 3.4, dur: 7.7, dx: -29, dy: -20, size: 5 },
-  { left: 69.9, top: 54.5, delay: 3.7, dur: 7.0, dx: 34, dy: 25, size: 4 },
-  { left: 37.0, top: 27.4, delay: 1.1, dur: 8.1, dx: -29, dy: 31, size: 4 },
-  { left: 30.1, top: 90.3, delay: 0.7, dur: 6.7, dx: 18, dy: 21, size: 3 },
-  { left: 74.9, top: 55.3, delay: 5.3, dur: 6.3, dx: 29, dy: 14, size: 3 },
-  { left: 91.8, top: 46.8, delay: 4.0, dur: 5.2, dx: 31, dy: 18, size: 4 },
-  { left: 86.4, top: 35.8, delay: 5.6, dur: 6.4, dx: -27, dy: -29, size: 3 },
-  { left: 72.4, top: 40.2, delay: 5.5, dur: 7.0, dx: -26, dy: 31, size: 4 },
-  { left: 84.2, top: 29.9, delay: 2.5, dur: 6.4, dx: 39, dy: -14, size: 3 },
-  { left: 24.8, top: 26.1, delay: 2.9, dur: 7.4, dx: 21, dy: -21, size: 4 },
-  { left: 60.3, top: 33.4, delay: 0.8, dur: 8.4, dx: -26, dy: 21, size: 4 },
-  { left: 12.7, top: 60.5, delay: 0.4, dur: 5.3, dx: -25, dy: -19, size: 3 },
-  { left: 12.6, top: 54.7, delay: 3.2, dur: 8.8, dx: -16, dy: -26, size: 3 },
-  { left: 62.6, top: 88.2, delay: 3.6, dur: 6.9, dx: -36, dy: 23, size: 4 },
-  { left: 11.1, top: 14.8, delay: 2.1, dur: 6.1, dx: -27, dy: -33, size: 5 },
-  { left: 37.0, top: 65.3, delay: 5.5, dur: 8.0, dx: 39, dy: -27, size: 4 },
-  { left: 51.7, top: 84.1, delay: 2.1, dur: 5.9, dx: 31, dy: -30, size: 4 },
-  { left: 72.5, top: 25.5, delay: 3.1, dur: 6.4, dx: -40, dy: 22, size: 3 },
-  { left: 68.1, top: 88.3, delay: 2.7, dur: 8.7, dx: 39, dy: 14, size: 3 },
-  { left: 24.3, top: 22.9, delay: 1.2, dur: 7.5, dx: -26, dy: 30, size: 3 },
-  { left: 81.5, top: 16.3, delay: 2.3, dur: 7.8, dx: -26, dy: -22, size: 4 },
-  { left: 11.2, top: 87.4, delay: 4.3, dur: 6.9, dx: -33, dy: -34, size: 3 },
-  { left: 17.2, top: 83.8, delay: 4.8, dur: 5.6, dx: 31, dy: 15, size: 5 },
-  { left: 15.3, top: 7.2, delay: 5.8, dur: 7.6, dx: -25, dy: -30, size: 3 },
-  { left: 5.6, top: 24.3, delay: 3.0, dur: 8.1, dx: 21, dy: 30, size: 3 },
+  { left: 17.8, top: 67.1, delay: 4.4, dur: 6.4, dx: -38, dy: 33, size: 6 },
+  { left: 19.6, top: 52.1, delay: 5.5, dur: 4.6, dx: 14, dy: -36, size: 7 },
+  { left: 6.1, top: 95.8, delay: 5.2, dur: 8.0, dx: 13, dy: 26, size: 7 },
+  { left: 13.1, top: 91.5, delay: 2.6, dur: 5.1, dx: -15, dy: -24, size: 6 },
+  { left: 71.9, top: 40.3, delay: 1.1, dur: 7.2, dx: 35, dy: -14, size: 4 },
+  { left: 22.0, top: 93.1, delay: 6.3, dur: 7.5, dx: -15, dy: 27, size: 5 },
+  { left: 21.3, top: 88.9, delay: 6.2, dur: 6.1, dx: 37, dy: 20, size: 5 },
+  { left: 39.1, top: 5.5, delay: 0.7, dur: 7.4, dx: 12, dy: -26, size: 7 },
+  { left: 52.1, top: 56.2, delay: 2.2, dur: 8.4, dx: -17, dy: -28, size: 5 },
+  { left: 35.3, top: 58.5, delay: 2.1, dur: 4.9, dx: -36, dy: -32, size: 5 },
+  { left: 17.3, top: 6.4, delay: 3.6, dur: 7.1, dx: -23, dy: -37, size: 6 },
+  { left: 3.4, top: 35.2, delay: 3.5, dur: 7.2, dx: -16, dy: -23, size: 5 },
+  { left: 76.3, top: 47.9, delay: 5.9, dur: 4.7, dx: 29, dy: -23, size: 4 },
+  { left: 39.9, top: 83.9, delay: 4.5, dur: 5.1, dx: -31, dy: 13, size: 4 },
+  { left: 94.1, top: 51.9, delay: 5.1, dur: 4.6, dx: -35, dy: 33, size: 5 },
+  { left: 59.7, top: 42.6, delay: 4.1, dur: 7.9, dx: 16, dy: 16, size: 7 },
+  { left: 3.0, top: 66.7, delay: 6.7, dur: 4.6, dx: 29, dy: 19, size: 5 },
+  { left: 74.2, top: 78.5, delay: 1.0, dur: 5.1, dx: 14, dy: -29, size: 4 },
+  { left: 8.9, top: 14.1, delay: 2.0, dur: 5.7, dx: 22, dy: -28, size: 4 },
+  { left: 19.7, top: 38.1, delay: 5.0, dur: 6.7, dx: -28, dy: -33, size: 4 },
+  { left: 39.2, top: 83.4, delay: 2.8, dur: 6.8, dx: -19, dy: 31, size: 4 },
+  { left: 39.3, top: 31.8, delay: 6.3, dur: 5.7, dx: 37, dy: -26, size: 4 },
+  { left: 50.8, top: 71.3, delay: 6.8, dur: 5.7, dx: -14, dy: 37, size: 5 },
+  { left: 8.3, top: 64.2, delay: 2.9, dur: 8.0, dx: -28, dy: 25, size: 4 },
+  { left: 67.3, top: 68.6, delay: 3.3, dur: 6.6, dx: 14, dy: -13, size: 5 },
+  { left: 6.0, top: 28.6, delay: 4.1, dur: 6.1, dx: 24, dy: -22, size: 5 },
+  { left: 48.7, top: 61.8, delay: 6.7, dur: 4.8, dx: 16, dy: 31, size: 4 },
+  { left: 76.8, top: 61.3, delay: 5.3, dur: 7.2, dx: 18, dy: 22, size: 6 },
+  { left: 38.7, top: 51.8, delay: 5.0, dur: 8.1, dx: -20, dy: 35, size: 7 },
+  { left: 16.0, top: 54.5, delay: 0.6, dur: 5.7, dx: 31, dy: 38, size: 4 },
+  { left: 69.6, top: 22.1, delay: 2.3, dur: 7.1, dx: -19, dy: -20, size: 5 },
+  { left: 92.7, top: 92.9, delay: 6.3, dur: 6.5, dx: -28, dy: 31, size: 4 },
+  { left: 92.3, top: 46.4, delay: 3.1, dur: 7.0, dx: 29, dy: 28, size: 4 },
+  { left: 20.1, top: 92.4, delay: 0.2, dur: 7.7, dx: 12, dy: -22, size: 5 },
+  { left: 69.2, top: 25.3, delay: 0.1, dur: 6.7, dx: -37, dy: -24, size: 4 },
+  { left: 37.5, top: 15.6, delay: 5.5, dur: 7.8, dx: -20, dy: 22, size: 6 },
+  { left: 25.5, top: 56.5, delay: 5.8, dur: 6.8, dx: 35, dy: -29, size: 4 },
+  { left: 9.7, top: 86.7, delay: 5.2, dur: 7.5, dx: -16, dy: 33, size: 6 },
+  { left: 53.4, top: 48.7, delay: 4.8, dur: 7.2, dx: -19, dy: 19, size: 7 },
+  { left: 62.2, top: 85.8, delay: 0.5, dur: 4.8, dx: -30, dy: -21, size: 5 },
 ];
 
 const SPARK_CSS = `
@@ -49,14 +61,14 @@ const SPARK_CSS = `
   100% { transform: translate(0, 0) scale(1); }
 }
 @keyframes krcGlow {
-  0%,100% { opacity: 0.25; filter: brightness(0.9); }
-  50%     { opacity: 1; filter: brightness(1.7); }
+  0%,100% { opacity: 0.45; filter: brightness(1.05); }
+  50%     { opacity: 1; filter: brightness(1.9); }
 }
 .krc-spark {
   position: absolute;
   border-radius: 9999px;
-  background: radial-gradient(circle at 35% 35%, #FFF6CC 0%, #FFD66B 40%, #FFB02E 72%, rgba(255,176,46,0) 100%);
-  box-shadow: 0 0 6px 1px rgba(255,200,90,0.9), 0 0 14px 4px rgba(255,150,30,0.45);
+  background: radial-gradient(circle at 35% 35%, #FFFBE6 0%, #FFE08A 38%, #FFC24B 70%, rgba(255,194,75,0) 100%);
+  box-shadow: 0 0 10px 2px rgba(255,210,110,0.95), 0 0 22px 7px rgba(255,170,50,0.5);
   animation-name: krcFloat, krcGlow;
   animation-timing-function: ease-in-out, ease-in-out;
   animation-iteration-count: infinite, infinite;
@@ -124,14 +136,14 @@ export default function LoginPage() {
       </div>
 
       <div className="relative z-10 flex w-full max-w-sm flex-col items-center">
-        <Card className="w-full overflow-hidden rounded-2xl border-2 border-white/70 p-0 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)] ring-1 ring-black/10">
-          <div className="bg-[#0033A0] px-6 py-8 text-center">
+        <Card className="w-full overflow-hidden rounded-2xl border border-white/40 !bg-white/55 p-0 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)] ring-1 ring-white/20 backdrop-blur-lg">
+          <div className="bg-[#0033A0]/90 px-6 py-8 text-center backdrop-blur-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/krc-logo-white.png" alt="한국농어촌공사" className="mx-auto h-8 w-auto" />
             <div className="mt-4 text-xl font-extrabold tracking-tight text-white">KRC 건설공사실록</div>
             <div className="mt-1 text-xs text-white/70">동영상 기록관리 플랫폼</div>
           </div>
-          <CardContent className="space-y-4 p-6">
+          <CardContent className="space-y-4 !bg-transparent p-6">
             {registered && (
               <div className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
                 가입이 완료되었습니다. 등록한 이메일/비밀번호로 로그인하세요.
@@ -146,21 +158,22 @@ export default function LoginPage() {
               <span>💬</span> 카카오로 회원가입 / 로그인
             </button>
 
-            <div className="flex items-center gap-3 text-xs text-neutral-400">
-              <div className="h-px flex-1 bg-neutral-200" />
+            <div className="flex items-center gap-3 text-xs font-bold text-[#0A2540]">
+              <div className="h-px flex-1 bg-[#0A2540]/30" />
               또는 이메일로 로그인
-              <div className="h-px flex-1 bg-neutral-200" />
+              <div className="h-px flex-1 bg-[#0A2540]/30" />
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="email">이메일</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label htmlFor="email" className="text-[#0A2540]">이메일</Label>
+              <Input id="email" type="email" className="bg-white/90" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="password">비밀번호</Label>
+              <Label htmlFor="password" className="text-[#0A2540]">비밀번호</Label>
               <Input
                 id="password"
                 type="password"
+                className="bg-white/90"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => {
