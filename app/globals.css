@@ -256,7 +256,7 @@
 .krc-spark {
   position: absolute;
   bottom: 4%;
-  --rise: 520px;
+  --rise: 105vh;
   border-radius: 9999px;
   background: radial-gradient(circle at 35% 35%, #FFFBE6 0%, #FFE08A 38%, #FFC24B 70%, rgba(255,194,75,0) 100%);
   box-shadow: 0 0 14px 3px rgba(255,220,130,1), 0 0 30px 10px rgba(255,170,50,0.7);

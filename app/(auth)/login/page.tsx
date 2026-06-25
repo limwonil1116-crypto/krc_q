@@ -10,50 +10,24 @@ import { PrimaryButton } from "@/components/kit/buttons";
 
 // 금속 불꽃(엠버) - 고정 시드값으로 SSR/CSR 일치
 const SPARKS = [
-  { left: 49.7, delay: 1.1, dur: 4.1, drift: -13, size: 7 },
-  { left: 24.0, delay: 4.0, dur: 5.2, drift: 10, size: 3 },
-  { left: 81.0, delay: 2.7, dur: 4.9, drift: 6, size: 4 },
-  { left: 59.2, delay: 4.3, dur: 6.1, drift: 19, size: 4 },
-  { left: 34.5, delay: 3.6, dur: 6.1, drift: -8, size: 6 },
-  { left: 50.0, delay: 4.3, dur: 5.0, drift: -5, size: 4 },
-  { left: 50.1, delay: 2.3, dur: 4.7, drift: 23, size: 3 },
-  { left: 50.0, delay: 5.0, dur: 5.4, drift: 25, size: 4 },
-  { left: 31.2, delay: 5.2, dur: 5.7, drift: 13, size: 5 },
-  { left: 50.3, delay: 5.4, dur: 6.4, drift: 8, size: 3 },
-  { left: 28.1, delay: 0.9, dur: 5.7, drift: -4, size: 5 },
-  { left: 50.8, delay: 0.8, dur: 5.5, drift: -6, size: 4 },
-  { left: 50.0, delay: 1.1, dur: 6.0, drift: -23, size: 4 },
-  { left: 49.9, delay: 3.0, dur: 6.1, drift: -19, size: 6 },
-  { left: 50.0, delay: 0.3, dur: 5.8, drift: 11, size: 7 },
-  { left: 55.6, delay: 3.3, dur: 4.8, drift: -21, size: 4 },
-  { left: 46.9, delay: 5.5, dur: 4.8, drift: 22, size: 5 },
-  { left: 47.8, delay: 2.7, dur: 4.3, drift: -13, size: 7 },
-  { left: 62.3, delay: 1.0, dur: 3.8, drift: -11, size: 5 },
-  { left: 63.5, delay: 1.9, dur: 4.7, drift: -8, size: 7 },
-  { left: 49.6, delay: 2.3, dur: 4.7, drift: -21, size: 3 },
-  { left: 77.9, delay: 4.0, dur: 4.8, drift: -3, size: 4 },
-  { left: 66.3, delay: 1.2, dur: 5.8, drift: -21, size: 6 },
-  { left: 54.0, delay: 1.2, dur: 6.0, drift: 9, size: 4 },
-  { left: 49.4, delay: 2.4, dur: 6.5, drift: 20, size: 5 },
-  { left: 86.7, delay: 1.4, dur: 5.1, drift: 21, size: 7 },
-  { left: 47.9, delay: 2.6, dur: 4.0, drift: 21, size: 5 },
-  { left: 70.4, delay: 2.3, dur: 5.6, drift: 6, size: 4 },
-  { left: 49.3, delay: 3.7, dur: 6.2, drift: 6, size: 6 },
-  { left: 49.9, delay: 2.1, dur: 6.3, drift: -8, size: 6 },
-  { left: 48.9, delay: 1.6, dur: 6.2, drift: 20, size: 6 },
-  { left: 37.0, delay: 3.5, dur: 5.6, drift: 13, size: 7 },
-  { left: 53.2, delay: 2.2, dur: 6.2, drift: 8, size: 3 },
-  { left: 28.6, delay: 2.9, dur: 3.6, drift: -10, size: 6 },
-  { left: 90.3, delay: 5.4, dur: 5.1, drift: 16, size: 4 },
-  { left: 45.2, delay: 4.7, dur: 4.9, drift: 3, size: 6 },
-  { left: 50.6, delay: 3.5, dur: 5.9, drift: 14, size: 4 },
-  { left: 55.0, delay: 5.5, dur: 6.0, drift: -22, size: 3 },
-  { left: 86.1, delay: 2.3, dur: 4.7, drift: 3, size: 6 },
-  { left: 50.3, delay: 1.6, dur: 5.9, drift: 26, size: 7 },
-  { left: 49.6, delay: 4.3, dur: 4.4, drift: -9, size: 4 },
-  { left: 73.9, delay: 4.8, dur: 5.7, drift: -6, size: 5 },
-  { left: 84.5, delay: 1.0, dur: 4.4, drift: -12, size: 5 },
-  { left: 65.0, delay: 3.8, dur: 4.2, drift: 21, size: 5 },
+  { left: 20.9, delay: 2.4, dur: 5.0, drift: -9, size: 5 },
+  { left: 16.2, delay: 4.3, dur: 4.1, drift: 9, size: 5 },
+  { left: 19.1, delay: 0.9, dur: 5.8, drift: -8, size: 5 },
+  { left: 9.9, delay: 1.4, dur: 5.4, drift: -5, size: 4 },
+  { left: 7.5, delay: 1.0, dur: 5.5, drift: 7, size: 6 },
+  { left: 13.9, delay: 3.5, dur: 4.2, drift: -3, size: 5 },
+  { left: 10.4, delay: 3.0, dur: 5.9, drift: 1, size: 4 },
+  { left: 21.8, delay: 4.0, dur: 5.2, drift: -9, size: 6 },
+  { left: 14.5, delay: 4.0, dur: 4.2, drift: 6, size: 4 },
+  { left: 80.7, delay: 1.4, dur: 4.0, drift: 2, size: 4 },
+  { left: 80.0, delay: 1.7, dur: 5.9, drift: -1, size: 6 },
+  { left: 82.7, delay: 0.8, dur: 5.8, drift: 10, size: 6 },
+  { left: 85.8, delay: 0.9, dur: 4.6, drift: 1, size: 5 },
+  { left: 89.2, delay: 2.9, dur: 5.4, drift: 3, size: 4 },
+  { left: 92.1, delay: 3.9, dur: 5.6, drift: -9, size: 3 },
+  { left: 80.8, delay: 0.3, dur: 4.3, drift: -5, size: 3 },
+  { left: 85.9, delay: 3.0, dur: 4.3, drift: 0, size: 6 },
+  { left: 79.3, delay: 3.4, dur: 5.4, drift: 2, size: 3 },
 ];
 
 export default function LoginPage() {
@@ -93,7 +67,7 @@ export default function LoginPage() {
       </div>
 
       {/* 금속 불꽃 (카드 위 레이어) */}
-      <div className="pointer-events-none fixed inset-0 z-20 overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 z-[5] overflow-hidden">
         <div className="relative h-full w-full">
           {SPARKS.map((s, i) => (
             <span

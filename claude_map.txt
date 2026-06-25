@@ -1,0 +1,268 @@
+
+
+========== FILE: components/kit/kakao-map-picker.tsx ==========
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Script from "next/script";
+import { Input } from "@/components/ui/input";
+import { PrimaryButton } from "@/components/kit/buttons";
+
+declare global {
+  interface Window {
+    kakao: any;
+  }
+}
+
+type Value = { lat: number | null; lng: number | null; address: string };
+
+export function KakaoMapPicker({
+  value,
+  onChange,
+}: {
+  value: Value;
+  onChange: (v: { lat: number; lng: number; address: string }) => void;
+}) {
+  const KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapObj = useRef<any>(null);
+  const markerObj = useRef<any>(null);
+  const [ready, setReady] = useState(false);
+  const [query, setQuery] = useState("");
+
+  // SDK 가 이미 로드되어 있으면(뒤로가기/캐시) 바로 준비 완료 처리
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.kakao && window.kakao.maps) {
+      setReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!ready || !mapRef.current || mapObj.current) return;
+    const kakao = window.kakao;
+    if (!kakao || !kakao.maps) return;
+    kakao.maps.load(() => {
+      if (mapObj.current || !mapRef.current) return;
+      const center = new kakao.maps.LatLng(value.lat ?? 36.5, value.lng ?? 127.8);
+      const map = new kakao.maps.Map(mapRef.current, { center, level: value.lat ? 4 : 12 });
+      mapObj.current = map;
+      const marker = new kakao.maps.Marker({ position: center });
+      if (value.lat) marker.setMap(map);
+      markerObj.current = marker;
+      // 컨테이너 크기 확정 후 재배치 (빈 화면 방지)
+      setTimeout(() => map.relayout(), 200);
+
+      const geocoder = new kakao.maps.services.Geocoder();
+      kakao.maps.event.addListener(map, "click", (mouseEvent: any) => {
+        const latlng = mouseEvent.latLng;
+        marker.setPosition(latlng);
+        marker.setMap(map);
+        geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (res: any, status: any) => {
+          const addr =
+            status === kakao.maps.services.Status.OK
+              ? res[0].road_address?.address_name || res[0].address?.address_name || ""
+              : "";
+          onChange({ lat: latlng.getLat(), lng: latlng.getLng(), address: addr });
+        });
+      });
+    });
+  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function search() {
+    const kakao = window.kakao;
+    if (!kakao || !mapObj.current || !query.trim()) return;
+    const geocoder = new kakao.maps.services.Geocoder();
+    geocoder.addressSearch(query, (res: any, status: any) => {
+      if (status !== kakao.maps.services.Status.OK || !res[0]) {
+        alert("주소를 찾을 수 없습니다.");
+        return;
+      }
+      const { x, y } = res[0];
+      const coords = new kakao.maps.LatLng(y, x);
+      mapObj.current.setCenter(coords);
+      mapObj.current.setLevel(4);
+      markerObj.current.setPosition(coords);
+      markerObj.current.setMap(mapObj.current);
+      onChange({
+        lat: Number(y),
+        lng: Number(x),
+        address: res[0].road_address?.address_name || res[0].address_name || query,
+      });
+    });
+  }
+
+  if (!KEY) {
+    return (
+      <div className="rounded-xl border border-dashed border-red-300 bg-red-50 p-4 text-sm text-red-600">
+        NEXT_PUBLIC_KAKAO_MAP_KEY 가 설정되지 않았습니다. .env.local 확인 후 dev 서버를 재시작하세요.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Script
+        src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KEY}&libraries=services&autoload=false`}
+        strategy="afterInteractive"
+        onLoad={() => setReady(true)}
+        onReady={() => setReady(true)}
+      />
+      <div className="flex gap-2">
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="도로명/지번 주소 검색"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              search();
+            }
+          }}
+        />
+        <PrimaryButton type="button" onClick={search}>
+          검색
+        </PrimaryButton>
+      </div>
+      <div ref={mapRef} className="h-64 w-full rounded-xl border border-neutral-200 bg-neutral-100" />
+      <p className="text-xs text-neutral-500">
+        {value.lat
+          ? `선택 좌표: ${value.lat.toFixed(6)}, ${value.lng?.toFixed(6)}`
+          : "지도를 클릭하거나 주소를 검색해 위치를 지정하세요."}
+      </p>
+    </div>
+  );
+}
+
+
+========== FILE: components\kit\kakao-map-picker.tsx ==========
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Script from "next/script";
+import { Input } from "@/components/ui/input";
+import { PrimaryButton } from "@/components/kit/buttons";
+
+declare global {
+  interface Window {
+    kakao: any;
+  }
+}
+
+type Value = { lat: number | null; lng: number | null; address: string };
+
+export function KakaoMapPicker({
+  value,
+  onChange,
+}: {
+  value: Value;
+  onChange: (v: { lat: number; lng: number; address: string }) => void;
+}) {
+  const KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapObj = useRef<any>(null);
+  const markerObj = useRef<any>(null);
+  const [ready, setReady] = useState(false);
+  const [query, setQuery] = useState("");
+
+  // SDK 가 이미 로드되어 있으면(뒤로가기/캐시) 바로 준비 완료 처리
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.kakao && window.kakao.maps) {
+      setReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!ready || !mapRef.current || mapObj.current) return;
+    const kakao = window.kakao;
+    if (!kakao || !kakao.maps) return;
+    kakao.maps.load(() => {
+      if (mapObj.current || !mapRef.current) return;
+      const center = new kakao.maps.LatLng(value.lat ?? 36.5, value.lng ?? 127.8);
+      const map = new kakao.maps.Map(mapRef.current, { center, level: value.lat ? 4 : 12 });
+      mapObj.current = map;
+      const marker = new kakao.maps.Marker({ position: center });
+      if (value.lat) marker.setMap(map);
+      markerObj.current = marker;
+      // 컨테이너 크기 확정 후 재배치 (빈 화면 방지)
+      setTimeout(() => map.relayout(), 200);
+
+      const geocoder = new kakao.maps.services.Geocoder();
+      kakao.maps.event.addListener(map, "click", (mouseEvent: any) => {
+        const latlng = mouseEvent.latLng;
+        marker.setPosition(latlng);
+        marker.setMap(map);
+        geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (res: any, status: any) => {
+          const addr =
+            status === kakao.maps.services.Status.OK
+              ? res[0].road_address?.address_name || res[0].address?.address_name || ""
+              : "";
+          onChange({ lat: latlng.getLat(), lng: latlng.getLng(), address: addr });
+        });
+      });
+    });
+  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function search() {
+    const kakao = window.kakao;
+    if (!kakao || !mapObj.current || !query.trim()) return;
+    const geocoder = new kakao.maps.services.Geocoder();
+    geocoder.addressSearch(query, (res: any, status: any) => {
+      if (status !== kakao.maps.services.Status.OK || !res[0]) {
+        alert("주소를 찾을 수 없습니다.");
+        return;
+      }
+      const { x, y } = res[0];
+      const coords = new kakao.maps.LatLng(y, x);
+      mapObj.current.setCenter(coords);
+      mapObj.current.setLevel(4);
+      markerObj.current.setPosition(coords);
+      markerObj.current.setMap(mapObj.current);
+      onChange({
+        lat: Number(y),
+        lng: Number(x),
+        address: res[0].road_address?.address_name || res[0].address_name || query,
+      });
+    });
+  }
+
+  if (!KEY) {
+    return (
+      <div className="rounded-xl border border-dashed border-red-300 bg-red-50 p-4 text-sm text-red-600">
+        NEXT_PUBLIC_KAKAO_MAP_KEY 가 설정되지 않았습니다. .env.local 확인 후 dev 서버를 재시작하세요.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Script
+        src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KEY}&libraries=services&autoload=false`}
+        strategy="afterInteractive"
+        onLoad={() => setReady(true)}
+        onReady={() => setReady(true)}
+      />
+      <div className="flex gap-2">
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="도로명/지번 주소 검색"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              search();
+            }
+          }}
+        />
+        <PrimaryButton type="button" onClick={search}>
+          검색
+        </PrimaryButton>
+      </div>
+      <div ref={mapRef} className="h-64 w-full rounded-xl border border-neutral-200 bg-neutral-100" />
+      <p className="text-xs text-neutral-500">
+        {value.lat
+          ? `선택 좌표: ${value.lat.toFixed(6)}, ${value.lng?.toFixed(6)}`
+          : "지도를 클릭하거나 주소를 검색해 위치를 지정하세요."}
+      </p>
+    </div>
+  );
+}
