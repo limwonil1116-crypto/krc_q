@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { Input } from "@/components/ui/input";
 import { PrimaryButton } from "@/components/kit/buttons";
@@ -26,28 +26,81 @@ export function KakaoMapPicker({
   const markerObj = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
+  const [locating, setLocating] = useState(false);
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
-  // SDK 가 이미 로드되어 있으면(뒤로가기/캐시) 바로 준비 완료 처리
+  // 이미 로드된 경우(뒤로가기/캐시) 대비
   useEffect(() => {
     if (typeof window !== "undefined" && window.kakao && window.kakao.maps) {
       setReady(true);
     }
   }, []);
 
-  useEffect(() => {
-    if (!ready || !mapRef.current || mapObj.current) return;
+  const placeMarker = useCallback(
+    (lat: number, lng: number, addr: string) => {
+      const kakao = window.kakao;
+      if (!kakao || !mapObj.current) return;
+      const coords = new kakao.maps.LatLng(lat, lng);
+      mapObj.current.setCenter(coords);
+      mapObj.current.setLevel(3);
+      markerObj.current.setPosition(coords);
+      markerObj.current.setMap(mapObj.current);
+      onChange({ lat, lng, address: addr });
+    },
+    [onChange]
+  );
+
+  // 현재 위치로 이동
+  const goToMyLocation = useCallback(() => {
+    if (!navigator.geolocation || !mapObj.current) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const kakao = window.kakao;
+        const coords = new kakao.maps.LatLng(latitude, longitude);
+        mapObj.current.setCenter(coords);
+        mapObj.current.setLevel(3);
+        // 역지오코딩으로 주소도 채움(마커는 사용자가 클릭해 확정)
+        const geocoder = new kakao.maps.services.Geocoder();
+        geocoder.coord2Address(longitude, latitude, (res: any, status: any) => {
+          const addr =
+            status === kakao.maps.services.Status.OK
+              ? res[0].road_address?.address_name || res[0].address?.address_name || ""
+              : "";
+          markerObj.current.setPosition(coords);
+          markerObj.current.setMap(mapObj.current);
+          onChange({ lat: latitude, lng: longitude, address: addr });
+          setLocating(false);
+        });
+      },
+      () => {
+        setLocating(false);
+        // 권한 거부/실패: 조용히 무시 (기본 위치 유지)
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  }, [onChange]);
+
+  // 지도 초기화
+  const initMap = useCallback(() => {
     const kakao = window.kakao;
-    if (!kakao || !kakao.maps) return;
+    if (!kakao || !kakao.maps || !mapRef.current || mapObj.current) return;
     kakao.maps.load(() => {
       if (mapObj.current || !mapRef.current) return;
-      const center = new kakao.maps.LatLng(value.lat ?? 36.5, value.lng ?? 127.8);
-      const map = new kakao.maps.Map(mapRef.current, { center, level: value.lat ? 4 : 12 });
+      const v = valueRef.current;
+      const startLat = v.lat ?? 36.5;
+      const startLng = v.lng ?? 127.8;
+      const center = new kakao.maps.LatLng(startLat, startLng);
+      const map = new kakao.maps.Map(mapRef.current, { center, level: v.lat ? 3 : 12 });
       mapObj.current = map;
       const marker = new kakao.maps.Marker({ position: center });
-      if (value.lat) marker.setMap(map);
+      if (v.lat) marker.setMap(map);
       markerObj.current = marker;
-      // 컨테이너 크기 확정 후 재배치 (빈 화면 방지)
-      setTimeout(() => map.relayout(), 200);
+
+      // 컨테이너 크기 확정 후 재배치 (회색 방지) - 여러 번 시도
+      [60, 200, 500, 1000].forEach((ms) => setTimeout(() => mapObj.current?.relayout(), ms));
 
       const geocoder = new kakao.maps.services.Geocoder();
       kakao.maps.event.addListener(map, "click", (mouseEvent: any) => {
@@ -62,8 +115,29 @@ export function KakaoMapPicker({
           onChange({ lat: latlng.getLat(), lng: latlng.getLng(), address: addr });
         });
       });
+
+      // 저장된 좌표가 없으면 현재 위치로 자동 이동/확대
+      if (!v.lat) {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const coords = new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+              map.setCenter(coords);
+              map.setLevel(3);
+            },
+            () => {
+              // 거부 시 기본(전국) 유지
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+          );
+        }
+      }
     });
-  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [onChange]);
+
+  useEffect(() => {
+    if (ready) initMap();
+  }, [ready, initMap]);
 
   function search() {
     const kakao = window.kakao;
@@ -75,16 +149,7 @@ export function KakaoMapPicker({
         return;
       }
       const { x, y } = res[0];
-      const coords = new kakao.maps.LatLng(y, x);
-      mapObj.current.setCenter(coords);
-      mapObj.current.setLevel(4);
-      markerObj.current.setPosition(coords);
-      markerObj.current.setMap(mapObj.current);
-      onChange({
-        lat: Number(y),
-        lng: Number(x),
-        address: res[0].road_address?.address_name || res[0].address_name || query,
-      });
+      placeMarker(Number(y), Number(x), res[0].road_address?.address_name || res[0].address_name || query);
     });
   }
 
@@ -101,8 +166,13 @@ export function KakaoMapPicker({
       <Script
         src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KEY}&libraries=services&autoload=false`}
         strategy="afterInteractive"
-        onLoad={() => setReady(true)}
-        onReady={() => setReady(true)}
+        onLoad={() => {
+          if (window.kakao && window.kakao.maps) {
+            window.kakao.maps.load(() => setReady(true));
+          } else {
+            setReady(true);
+          }
+        }}
       />
       <div className="flex gap-2">
         <Input
@@ -120,7 +190,17 @@ export function KakaoMapPicker({
           검색
         </PrimaryButton>
       </div>
-      <div ref={mapRef} className="h-64 w-full rounded-xl border border-neutral-200 bg-neutral-100" />
+      <div className="relative">
+        <div ref={mapRef} className="h-64 w-full rounded-xl border border-neutral-200 bg-neutral-100" />
+        <button
+          type="button"
+          onClick={goToMyLocation}
+          disabled={locating}
+          className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-md bg-white/95 px-2.5 py-1.5 text-xs font-semibold text-[#0033A0] shadow ring-1 ring-black/10 hover:bg-white"
+        >
+          {locating ? "위치 찾는 중..." : "📍 내 위치"}
+        </button>
+      </div>
       <p className="text-xs text-neutral-500">
         {value.lat
           ? `선택 좌표: ${value.lat.toFixed(6)}, ${value.lng?.toFixed(6)}`
