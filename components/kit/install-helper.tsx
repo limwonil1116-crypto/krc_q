@@ -135,7 +135,7 @@ export function InstallHelper() {
 
       {/* 설치 버튼 (우상단 고정) */}
       {!showInApp && (deferred || isIOS(ua) || isAndroid(ua)) && (
-        <div className="fixed right-3 top-3 z-50 flex flex-col items-end gap-1">
+        <div className="fixed bottom-4 right-3 z-50 flex flex-col items-end gap-1">
           <button
             onClick={install}
             className="flex items-center gap-1.5 rounded-full bg-[#FE5000] px-3 py-2 text-xs font-bold text-white shadow-lg ring-2 ring-white/50 hover:bg-[#E04800]"

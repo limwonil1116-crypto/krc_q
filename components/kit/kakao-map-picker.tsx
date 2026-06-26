@@ -26,7 +26,6 @@ export function KakaoMapPicker({
   const markerObj = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
-  const [locating, setLocating] = useState(false);
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -50,38 +49,6 @@ export function KakaoMapPicker({
     },
     [onChange]
   );
-
-  // 현재 위치로 이동
-  const goToMyLocation = useCallback(() => {
-    if (!navigator.geolocation || !mapObj.current) return;
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const kakao = window.kakao;
-        const coords = new kakao.maps.LatLng(latitude, longitude);
-        mapObj.current.setCenter(coords);
-        mapObj.current.setLevel(3);
-        // 역지오코딩으로 주소도 채움(마커는 사용자가 클릭해 확정)
-        const geocoder = new kakao.maps.services.Geocoder();
-        geocoder.coord2Address(longitude, latitude, (res: any, status: any) => {
-          const addr =
-            status === kakao.maps.services.Status.OK
-              ? res[0].road_address?.address_name || res[0].address?.address_name || ""
-              : "";
-          markerObj.current.setPosition(coords);
-          markerObj.current.setMap(mapObj.current);
-          onChange({ lat: latitude, lng: longitude, address: addr });
-          setLocating(false);
-        });
-      },
-      () => {
-        setLocating(false);
-        // 권한 거부/실패: 조용히 무시 (기본 위치 유지)
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-    );
-  }, [onChange]);
 
   // 지도 초기화
   const initMap = useCallback(() => {
@@ -190,17 +157,7 @@ export function KakaoMapPicker({
           검색
         </PrimaryButton>
       </div>
-      <div className="relative">
-        <div ref={mapRef} className="h-64 w-full rounded-xl border border-neutral-200 bg-neutral-100" />
-        <button
-          type="button"
-          onClick={goToMyLocation}
-          disabled={locating}
-          className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-md bg-white/95 px-2.5 py-1.5 text-xs font-semibold text-[#0033A0] shadow ring-1 ring-black/10 hover:bg-white"
-        >
-          {locating ? "위치 찾는 중..." : "📍 내 위치"}
-        </button>
-      </div>
+      <div ref={mapRef} className="h-64 w-full rounded-xl border border-neutral-200 bg-neutral-100" />
       <p className="text-xs text-neutral-500">
         {value.lat
           ? `선택 좌표: ${value.lat.toFixed(6)}, ${value.lng?.toFixed(6)}`
