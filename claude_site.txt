@@ -1,3 +1,6 @@
+
+
+========== components/site/site-form.tsx ==========
 "use client";
 
 import { useState } from "react";
@@ -14,21 +17,9 @@ const PROJECT_TYPES = [
   "다목적용수", "체계재편", "논범용화", "배수개선", "경지정리", "대행위탁사업",
   "방조제개보수", "수리시설개보수", "수질개선", "지역개발", "기타",
 ];
-const EXECUTORS: { value: string; label: string }[] = [
-  { value: "본부내근", label: "충남본부 내근" },
-  { value: "천안", label: "천안지사" },
-  { value: "공주", label: "공주지사" },
-  { value: "보령", label: "보령지사" },
-  { value: "아산", label: "아산지사" },
-  { value: "서산태안", label: "서산태안지사" },
-  { value: "논산", label: "논산지사" },
-  { value: "세종대전금산", label: "세종대전금산지사" },
-  { value: "부여", label: "부여지사" },
-  { value: "서천", label: "서천지사" },
-  { value: "청양", label: "청양지사" },
-  { value: "홍성", label: "홍성지사" },
-  { value: "예산", label: "예산지사" },
-  { value: "당진", label: "당진지사" },
+const EXECUTORS = [
+  "천안지사", "공주지사", "보령지사", "아산지사", "서산태안지사", "논산지사",
+  "세종대전금산지사", "부여지사", "서천지사", "청양지사", "홍성지사", "예산지사", "당진지사",
 ];
 const WORK_TYPES = ["철근콘크리트", "토목", "건축", "조경", "기타"];
 
@@ -294,8 +285,8 @@ export function SiteForm({
             <select className={selectCls} value={f.executor} onChange={onText("executor")}>
               <option value="">선택하세요</option>
               {EXECUTORS.map((x) => (
-                <option key={x.value} value={x.value}>
-                  {x.label}
+                <option key={x} value={x}>
+                  {x}
                 </option>
               ))}
             </select>
@@ -449,4 +440,176 @@ export function SiteForm({
       </BottomBar>
     </div>
   );
+}
+
+
+========== app/api/sites/route.ts ==========
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { constructionSites, siteParticipants } from "@/lib/db/schema";
+import { getMyOrgId } from "@/lib/org";
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.user?.role;
+    if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+      return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+    }
+    const userId = session.user.id;
+    const orgId = await getMyOrgId(userId);
+    if (!orgId) {
+      return NextResponse.json({ error: "소속 기관 정보를 찾을 수 없습니다." }, { status: 400 });
+    }
+
+    const b = await req.json();
+    const districtName = (b.districtName ?? "").trim();
+    const projectName = (b.projectName ?? "").trim();
+    const address = (b.address ?? "").trim();
+    if (!districtName || !projectName || !address) {
+      return NextResponse.json({ error: "지구명/사업/주소는 필수입니다." }, { status: 400 });
+    }
+
+    const [site] = await db
+      .insert(constructionSites)
+      .values({
+        clientOrgId: role === "client" ? orgId : (b.clientOrgId || null),
+        contractorOrgId: role === "contractor" ? orgId : null,
+        siteCode: (b.siteCode ?? "").trim() || null,
+        districtName,
+        projectName,
+        executor: (b.executor ?? "").trim() || null,
+        workType: (b.workType ?? "").trim() || null,
+        workTypes: (b.workTypes ?? "").trim() || null,
+        siteManagerName: (b.siteManagerName ?? "").trim() || null,
+        siteManagerPhone: (b.siteManagerPhone ?? "").trim() || null,
+        siteManagerEmail: (b.siteManagerEmail ?? "").trim() || null,
+        address,
+        lat: b.lat != null ? String(b.lat) : null,
+        lng: b.lng != null ? String(b.lng) : null,
+        startedOn: b.startedOn || null,
+        endedOn: b.endedOn || null,
+        supervisorName: (b.supervisorName ?? "").trim() || null,
+        supervisorPhone: (b.supervisorPhone ?? "").trim() || null,
+        supervisorEmail: (b.supervisorEmail ?? "").trim() || null,
+        status: "active",
+        createdBy: userId,
+      })
+      .returning();
+
+    await db.insert(siteParticipants).values({
+      siteId: site.id,
+      userId,
+      participantRole: role === "client" ? "client_manager" : "contractor_manager",
+    });
+
+    return NextResponse.json({ ok: true, id: site.id });
+  } catch (e) {
+    console.error("[sites] error:", e);
+    const msg = e instanceof Error ? e.message : "알 수 없는 오류";
+    return NextResponse.json({ error: "현장 저장 오류: " + msg }, { status: 500 });
+  }
+}
+
+
+========== app/api/sites/[id]/route.ts ==========
+import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { constructionSites } from "@/lib/db/schema";
+import { getMyOrgId } from "@/lib/org";
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const session = await auth();
+    const role = session?.user?.role;
+    if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+      return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+    }
+    const userId = session.user.id;
+    const orgId = await getMyOrgId(userId);
+
+    const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, id)).limit(1);
+    const site = rows[0];
+    if (!site) {
+      return NextResponse.json({ error: "현장을 찾을 수 없습니다." }, { status: 404 });
+    }
+    const owns =
+      site.createdBy === userId ||
+      (orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+    if (!owns) {
+      return NextResponse.json({ error: "수정 권한이 없습니다." }, { status: 403 });
+    }
+
+    const b = await req.json();
+    const districtName = (b.districtName ?? "").trim();
+    const projectName = (b.projectName ?? "").trim();
+    const address = (b.address ?? "").trim();
+    if (!districtName || !projectName || !address) {
+      return NextResponse.json({ error: "지구명/사업/주소는 필수입니다." }, { status: 400 });
+    }
+
+    await db
+      .update(constructionSites)
+      .set({
+        clientOrgId: role === "contractor" ? (b.clientOrgId || null) : site.clientOrgId,
+        siteCode: (b.siteCode ?? "").trim() || null,
+        districtName,
+        projectName,
+        executor: (b.executor ?? "").trim() || null,
+        workType: (b.workType ?? "").trim() || null,
+        workTypes: (b.workTypes ?? "").trim() || null,
+        contractorCompany: (b.contractorCompany ?? "").trim() || null,
+        siteManagerName: (b.siteManagerName ?? "").trim() || null,
+        siteManagerPhone: (b.siteManagerPhone ?? "").trim() || null,
+        siteManagerEmail: (b.siteManagerEmail ?? "").trim() || null,
+        address,
+        lat: b.lat != null ? String(b.lat) : null,
+        lng: b.lng != null ? String(b.lng) : null,
+        startedOn: b.startedOn || null,
+        endedOn: b.endedOn || null,
+        supervisorName: (b.supervisorName ?? "").trim() || null,
+        supervisorPhone: (b.supervisorPhone ?? "").trim() || null,
+        supervisorEmail: (b.supervisorEmail ?? "").trim() || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(constructionSites.id, id));
+
+    return NextResponse.json({ ok: true, id });
+  } catch (e) {
+    console.error("[sites:patch] error:", e);
+    const msg = e instanceof Error ? e.message : "알 수 없는 오류";
+    return NextResponse.json({ error: "현장 수정 오류: " + msg }, { status: 500 });
+  }
+}
+
+
+========== app/client/sites/new/page.tsx ==========
+import { SiteForm } from "@/components/site/site-form";
+
+export const dynamic = "force-dynamic";
+
+export default async function NewClientSitePage() {
+  return <SiteForm clientOrgs={[]} mode="client" />;
+}
+
+
+========== app/contractor/sites/new/page.tsx ==========
+import { and, eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { organizations } from "@/lib/db/schema";
+import { SiteForm } from "@/components/site/site-form";
+
+export const dynamic = "force-dynamic";
+
+export default async function NewSitePage() {
+  const clientOrgs = await db
+    .select({ id: organizations.id, name: organizations.name })
+    .from(organizations)
+    .where(and(eq(organizations.type, "client_agency"), eq(organizations.status, "active")));
+
+  return <SiteForm clientOrgs={clientOrgs} />;
 }

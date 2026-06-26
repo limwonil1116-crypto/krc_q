@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { constructionSites } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
+import { getMyBranch, isHeadOffice } from "@/lib/perm";
 import { ActionButton } from "@/components/kit/buttons";
 import { SitesTable } from "@/components/site/sites-table";
 
@@ -13,13 +14,22 @@ export default async function Page() {
   const session = await auth();
   const userId = session?.user?.id;
   const orgId = userId ? await getMyOrgId(userId) : null;
-  const raw = orgId
-    ? await db
-        .select()
-        .from(constructionSites)
-        .where(eq(constructionSites.clientOrgId, orgId))
-        .orderBy(desc(constructionSites.createdAt))
-    : [];
+  const branch = userId ? await getMyBranch(userId) : null;
+  const headOffice = isHeadOffice(branch);
+  // 본부내근: 전체 / 특정 지사: executor === 지사 / 지사정보 없으면 기존 org 기준
+  const whereCond = headOffice
+    ? undefined
+    : branch
+    ? eq(constructionSites.executor, branch)
+    : orgId
+    ? eq(constructionSites.clientOrgId, orgId)
+    : undefined;
+  const raw =
+    headOffice || whereCond
+      ? await (whereCond
+          ? db.select().from(constructionSites).where(whereCond).orderBy(desc(constructionSites.createdAt))
+          : db.select().from(constructionSites).orderBy(desc(constructionSites.createdAt)))
+      : [];
   const sites = raw.map((s) => ({
     id: s.id,
     districtName: s.districtName,
