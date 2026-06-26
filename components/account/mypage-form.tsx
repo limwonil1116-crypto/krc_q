@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ActionButton } from "@/components/kit/buttons";
 import { SelectableCard } from "@/components/kit/selectable-card";
-import { KRC_BRANCHES } from "@/lib/perm";
+import { KRC_BRANCHES } from "@/lib/branches";
 
 export function MypageForm({
   initial,
