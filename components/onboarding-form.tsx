@@ -108,7 +108,12 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
             />
             <SelectableCard
               label="한국농어촌공사"
-              icon="🏛️"
+              icon={
+                // eslint-disable-next-line @next/next/no-img-element
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white p-1.5 shadow-sm sm:h-14 sm:w-14">
+                  <img src="/krc-logo.png" alt="한국농어촌공사" className="h-full w-full object-contain" />
+                </span>
+              }
               selected={role === "client"}
               onClick={() => setRole("client")}
             />
