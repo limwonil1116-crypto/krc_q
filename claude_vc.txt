@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { VideoExporter } from "@/components/record/video-exporter";
 
 type Phase = { id: string; code: string; name: string; sortOrder: number };
 type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null };
@@ -403,21 +402,6 @@ export function VideoComposer({
           <p className="text-center text-xs text-neutral-400">
             {idx + 1} / {total} · 자동 구성 미리보기 (최종 MP4 내보내기는 다음 단계에서 추가됩니다)
           </p>
-          <VideoExporter
-            slides={slides}
-            meta={{
-              projectName: meta.projectName,
-              districtName: meta.districtName,
-              address: meta.address,
-              workType: meta.workType,
-              executor: meta.executor,
-              structureName: meta.structureName,
-              typeName: meta.typeName,
-              contractorCompany: meta.contractorCompany,
-            }}
-            date={date}
-            fileBase={`KRC_${meta.structureName || "record"}`}
-          />
         </div>
       )}
     </div>
