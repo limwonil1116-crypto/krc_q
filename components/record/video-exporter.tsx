@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type ExportSlide =
   | { kind: "title" }
@@ -77,16 +77,32 @@ export function VideoExporter({
   meta,
   date,
   fileBase,
+  siteStructureId,
+  canSave,
+  autoSave,
 }: {
   slides: ExportSlide[];
   meta: ExportMeta;
   date: string;
   fileBase: string;
+  siteStructureId?: string;
+  canSave?: boolean;
+  autoSave?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [msg, setMsg] = useState("");
   const cancelRef = useRef(false);
+  const autoRan = useRef(false);
+
+  useEffect(() => {
+    if (autoSave && canSave && siteStructureId && slides.length > 0 && !autoRan.current) {
+      autoRan.current = true;
+      // 자동: 다운로드 없이 드라이브 저장만
+      exportVideo(true, { download: false, upload: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSave, canSave, siteStructureId, slides.length]);
 
   function drawBackground(ctx: CanvasRenderingContext2D, color: string) {
     ctx.fillStyle = color;
@@ -221,7 +237,9 @@ export function VideoExporter({
     ctx.fillText(caption, 56, H - 30);
   }
 
-  async function exportVideo(withBgm: boolean) {
+  async function exportVideo(withBgm: boolean, opts?: { download?: boolean; upload?: boolean }) {
+    const doDownload = opts?.download !== false;
+    const doUpload = !!opts?.upload && !!siteStructureId;
     if (busy) return;
     setBusy(true);
     setProgress(0);
@@ -364,17 +382,38 @@ export function VideoExporter({
       const blob = await done;
       if (audioCtx) audioCtx.close();
 
-      setMsg("파일 생성 중...");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${fileBase}_${date}.webm`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      if (doDownload) {
+        setMsg("파일 생성 중...");
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${fileBase}_${date}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+      if (doUpload && siteStructureId) {
+        setMsg("드라이브에 저장 중...");
+        try {
+          const form = new FormData();
+          form.append("siteStructureId", siteStructureId);
+          form.append("inspectionDate", date);
+          form.append("file", new File([blob], `${fileBase}_${date}.webm`, { type: "video/webm" }));
+          const res = await fetch("/api/records/video", { method: "POST", body: form });
+          const d = await res.json().catch(() => ({}));
+          if (!res.ok || !d.ok) {
+            setMsg("드라이브 저장 실패: " + (d.error || res.status));
+          } else {
+            setMsg(doDownload ? "완료! 다운로드 + 드라이브 저장됨." : "드라이브에 저장되었습니다.");
+          }
+        } catch (e) {
+          setMsg("드라이브 저장 오류: " + (e instanceof Error ? e.message : "네트워크"));
+        }
+      } else {
+        setMsg(doDownload ? "완료! 다운로드가 시작됩니다." : "완료되었습니다.");
+      }
       setProgress(100);
-      setMsg("완료! 다운로드가 시작됩니다.");
     } catch (e) {
       setMsg("실패: " + (e instanceof Error ? e.message : "오류"));
     } finally {
@@ -405,6 +444,16 @@ export function VideoExporter({
         >
           🎵 BGM 포함 다운로드
         </button>
+        {canSave && siteStructureId && (
+          <button
+            type="button"
+            disabled={busy || slides.length === 0}
+            onClick={() => exportVideo(true, { download: true, upload: true })}
+            className="rounded-md bg-[#0033A0] px-4 py-2 text-sm font-bold text-white hover:bg-[#002A80] disabled:opacity-50"
+          >
+            💾 드라이브 저장 + 다운로드
+          </button>
+        )}
         {busy && (
           <button
             type="button"
