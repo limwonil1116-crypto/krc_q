@@ -35,6 +35,7 @@ export const users = pgTable("users", {
   kakaoId: varchar("kakao_id", { length: 64 }),
   name: varchar("name", { length: 80 }).notNull(),
   phone: varchar("phone", { length: 30 }),
+  branch: varchar("branch", { length: 50 }),
   role: text("role").$type<"contractor" | "supervisor" | "client" | "admin">().notNull(),
   status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),

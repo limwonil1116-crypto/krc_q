@@ -1,0 +1,424 @@
+
+
+========== schema:users ==========
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).unique(),
+  passwordHash: text("password_hash"),
+  kakaoId: varchar("kakao_id", { length: 64 }),
+  name: varchar("name", { length: 80 }).notNull(),
+  phone: varchar("phone", { length: 30 }),
+  role: text("role").$type<"contractor" | "supervisor" | "client" | "admin">().notNull(),
+  status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+========== schema:organizations ==========
+export const organizations = pgTable("organizations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 150 }).notNull(),
+  type: text("type").$type<"contractor" | "client_agency" | "admin_org">().notNull(),
+  businessNumber: varchar("business_number", { length: 30 }),
+  representativeName: varchar("representative_name", { length: 80 }),
+  phone: varchar("phone", { length: 30 }),
+  email: varchar("email", { length: 255 }),
+  address: text("address"),
+  headquarters: varchar("headquarters", { length: 50 }),
+  branch: varchar("branch", { length: 50 }),
+  status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+========== schema:organizationMembers ==========
+export const organizationMembers = pgTable("organization_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  memberRole: text("member_role").$type<"owner" | "manager" | "viewer" | "staff">().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+========== schema:constructionSites ==========
+export const constructionSites = pgTable("construction_sites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientOrgId: uuid("client_org_id"),
+  contractorOrgId: uuid("contractor_org_id"),
+  siteCode: varchar("site_code", { length: 100 }),
+  districtName: varchar("district_name", { length: 150 }).notNull(),
+  projectName: varchar("project_name", { length: 200 }).notNull(),
+  executor: varchar("executor", { length: 50 }),
+  workType: varchar("work_type", { length: 100 }),
+  workTypes: text("work_types"),
+  siteManagerName: varchar("site_manager_name", { length: 80 }),
+  siteManagerPhone: varchar("site_manager_phone", { length: 30 }),
+  siteManagerEmail: varchar("site_manager_email", { length: 255 }),
+  contractorLogoDriveId: text("contractor_logo_drive_id"),
+  contractorLogoName: varchar("contractor_logo_name", { length: 255 }),
+  contractorCompany: varchar("contractor_company", { length: 150 }),
+  address: text("address").notNull(),
+  lat: numeric("lat", { precision: 10, scale: 7 }),
+  lng: numeric("lng", { precision: 10, scale: 7 }),
+  startedOn: date("started_on"),
+  endedOn: date("ended_on"),
+  supervisorName: varchar("supervisor_name", { length: 80 }),
+  supervisorPhone: varchar("supervisor_phone", { length: 30 }),
+  supervisorEmail: varchar("supervisor_email", { length: 255 }),
+  status: text("status").$type<"draft" | "active" | "completed" | "archived">().notNull().default("draft"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+========== schema:siteParticipants ==========
+export const siteParticipants = pgTable("site_participants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  participantRole: text("participant_role")
+    .$type<"contractor_manager" | "supervisor" | "client_viewer" | "client_manager">()
+    .notNull(),
+  receiveEmail: boolean("receive_email").notNull().default(true),
+  receivePush: boolean("receive_push").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+========== app/api/onboarding/route.ts ==========
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { users, organizations, organizationMembers } from "@/lib/db/schema";
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    }
+    const userId = session.user.id;
+
+    const b = await req.json();
+    const role = b.role === "client" ? "client" : "contractor";
+    const name = (b.name ?? "").trim();
+    const email = (b.email ?? "").trim().toLowerCase();
+    const password = b.password ?? "";
+    const phone = (b.phone ?? "").trim();
+    const headquarters = (b.headquarters ?? "").trim();
+    const branch = (b.branch ?? "").trim();
+    const companyName = role === "client" ? "한국농어촌공사" : (b.companyName ?? "").trim();
+
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: "성명/이메일/비밀번호는 필수입니다." }, { status: 400 });
+    }
+    if (role === "contractor" && !companyName) {
+      return NextResponse.json({ error: "회사명을 입력해 주세요." }, { status: 400 });
+    }
+    if (role === "client" && !branch) {
+      return NextResponse.json({ error: "지사를 선택해 주세요." }, { status: 400 });
+    }
+    if (password.length < 6) {
+      return NextResponse.json({ error: "비밀번호는 6자 이상이어야 합니다." }, { status: 400 });
+    }
+
+    const dup = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (dup[0] && dup[0].id !== userId) {
+      return NextResponse.json({ error: "이미 사용 중인 이메일입니다." }, { status: 409 });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const orgType = role === "client" ? "client_agency" : "contractor";
+
+    const [org] = await db
+      .insert(organizations)
+      .values({
+        name: companyName,
+        type: orgType,
+        status: "active",
+        headquarters: role === "client" ? (headquarters || "충남") : null,
+        branch: role === "client" ? branch : null,
+      })
+      .returning();
+
+    await db
+      .update(users)
+      .set({ email, passwordHash, name, phone: phone || null, role, status: "active" })
+      .where(eq(users.id, userId));
+
+    await db.insert(organizationMembers).values({
+      organizationId: org.id,
+      userId,
+      memberRole: "owner",
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("[onboarding] error:", e);
+    const msg = e instanceof Error ? e.message : "알 수 없는 오류";
+    return NextResponse.json({ error: "가입 처리 오류: " + msg }, { status: 500 });
+  }
+}
+
+
+========== lib/org.ts ==========
+import { and, eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { organizationMembers, organizations } from "@/lib/db/schema";
+
+// 로그인한 사용자의 소속 조직 id (역할 무관)
+export async function getMyOrgId(userId: string): Promise<string | null> {
+  const rows = await db
+    .select({ orgId: organizationMembers.organizationId })
+    .from(organizationMembers)
+    .where(eq(organizationMembers.userId, userId))
+    .limit(1);
+  return rows[0]?.orgId ?? null;
+}
+
+// 시공사 조직 id (기존 호환)
+export async function getContractorOrgId(userId: string): Promise<string | null> {
+  const rows = await db
+    .select({ orgId: organizations.id })
+    .from(organizationMembers)
+    .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
+    .where(and(eq(organizationMembers.userId, userId), eq(organizations.type, "contractor")))
+    .limit(1);
+  return rows[0]?.orgId ?? null;
+}
+
+
+========== auth.ts ==========
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import Kakao from "next-auth/providers/kakao";
+import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
+import { authConfig } from "./auth.config";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+
+const providers = [
+  Credentials({
+    credentials: { email: {}, password: {} },
+    async authorize(credentials) {
+      const email = credentials?.email as string | undefined;
+      const password = credentials?.password as string | undefined;
+      if (!email || !password) return null;
+      const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const u = rows[0];
+      if (!u || !u.passwordHash) return null;
+      if (u.status !== "active") return null;
+      const ok = await bcrypt.compare(password, u.passwordHash);
+      if (!ok) return null;
+      return { id: u.id, email: u.email ?? undefined, name: u.name, role: u.role };
+    },
+  }),
+  // 카카오 키가 있을 때만 provider 추가 (없으면 이메일 로그인만 동작)
+  ...(process.env.AUTH_KAKAO_ID ? [Kakao] : []),
+];
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
+  providers,
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user, account }) {
+      // 카카오 로그인: kakao_id 로 사용자 조회/생성(스텁)
+      if (account?.provider === "kakao") {
+        const kakaoId = String(account.providerAccountId);
+        const rows = await db.select().from(users).where(eq(users.kakaoId, kakaoId)).limit(1);
+        let u = rows[0];
+        if (!u) {
+          const ins = await db
+            .insert(users)
+            .values({
+              kakaoId,
+              name: (user?.name as string) ?? "카카오사용자",
+              role: "contractor",
+              status: "pending", // 온보딩 전 상태
+            })
+            .returning();
+          u = ins[0];
+        }
+        token.id = u.id;
+        token.role = u.role;
+        token.status = u.status;
+        token.name = u.name;
+        return token;
+      }
+      // 이메일/비번 로그인
+      if (user) {
+        token.id = (user as { id?: string }).id;
+        token.role = (user as { role?: string }).role;
+        token.status = "active";
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as { id?: string }).id = token.id as string;
+        (session.user as { role?: string }).role = token.role as string;
+        (session.user as { status?: string }).status = token.status as string;
+      }
+      return session;
+    },
+  },
+});
+
+
+========== app/client/page.tsx ==========
+import Link from "next/link";
+import { desc, eq } from "drizzle-orm";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { constructionSites } from "@/lib/db/schema";
+import { getMyOrgId } from "@/lib/org";
+import { ActionButton } from "@/components/kit/buttons";
+import { SitesTable } from "@/components/site/sites-table";
+
+export const dynamic = "force-dynamic";
+
+export default async function Page() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  const orgId = userId ? await getMyOrgId(userId) : null;
+  const raw = orgId
+    ? await db
+        .select()
+        .from(constructionSites)
+        .where(eq(constructionSites.clientOrgId, orgId))
+        .orderBy(desc(constructionSites.createdAt))
+    : [];
+  const sites = raw.map((s) => ({
+    id: s.id,
+    districtName: s.districtName,
+    projectName: s.projectName,
+    executor: s.executor,
+    workType: s.workType,
+    address: s.address,
+    status: s.status,
+    supervisorName: s.supervisorName,
+    startedOn: s.startedOn ?? null,
+    endedOn: s.endedOn ?? null,
+    createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
+  }));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-[#0033A0]">건설현장 현황</h1>
+        <Link href="/client/sites/new">
+          <ActionButton>+ 현장 등록</ActionButton>
+        </Link>
+      </div>
+      <SitesTable sites={sites} basePath="/client/sites" />
+    </div>
+  );
+}
+
+
+========== app/client/sites/page.tsx ==========
+import Link from "next/link";
+import { desc, eq } from "drizzle-orm";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { constructionSites } from "@/lib/db/schema";
+import { getMyOrgId } from "@/lib/org";
+import { ActionButton } from "@/components/kit/buttons";
+import { SitesTable } from "@/components/site/sites-table";
+
+export const dynamic = "force-dynamic";
+
+export default async function Page() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  const orgId = userId ? await getMyOrgId(userId) : null;
+  const raw = orgId
+    ? await db
+        .select()
+        .from(constructionSites)
+        .where(eq(constructionSites.clientOrgId, orgId))
+        .orderBy(desc(constructionSites.createdAt))
+    : [];
+  const sites = raw.map((s) => ({
+    id: s.id,
+    districtName: s.districtName,
+    projectName: s.projectName,
+    executor: s.executor,
+    workType: s.workType,
+    address: s.address,
+    status: s.status,
+    supervisorName: s.supervisorName,
+    startedOn: s.startedOn ?? null,
+    endedOn: s.endedOn ?? null,
+    createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
+  }));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-[#0033A0]">현장 목록</h1>
+        <Link href="/client/sites/new">
+          <ActionButton>+ 현장 등록</ActionButton>
+        </Link>
+      </div>
+      <SitesTable sites={sites} basePath="/client/sites" />
+    </div>
+  );
+}
+
+
+========== app/contractor/page.tsx ==========
+import Link from "next/link";
+import { desc, eq } from "drizzle-orm";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { constructionSites } from "@/lib/db/schema";
+import { getMyOrgId } from "@/lib/org";
+import { ActionButton } from "@/components/kit/buttons";
+import { SitesTable } from "@/components/site/sites-table";
+
+export const dynamic = "force-dynamic";
+
+export default async function Page() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  const orgId = userId ? await getMyOrgId(userId) : null;
+  const raw = orgId
+    ? await db
+        .select()
+        .from(constructionSites)
+        .where(eq(constructionSites.contractorOrgId, orgId))
+        .orderBy(desc(constructionSites.createdAt))
+    : [];
+  const sites = raw.map((s) => ({
+    id: s.id,
+    districtName: s.districtName,
+    projectName: s.projectName,
+    executor: s.executor,
+    workType: s.workType,
+    address: s.address,
+    status: s.status,
+    supervisorName: s.supervisorName,
+    startedOn: s.startedOn ?? null,
+    endedOn: s.endedOn ?? null,
+    createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
+  }));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-[#0033A0]">시공사 현장</h1>
+        <Link href="/contractor/sites/new">
+          <ActionButton>+ 현장 등록</ActionButton>
+        </Link>
+      </div>
+      <SitesTable sites={sites} basePath="/contractor/sites" />
+    </div>
+  );
+}

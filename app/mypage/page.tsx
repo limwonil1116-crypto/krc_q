@@ -75,6 +75,14 @@ export default async function MyPage() {
             <span className="text-neutral-500">분류</span>
             <span className="font-medium text-[#0A2540]">{ROLE_LABEL[u.role] || u.role}</span>
           </div>
+          {u.role === "client" && (
+            <div className="flex justify-between">
+              <span className="text-neutral-500">소속</span>
+              <span className="font-medium text-[#0A2540]">
+                {u.branch ? (u.branch === "본부내근" ? "충남본부 내근" : `${u.branch}지사`) : "-"}
+              </span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-neutral-500">상태</span>
             <span className="font-medium text-[#0A2540]">{STATUS_LABEL[u.status] || u.status}</span>
@@ -82,8 +90,9 @@ export default async function MyPage() {
         </div>
 
         <MypageForm
-          initial={{ name: u.name, phone: u.phone ?? "" }}
+          initial={{ name: u.name, phone: u.phone ?? "", role: u.role, branch: u.branch ?? "" }}
           hasPassword={!!u.passwordHash}
+          editableRole={u.role === "contractor" || u.role === "client"}
         />
       </main>
     </div>

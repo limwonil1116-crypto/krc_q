@@ -5,22 +5,29 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ActionButton } from "@/components/kit/buttons";
+import { SelectableCard } from "@/components/kit/selectable-card";
+import { KRC_BRANCHES } from "@/lib/perm";
 
 export function MypageForm({
   initial,
   hasPassword,
+  editableRole,
 }: {
-  initial: { name: string; phone: string };
+  initial: { name: string; phone: string; role: string; branch: string };
   hasPassword: boolean;
+  editableRole: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState(initial.name);
   const [phone, setPhone] = useState(initial.phone);
+  const [role, setRole] = useState<"contractor" | "client">(
+    initial.role === "client" ? "client" : "contractor"
+  );
+  const [branch, setBranch] = useState(initial.branch);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 비밀번호 변경
   const [pwOpen, setPwOpen] = useState(false);
   const [curPw, setCurPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -29,6 +36,9 @@ export function MypageForm({
   const [pwErr, setPwErr] = useState("");
   const [pwLoading, setPwLoading] = useState(false);
 
+  const selectCls =
+    "h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
+
   async function saveInfo() {
     setMsg("");
     setErr("");
@@ -36,12 +46,21 @@ export function MypageForm({
       setErr("이름을 입력하세요.");
       return;
     }
+    if (editableRole && role === "client" && !branch) {
+      setErr("소속 지사를 선택하세요.");
+      return;
+    }
     setLoading(true);
     try {
+      const payload: Record<string, string> = { name: name.trim(), phone: phone.trim() };
+      if (editableRole) {
+        payload.role = role;
+        if (role === "client") payload.branch = branch;
+      }
       const res = await fetch("/api/account", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim() }),
+        body: JSON.stringify(payload),
       });
       let data: { ok?: boolean; error?: string } = {};
       try {
@@ -104,7 +123,6 @@ export function MypageForm({
 
   return (
     <div className="space-y-4">
-      {/* 기본 정보 수정 */}
       <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
         <div className="space-y-1">
           <Label>성명 *</Label>
@@ -114,6 +132,45 @@ export function MypageForm({
           <Label>핸드폰</Label>
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-0000-0000" />
         </div>
+
+        {editableRole && (
+          <>
+            <div className="space-y-1">
+              <Label>분류 *</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <SelectableCard
+                  label="시공사"
+                  icon="🏗️"
+                  selected={role === "contractor"}
+                  onClick={() => setRole("contractor")}
+                />
+                <SelectableCard
+                  label="한국농어촌공사"
+                  icon="🏛️"
+                  selected={role === "client"}
+                  onClick={() => setRole("client")}
+                />
+              </div>
+            </div>
+            {role === "client" && (
+              <div className="space-y-1">
+                <Label>소속 (지사) *</Label>
+                <select className={selectCls} value={branch} onChange={(e) => setBranch(e.target.value)}>
+                  <option value="">선택하세요</option>
+                  {KRC_BRANCHES.map((b) => (
+                    <option key={b} value={b}>
+                      {b === "본부내근" ? "충남본부 내근" : `${b}지사`}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-neutral-400">
+                  본부 내근은 전체 현장, 각 지사는 해당 지사 현장만 조회·수정할 수 있습니다.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
         {err && <p className="text-sm text-red-600">{err}</p>}
         {msg && <p className="text-sm text-green-600">{msg}</p>}
         <ActionButton className="w-full" onClick={saveInfo} disabled={loading}>
@@ -121,7 +178,6 @@ export function MypageForm({
         </ActionButton>
       </div>
 
-      {/* 비밀번호 변경 (이메일 가입자만) */}
       {hasPassword && (
         <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
           <button
