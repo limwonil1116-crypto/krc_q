@@ -57,24 +57,17 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
   });
 }
 
-function captureVideoFrame(src: string): Promise<HTMLImageElement | HTMLCanvasElement | null> {
+function loadVideo(src: string): Promise<HTMLVideoElement | null> {
   return new Promise((resolve) => {
     const v = document.createElement("video");
     v.crossOrigin = "anonymous";
     v.muted = true;
     v.playsInline = true;
+    v.preload = "auto";
     v.src = src;
-    v.onloadeddata = () => {
-      v.currentTime = Math.min(0.1, v.duration || 0.1);
-    };
-    v.onseeked = () => {
-      const c = document.createElement("canvas");
-      c.width = v.videoWidth || W;
-      c.height = v.videoHeight || H;
-      const cx = c.getContext("2d");
-      if (cx) cx.drawImage(v, 0, 0, c.width, c.height);
-      resolve(c);
-    };
+    const done = () => resolve(v);
+    v.onloadeddata = done;
+    v.oncanplay = done;
     v.onerror = () => resolve(null);
   });
 }
@@ -98,7 +91,6 @@ export function VideoExporter({
   function drawBackground(ctx: CanvasRenderingContext2D, color: string) {
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, W, H);
-    // 격자
     ctx.strokeStyle = "rgba(255,255,255,0.10)";
     ctx.lineWidth = 1;
     for (let x = 0; x <= W; x += 48) {
@@ -113,7 +105,6 @@ export function VideoExporter({
       ctx.lineTo(W, y);
       ctx.stroke();
     }
-    // 코너 마커
     ctx.strokeStyle = ORANGE;
     ctx.lineWidth = 4;
     const m = 28;
@@ -129,47 +120,41 @@ export function VideoExporter({
   function drawTitle(ctx: CanvasRenderingContext2D) {
     drawBackground(ctx, DARKBLUE);
     ctx.textAlign = "center";
-    // 제목
     ctx.fillStyle = "#fff";
     ctx.font = "bold 72px sans-serif";
     ctx.fillText("KRC 건설공사실록", W / 2, 250);
-    // 주황 라인
     ctx.fillStyle = ORANGE;
     ctx.fillRect(W / 2 - 90, 282, 180, 6);
-    // 구조물명
     ctx.fillStyle = "#fff";
     ctx.font = "bold 44px sans-serif";
     ctx.fillText(meta.structureName, W / 2, 360);
-    // 사업/지구
     ctx.fillStyle = "rgba(255,255,255,0.9)";
     ctx.font = "26px sans-serif";
     const sub = meta.projectName + (meta.districtName ? ` · ${meta.districtName}` : "");
     ctx.fillText(sub, W / 2, 410);
-    // 주소
     ctx.fillStyle = "rgba(255,255,255,0.7)";
     ctx.font = "20px sans-serif";
     ctx.fillText(meta.address, W / 2, 446);
-    // 하단 정보 바
+    // 하단 4칸 정보 바
     ctx.fillStyle = "rgba(0,0,0,0.35)";
     ctx.fillRect(0, H - 70, W, 70);
-    ctx.fillStyle = "rgba(255,255,255,0.55)";
-    ctx.font = "16px sans-serif";
-    ctx.textAlign = "center";
     const cols = [
-      ["공종", meta.workType || meta.typeName || "-"],
+      ["공종", meta.workType || "-"],
       ["시행자", meta.executor || "-"],
-      [meta.contractorCompany ? "시공사" : "구조물", meta.contractorCompany || meta.typeName || "-"],
+      ["시공사", meta.contractorCompany || "-"],
+      ["구조물", meta.typeName || "-"],
     ];
     cols.forEach((c, i) => {
-      const cx = W / 6 + (i * W) / 3;
+      const cx = W / 8 + (i * W) / 4;
+      ctx.textAlign = "center";
       ctx.fillStyle = "rgba(255,255,255,0.5)";
       ctx.font = "15px sans-serif";
       ctx.fillText(c[0], cx, H - 44);
       ctx.fillStyle = "#fff";
       ctx.font = "bold 18px sans-serif";
-      ctx.fillText(c[1], cx, H - 20);
+      const v = wrapText(ctx, c[1], W / 4 - 24)[0] || c[1];
+      ctx.fillText(v, cx, H - 20);
     });
-    // 상단 라벨
     ctx.fillStyle = "rgba(0,0,0,0.3)";
     ctx.fillRect(0, 0, W, 34);
     ctx.fillStyle = "rgba(255,255,255,0.8)";
@@ -205,27 +190,25 @@ export function VideoExporter({
     }
   }
 
-  function drawImageSlide(
+  function drawMediaFrame(
     ctx: CanvasRenderingContext2D,
-    img: HTMLImageElement | HTMLCanvasElement,
+    src: CanvasImageSource,
+    iw: number,
+    ih: number,
     caption: string
   ) {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, W, H);
-    const iw = (img as HTMLImageElement).naturalWidth || (img as HTMLCanvasElement).width;
-    const ih = (img as HTMLImageElement).naturalHeight || (img as HTMLCanvasElement).height;
     const scale = Math.min(W / iw, H / ih);
     const dw = iw * scale;
     const dh = ih * scale;
-    ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
-    // 상단 워터마크
+    ctx.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
     ctx.fillStyle = "rgba(0,51,160,0.85)";
     ctx.fillRect(24, 24, 360, 34);
     ctx.fillStyle = "#fff";
     ctx.font = "bold 18px sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(`KRC 건설공사실록 · ${date}`, 36, 48);
-    // 하단 캡션 바
     const grad = ctx.createLinearGradient(0, H - 90, 0, H);
     grad.addColorStop(0, "rgba(0,0,0,0)");
     grad.addColorStop(1, "rgba(0,0,0,0.75)");
@@ -252,20 +235,18 @@ export function VideoExporter({
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("canvas 미지원");
 
-      // 미리 이미지/영상프레임 로드
-      setMsg("이미지 불러오는 중...");
-      const media: (HTMLImageElement | HTMLCanvasElement | null)[] = [];
+      setMsg("미디어 불러오는 중...");
+      const media: (HTMLImageElement | HTMLVideoElement | null)[] = [];
       for (let i = 0; i < slides.length; i++) {
         const s = slides[i];
         if (s.kind === "image") media[i] = await loadImage(s.src);
-        else if (s.kind === "video") media[i] = await captureVideoFrame(s.src);
+        else if (s.kind === "video") media[i] = await loadVideo(s.src);
         else media[i] = null;
-        setProgress(Math.round(((i + 1) / slides.length) * 20));
+        setProgress(Math.round(((i + 1) / slides.length) * 15));
       }
 
       const stream = canvas.captureStream(FPS);
 
-      // BGM 합성 (선택)
       let audioCtx: AudioContext | null = null;
       if (withBgm) {
         try {
@@ -290,7 +271,7 @@ export function VideoExporter({
           });
           dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
         } catch {
-          // 오디오 실패 무시
+          // ignore
         }
       }
 
@@ -307,38 +288,75 @@ export function VideoExporter({
       });
       recorder.start();
 
-      // 슬라이드별 지속시간(초)
-      const durations = slides.map((s) =>
-        s.kind === "title" ? TITLE_SEC : s.kind === "section" ? SECTION_SEC : IMAGE_SEC
-      );
-      const totalSec = durations.reduce((a, b) => a + b, 0);
+      // 총 길이 추정(진행률용): 영상은 실제 길이 사용
+      const durations = slides.map((s, i) => {
+        if (s.kind === "title") return TITLE_SEC;
+        if (s.kind === "section") return SECTION_SEC;
+        if (s.kind === "image") return IMAGE_SEC;
+        const v = media[i] as HTMLVideoElement | null;
+        return v && v.duration && isFinite(v.duration) ? v.duration : IMAGE_SEC;
+      });
+      const totalSec = durations.reduce((a, b) => a + b, 0) || 1;
       let elapsed = 0;
       const frameMs = 1000 / FPS;
 
       for (let i = 0; i < slides.length; i++) {
         if (cancelRef.current) break;
         const s = slides[i];
-        const dur = durations[i];
-        const frames = Math.max(1, Math.round(dur * FPS));
         setMsg(`녹화 중... (${i + 1}/${slides.length})`);
-        for (let fr = 0; fr < frames; fr++) {
-          if (cancelRef.current) break;
-          if (s.kind === "title") drawTitle(ctx);
-          else if (s.kind === "section") drawSection(ctx, s.label, s.text);
-          else {
-            const m = media[i];
-            if (m) drawImageSlide(ctx, m, s.kind === "image" || s.kind === "video" ? s.caption : "");
-            else {
-              drawBackground(ctx, "#111");
-              ctx.fillStyle = "#fff";
-              ctx.font = "24px sans-serif";
-              ctx.textAlign = "center";
-              ctx.fillText("(미디어를 불러오지 못했습니다)", W / 2, H / 2);
-            }
+
+        if (s.kind === "video" && media[i]) {
+          // 실제 영상 재생하며 프레임 캡처
+          const v = media[i] as HTMLVideoElement;
+          try {
+            v.currentTime = 0;
+            await v.play().catch(() => {});
+          } catch {
+            // ignore
           }
-          await new Promise((r) => setTimeout(r, frameMs));
-          elapsed += 1 / FPS;
-          setProgress(20 + Math.round((elapsed / totalSec) * 78));
+          await new Promise<void>((resolve) => {
+            const tick = () => {
+              if (cancelRef.current || v.ended || (v.duration && v.currentTime >= v.duration - 0.05)) {
+                resolve();
+                return;
+              }
+              const iw = v.videoWidth || W;
+              const ih = v.videoHeight || H;
+              drawMediaFrame(ctx, v, iw, ih, s.caption);
+              elapsed += 1 / FPS;
+              setProgress(15 + Math.round((elapsed / totalSec) * 83));
+              setTimeout(tick, frameMs);
+            };
+            tick();
+          });
+          try {
+            v.pause();
+          } catch {
+            // ignore
+          }
+        } else {
+          // 고정 길이 슬라이드 (title/section/image)
+          const dur = durations[i];
+          const frames = Math.max(1, Math.round(dur * FPS));
+          for (let fr = 0; fr < frames; fr++) {
+            if (cancelRef.current) break;
+            if (s.kind === "title") drawTitle(ctx);
+            else if (s.kind === "section") drawSection(ctx, s.label, s.text);
+            else {
+              const m = media[i] as HTMLImageElement | null;
+              if (m) drawMediaFrame(ctx, m, m.naturalWidth || W, m.naturalHeight || H, s.caption);
+              else {
+                drawBackground(ctx, "#111");
+                ctx.fillStyle = "#fff";
+                ctx.font = "24px sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("(미디어를 불러오지 못했습니다)", W / 2, H / 2);
+              }
+            }
+            await new Promise((r) => setTimeout(r, frameMs));
+            elapsed += 1 / FPS;
+            setProgress(15 + Math.round((elapsed / totalSec) * 83));
+          }
         }
       }
 
@@ -367,8 +385,6 @@ export function VideoExporter({
       }, 4000);
     }
   }
-
-  const hasVideo = slides.some((s) => s.kind === "video");
 
   return (
     <div className="space-y-2 rounded-2xl border border-neutral-200 bg-white p-4">
@@ -411,7 +427,7 @@ export function VideoExporter({
 
       <p className="text-xs text-neutral-400">
         브라우저에서 직접 영상을 만들어 WebM 파일로 저장합니다. 녹화 중 탭을 닫지 마세요.
-        {hasVideo && " 동영상 클립은 대표 화면 한 장으로 포함됩니다."}
+        동영상 클립은 실제 재생되어 포함됩니다(영상 자체 소리는 제외, BGM만 선택 가능).
         {" "}PC 크롬 권장(아이폰은 미지원일 수 있음).
       </p>
     </div>

@@ -1,0 +1,51 @@
+===== PROPS HEAD =====
+export function PhaseRecorder({
+  siteStructureId,
+  structureName,
+  typeName,
+  subTypes,
+  phases,
+  records,
+  assets,
+  videoHref,
+}: {
+  siteStructureId: string;
+  structureName: string;
+  typeName: string;
+  subTypes: SubType[];
+  phases: Phase[];
+  records: Rec[];
+  assets: Asset[];
+  videoHref: string;
+}) {
+  
+
+===== submitInspection =====
+async function submitInspection(action: "submit" | "cancel") {
+    if (action === "submit" && !confirm("이 검측일자 기록을 제출할까요? 제출 후에도 '제출 취소'로 다시 수정할 수 있습니다.")) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/records/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate, action }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || ("처리 실패 (" + res.status + ")"));
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      alert("처리 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
