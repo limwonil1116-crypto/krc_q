@@ -70,9 +70,18 @@ export default async function VideoPage({
       inspectionDate: constructionRecords.inspectionDate,
       title: constructionRecords.title,
       textDescription: constructionRecords.textDescription,
+      status: constructionRecords.status,
     })
     .from(constructionRecords)
     .where(eq(constructionRecords.siteStructureId, structureId));
+
+  const submittedDates = Array.from(
+    new Set(
+      records
+        .filter((r) => r.status === "submitted" && r.inspectionDate)
+        .map((r) => r.inspectionDate as string)
+    )
+  );
 
   const assets = await db
     .select({
@@ -115,7 +124,7 @@ export default async function VideoPage({
           ⬇ 이 구조물 전체 다운로드(ZIP)
         </a>
       </div>
-      <VideoComposer meta={meta} phases={phases} records={records} assets={assets} dates={dates} />
+      <VideoComposer meta={meta} phases={phases} records={records} assets={assets} dates={dates} siteStructureId={ss.id} submittedDates={submittedDates} />
     </div>
   );
 }

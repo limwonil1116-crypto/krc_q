@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { VideoExporter } from "@/components/record/video-exporter";
 
 type Phase = { id: string; code: string; name: string; sortOrder: number };
-type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null };
+type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null; status?: string };
 type Asset = {
   id: string;
   phaseTemplateId: string;
@@ -42,12 +42,16 @@ export function VideoComposer({
   records,
   assets,
   dates,
+  siteStructureId,
+  submittedDates = [],
 }: {
   meta: Meta;
   phases: Phase[];
   records: Rec[];
   assets: Asset[];
   dates: string[];
+  siteStructureId?: string;
+  submittedDates?: string[];
 }) {
   const [date, setDate] = useState(dates[0] || "");
   const [idx, setIdx] = useState(0);
@@ -417,6 +421,9 @@ export function VideoComposer({
             }}
             date={date}
             fileBase={`KRC_${meta.structureName || "record"}`}
+            siteStructureId={siteStructureId}
+            canSave={!!siteStructureId}
+            autoSave={!!siteStructureId && submittedDates.includes(date)}
           />
         </div>
       )}
