@@ -101,11 +101,6 @@ export function StructureManager({
   const [editLoc, setEditLoc] = useState("");
   const [editErr, setEditErr] = useState("");
   const [editLoading, setEditLoading] = useState(false);
-  const [editMapVal, setEditMapVal] = useState<{ lat: number | null; lng: number | null; address: string }>({
-    lat: null,
-    lng: null,
-    address: "",
-  });
 
   // 구조물 -> 색
   const colorOf = useMemo(() => {
@@ -160,7 +155,6 @@ export function StructureManager({
     setEditId(s.id);
     setEditName(s.name);
     setEditLoc(s.locationDescription ?? "");
-    setEditMapVal({ lat: null, lng: null, address: s.locationDescription ?? "" });
     setEditErr("");
   }
 
@@ -308,21 +302,8 @@ export function StructureManager({
                         <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
                       </div>
                       <div className="space-y-1">
-                        <Label>위치 설명 (지도에서 선택)</Label>
-                        <Input
-                          value={editLoc}
-                          onChange={(e) => setEditLoc(e.target.value)}
-                          placeholder="지도를 클릭하거나 주소를 검색하세요 (직접 입력도 가능)"
-                        />
-                        <div className="pt-2">
-                          <KakaoMapPicker
-                            value={editMapVal}
-                            onChange={(v) => {
-                              setEditMapVal(v);
-                              setEditLoc(v.address);
-                            }}
-                          />
-                        </div>
+                        <Label>위치 설명</Label>
+                        <Input value={editLoc} onChange={(e) => setEditLoc(e.target.value)} />
                       </div>
                       {editErr && <p className="text-sm text-red-600">{editErr}</p>}
                       <div className="flex gap-2">
