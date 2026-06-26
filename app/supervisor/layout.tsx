@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
+import Link from "next/link";
 import { BottomNav } from "@/components/kit/bottom-nav";
 
 export default async function RoleLayout({ children }: { children: React.ReactNode }) {
@@ -16,7 +17,7 @@ export default async function RoleLayout({ children }: { children: React.ReactNo
           <span className="hidden text-sm text-white/80 sm:inline">· 공감소장</span>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span>{session.user.name}</span>
+          <Link href="/mypage" className="rounded bg-white/15 px-3 py-1 hover:bg-white/25">{session.user.name} 님</Link>
           <form
             action={async () => {
               "use server";
