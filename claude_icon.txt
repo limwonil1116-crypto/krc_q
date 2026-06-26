@@ -1,0 +1,18 @@
+
+
+===== components\site\structure-manager.tsx  (PIPELINE:True 🛢️:True) =====
+kit/kakao-map-picker";
+
+const CAT_ICON: Record<string, string> = {
+  FILLDAM: "🏞️",
+  TUNNEL: "🚇",
+  WEIR: "🌊",
+  PUMP: "⚙️",
+  CHANNEL: "💧",
+  PIPELINE: "🛢️",
+  LANDFILL: "⛰️",
+  LANDADJ: "🟫",
+  FARMROAD: "🛣️",
+  CULVERT: "🕳️",
+  SLUICEGATE: "🚪",
+};

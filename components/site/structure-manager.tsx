@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -11,13 +12,37 @@ import { SelectableCard } from "@/components/kit/selectable-card";
 import { ActionButton } from "@/components/kit/buttons";
 import { KakaoMapPicker } from "@/components/kit/kakao-map-picker";
 
-const CAT_ICON: Record<string, string> = {
+// PE강관(송수관로) 아이콘 - 관 단면 + 몸통
+function PipeIcon() {
+  return (
+    <svg viewBox="0 0 64 64" className="h-[1em] w-[1em]" aria-hidden="true">
+      {/* 관 몸통 */}
+      <path d="M20 18 L52 30 L52 42 L20 30 Z" fill="#90A4AE" />
+      <path d="M20 30 L52 42 L52 46 L20 34 Z" fill="#607D8B" />
+      {/* 관 단면 바깥 타원 */}
+      <ellipse cx="20" cy="28" rx="9" ry="14" fill="#B0BEC5" stroke="#546E7A" strokeWidth="2" />
+      {/* 관 두께 */}
+      <ellipse cx="20" cy="28" rx="5.5" ry="9.5" fill="#37474F" />
+      {/* 내부 구멍(물 흐름 파랑) */}
+      <ellipse cx="20" cy="28" rx="4" ry="7.5" fill="#0033A0" />
+      <ellipse cx="20" cy="28" rx="4" ry="7.5" fill="url(#pipeWater)" opacity="0.6" />
+      <defs>
+        <linearGradient id="pipeWater" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#4FC3F7" />
+          <stop offset="100%" stopColor="#0033A0" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+const CAT_ICON: Record<string, React.ReactNode> = {
   FILLDAM: "🏞️",
   TUNNEL: "🚇",
   WEIR: "🌊",
   PUMP: "⚙️",
   CHANNEL: "💧",
-  PIPELINE: "🛢️",
+  PIPELINE: <PipeIcon />,
   LANDFILL: "⛰️",
   LANDADJ: "🟫",
   FARMROAD: "🛣️",
