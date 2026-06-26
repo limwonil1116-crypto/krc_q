@@ -84,7 +84,16 @@ export async function POST(req: Request) {
     const mimeType = file.type || (assetType === "video" ? "video/mp4" : "image/jpeg");
     const cleanName = (file.name || "upload").replace(/[\\/]/g, "_");
     const driveName = `${Date.now()}_${cleanName}`;
-    const up = await uploadToDrive({ name: driveName, mimeType, buffer });
+    // 폴더 구조: 현장(사업명_지구명) > 구조물명 > 검측일자
+    const siteForFolder = await db
+      .select({ projectName: constructionSites.projectName, districtName: constructionSites.districtName })
+      .from(constructionSites)
+      .where(eq(constructionSites.id, ss.siteId))
+      .limit(1);
+    const sf = siteForFolder[0];
+    const siteFolder = sf ? `${sf.projectName}_${sf.districtName}` : ss.siteId;
+    const folderPath = [siteFolder, ss.name || siteStructureId, inspectionDate];
+    const up = await uploadToDrive({ name: driveName, mimeType, buffer, folderPath });
 
     const [asset] = await db
       .insert(recordAssets)
