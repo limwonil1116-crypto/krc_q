@@ -1,0 +1,402 @@
+
+
+===== 타입/상단 =====
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Label } from "@/components/ui/label";
+import { ActionButton } from "@/components/kit/buttons";
+import { Button } from "@/components/ui/button";
+
+type Phase = {
+  id: string;
+  code: string;
+  name: string;
+  guideText: string | null;
+  sortOrder: number;
+  minPhotoCount: number;
+  minVideoCount: number;
+  isRequired: boolean;
+};
+type SubType = { id: string; name: string };
+type Rec = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  title: string | null;
+  textDescription: string | null;
+  inspectionContent: string | null;
+  inspectionPartFromMain: number | null;
+  inspectionPartFromSub: number | null;
+  inspectionPartToMain: number | null;
+  inspectionPartToSub: number | null;
+  voiceMemoText: string | null;
+  notApplicable: boolean;
+  notApplicableReason: string | null;
+  status: string;
+};
+type Asset = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  assetType: string;
+  fileName: string;
+  mimeType: string;
+};
+
+const GUIDE_IMG = new Set(["F1", "F2", "F3", "F4", "F5"]);
+const WD = ["일", "월", "화", "수", "목", "금", "토"];
+
+function ymd(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function parseYmd(s: string) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function addDays(s: string, n: number) {
+  const d = parseYmd(s);
+  d.setDate(d.getDate() + n);
+  return ymd(d);
+}
+function todayStr() {
+  return ymd(new Date());
+}
+
+function Calendar({
+  selected,
+  marked,
+  submitted,
+  onSelect,
+}: {
+  selected: string;
+  marked: Set<string>;
+  submitted: Set<string>;
+  onSelect: (d: string) => void;
+}) {
+  const init = selected ? parseYmd(selected) : new Date();
+  const [vy, setVy] = useState(init.getFullYear());
+  const [vm, setVm] = useState(init.getMonth());
+
+  useEffect(() => {
+    if (selected) {
+      const d = parseYmd(selected);
+      setVy(d.getFullYear());
+      setVm(d.getMonth());
+    }
+  }, [selected]);
+
+  const startWeekday = new Date(vy, vm, 1).getDay();
+  const daysInMonth = new Date(vy, vm + 1, 0).getDate();
+  const today = todayStr();
+  const cells: (string | null)[] = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(ymd(new Date(vy, vm, d)));
+
+  function prevMonth() {
+    if (vm === 0) {
+      setVy(vy - 1);
+      setVm(11);
+    } else setVm(vm - 1);
+  }
+  function nextMonth() {
+    if (vm === 11) {
+      setVy(vy + 1);
+      setVm(0);
+    } else setVm(vm + 1);
+  }
+
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <button type="button" onClick={prevMonth} className="rounded-md px-3 py-1 text-lg text-[#0033A0] hover:bg-neutral-100">
+          ◀
+        </button>
+        <div className="font-semibold text-[#0033A0]">
+          {vy}년 {vm + 1}월
+        </div>
+        <button type="button" onClick={nextMonth} className="rounded-md px-3 py-1 text-lg text-[#0033A0] hover:bg-neutral-100">
+          ▶
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+        {WD.map((w, i) => (
+          <div key={w} className={i === 0 ? "text-red-500" : i === 6 ? "text-blue-500" : "text-neutral-400"}>
+            {w}
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {cells.map((c, i) =>
+          c === null ? (
+            <div key={i} />
+          ) : (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelect(c)}
+              className={
+                "flex min-h-[56px] flex-col gap-1 rounded-lg p-1 text-left hover:bg-neutral-100 " +
+                (c === selected ? "ring-2 ring-[#0033A0]" : "")
+              }
+            >
+              <span
+                className={
+                  "flex h-5 w-5 items-center justify-center rounded-full text-[11px] " +
+                  (c === selected
+                    ? "bg-[#0033A0] font-bold text-white"
+                    : c === today
+                    ? "font-bold text-[#0033A0]"
+                    : "text-neutral-700")
+                }
+              >
+                {Number(c.split("-")[2])}
+              </span>
+              {submitted.has(c) ? (
+                <span className="flex items-center gap-1 truncate rounded bg-green-100 px-1 py-0.5 text-[9px] font-semibold text-green-700">
+                  <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-green-500" />
+                  제출완료
+                </span>
+              ) : marked.has(c) ? (
+                <span className="flex items-center gap-1 truncate rounded bg-orange-100 px-1 py-0.5 text-[9px] font-semibold text-orange-700">
+                  <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-orange-500" />
+                  기록중
+                </span>
+              ) : null}
+            </button>
+          )
+        )}
+      </div>
+      <div className="mt-2 flex items-center justify-center gap-3 text-xs text-neutral-500">
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded-full bg-orange-500" /> 기록중
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> 제출완료
+        </span>
+      </div>
+    </div>
+  );
+}
+
+
+
+===== around 'assetType === "photo"' =====
+</span>;
+    if (r.notApplicable) return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">해당없음</span>;
+    return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">기록됨</span>;
+  }
+
+  const p = phases[step];
+  const r = p ? recMap.get(p.id) : undefined;
+  const list = p ? assetMap.get(p.id) || [] : [];
+  const photos = list.filter((a) => a.assetType === "photo");
+  const videos = list.filter((a) => a.assetType === "video");
+  const uploading = p ? busy === p.id : false;
+  const isLast = step === phases.length - 1;
+
+  return (
+    <div className="space-y-4 pb-4">
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-bold text-[#0033A0]">{structureName}</h1>
+          <p className="text-sm text-neutral-500">{typeName} · 세부항목별 검측 기록</p>
+        </div>
+        <Link
+          href={videoHref}
+          className="whitespace-nowrap rounded-md bg-[#FE5000] px-3 py-1.5 text-sm 
+
+===== around 'phases.map' =====
+text-center text-sm text-neutral-500">
+          먼저 세부 항목을 선택하세요.
+        </div>
+      ) : phases.length === 0 || !p ? (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
+          단계 템플릿이 없습니다.
+        </div>
+      ) : (
+        <>
+          {/* 단계 탭 */}
+          <div className="grid grid-cols-5 gap-1.5">
+            {phases.map((ph, idx) => {
+              const done = phaseDone(ph);
+              const active = idx === step;
+              return (
+                <button
+                  key={ph.id}
+                  type="button"
+                  onClick={() => goStep(idx)}
+                  className={
+                    "flex flex-col items-center gap-1.5 rounded-xl border px-0.5 py-2.5 text-center transition " +
+                    (active
+                      ? "border-[#0033A0] bg-[#0033A0] text-white shadow"
+                      : "border-neutral-200 bg-white text-neutral-600 hover:border-[#00
+
+===== around '.map((p' =====
+enter text-sm text-neutral-500">
+          먼저 세부 항목을 선택하세요.
+        </div>
+      ) : phases.length === 0 || !p ? (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
+          단계 템플릿이 없습니다.
+        </div>
+      ) : (
+        <>
+          {/* 단계 탭 */}
+          <div className="grid grid-cols-5 gap-1.5">
+            {phases.map((ph, idx) => {
+              const done = phaseDone(ph);
+              const active = idx === step;
+              return (
+                <button
+                  key={ph.id}
+                  type="button"
+                  onClick={() => goStep(idx)}
+                  className={
+                    "flex flex-col items-center gap-1.5 rounded-xl border px-0.5 py-2.5 text-center transition " +
+                    (active
+                      ? "border-[#0033A0] bg-[#0033A0] text-white shadow"
+                      : "border-neutral-200 bg-white text-neutral-600 hover:border-[#0033A0]"
+
+===== around 'textDescription' =====
+ "@/components/ui/button";
+
+type Phase = {
+  id: string;
+  code: string;
+  name: string;
+  guideText: string | null;
+  sortOrder: number;
+  minPhotoCount: number;
+  minVideoCount: number;
+  isRequired: boolean;
+};
+type SubType = { id: string; name: string };
+type Rec = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  title: string | null;
+  textDescription: string | null;
+  inspectionContent: string | null;
+  inspectionPartFromMain: number | null;
+  inspectionPartFromSub: number | null;
+  inspectionPartToMain: number | null;
+  inspectionPartToSub: number | null;
+  voiceMemoText: string | null;
+  notApplicable: boolean;
+  notApplicableReason: string | null;
+  status: string;
+};
+type Asset = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  assetType: string;
+  fileName: string;
+  mimeType: string;
+};
+
+const GUIDE_IMG = new Set(["F1", "F2", "F3", "F4", "F5"]);
+const WD = ["일",
+
+===== around '업로드' =====
+ppend("inspectionDate", selectedDate);
+      fd.append("assetType", assetType);
+      fd.append("file", file);
+      const res = await fetch("/api/records/assets", { method: "POST", body: fd });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || ("업로드 실패 (" + res.status + ")"));
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      alert("업로드 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function removeAsset(id: string) {
+    if (!confirm("이 파일을 삭제할까요?")) return;
+    try {
+      const res = await fetch(`/api/assets/${id}`, { method: "DELETE" });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "삭제 실패")
+
+===== around '사진' =====
+#0033A0] text-sm font-bold text-white">
+                  {step + 1}
+                </span>
+                <span className="text-lg font-bold text-[#0A2540]">{p.name}</span>
+              </div>
+              {statusBadge(r)}
+            </div>
+
+            <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+              <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>
+              <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>
+              <button
+                type="button"
+                className="rounded bg-[#EAF0FB] px-1.5 py-0.5 text-[#0033A0]"
+                onClick={() => setGuideOpen((v) => !v)}
+              >
+                촬영 가이드 보기 {guideOpen ? "▲" : "▼"}
+              </button>
+            </div>
+
+            {guideOpen && (
+              <div className="mt-2 space-y-2">
+                {GUIDE_IMG.has(p.code) && (
+                  // eslint-disable-next-line @
+
+===== return 초반 =====
+return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <button type="button" onClick={prevMonth} className="rounded-md px-3 py-1 text-lg text-[#0033A0] hover:bg-neutral-100">
+          ◀
+        </button>
+        <div className="font-semibold text-[#0033A0]">
+          {vy}년 {vm + 1}월
+        </div>
+        <button type="button" onClick={nextMonth} className="rounded-md px-3 py-1 text-lg text-[#0033A0] hover:bg-neutral-100">
+          ▶
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+        {WD.map((w, i) => (
+          <div key={w} className={i === 0 ? "text-red-500" : i === 6 ? "text-blue-500" : "text-neutral-400"}>
+            {w}
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {cells.map((c, i) =>
+          c === null ? (
+            <div key={i} />
+          ) : (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelect(c)}
+              className={
+                "flex min-h-[56px] flex-col gap-1 rounded-lg p-1 text-left hove

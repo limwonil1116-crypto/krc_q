@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { ActionButton } from "@/components/kit/buttons";
 import { Button } from "@/components/ui/button";
+import { InspectHelper } from "@/components/record/inspect-helper";
 
 type Phase = {
   id: string;
@@ -588,6 +589,15 @@ export function PhaseRecorder({
               >
                 촬영 가이드 보기 {guideOpen ? "▲" : "▼"}
               </button>
+            </div>
+
+            <div className="mt-2">
+              <InspectHelper
+                assetIds={photos.map((a) => a.id)}
+                phaseName={p.name}
+                structureTypeName={typeName}
+                text={r?.textDescription || ""}
+              />
             </div>
 
             {guideOpen && (
