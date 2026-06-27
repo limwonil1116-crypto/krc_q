@@ -44,6 +44,8 @@ export function VideoComposer({
   dates,
   siteStructureId,
   submittedDates = [],
+  initialDate = "",
+  autosaveOnLoad = false,
 }: {
   meta: Meta;
   phases: Phase[];
@@ -52,8 +54,10 @@ export function VideoComposer({
   dates: string[];
   siteStructureId?: string;
   submittedDates?: string[];
+  initialDate?: string;
+  autosaveOnLoad?: boolean;
 }) {
-  const [date, setDate] = useState(dates[0] || "");
+  const [date, setDate] = useState((initialDate && dates.includes(initialDate) ? initialDate : dates[0]) || "");
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -423,7 +427,7 @@ export function VideoComposer({
             fileBase={`KRC_${meta.structureName || "record"}`}
             siteStructureId={siteStructureId}
             canSave={!!siteStructureId}
-            autoSave={!!siteStructureId && submittedDates.includes(date)}
+            autoSave={!!siteStructureId && (submittedDates.includes(date) || (autosaveOnLoad && date === initialDate))}
           />
         </div>
       )}

@@ -273,6 +273,11 @@ export function PhaseRecorder({
         alert(data.error || ("처리 실패 (" + res.status + ")"));
         return;
       }
+      if (action === "submit" && videoHref) {
+        // 제출 완료 -> 영상 미리보기로 이동하여 자동 생성·드라이브 저장
+        router.push(`${videoHref}?date=${encodeURIComponent(selectedDate)}&autosave=1`);
+        return;
+      }
       router.refresh();
     } catch (e) {
       alert("처리 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));

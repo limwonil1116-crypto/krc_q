@@ -16,10 +16,15 @@ export const dynamic = "force-dynamic";
 
 export default async function VideoPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; structureId: string }>;
+  searchParams: Promise<{ date?: string; autosave?: string }>;
 }) {
   const { id, structureId } = await params;
+  const sp = await searchParams;
+  const initialDate = sp.date || "";
+  const autosaveFlag = sp.autosave === "1";
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -124,7 +129,7 @@ export default async function VideoPage({
           ⬇ 이 구조물 전체 다운로드(ZIP)
         </a>
       </div>
-      <VideoComposer meta={meta} phases={phases} records={records} assets={assets} dates={dates} siteStructureId={ss.id} submittedDates={submittedDates} />
+      <VideoComposer meta={meta} phases={phases} records={records} assets={assets} dates={dates} siteStructureId={ss.id} submittedDates={submittedDates} initialDate={initialDate} autosaveOnLoad={autosaveFlag} />
     </div>
   );
 }
