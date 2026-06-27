@@ -13,6 +13,9 @@ function isAndroid(ua: string) {
 function isIOS(ua: string) {
   return /iPhone|iPad|iPod/i.test(ua);
 }
+function isSafari(ua: string) {
+  return /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|KAKAOTALK|FBAN|FBAV|Instagram|Line|NAVER|DaumApps/i.test(ua);
+}
 function isStandalone() {
   if (typeof window === "undefined") return false;
   return (
@@ -21,10 +24,21 @@ function isStandalone() {
   );
 }
 
+function chromeIntent(href: string) {
+  const url = href.replace(/^https?:\/\//, "");
+  return (
+    "intent://" +
+    url +
+    "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" +
+    encodeURIComponent(href) +
+    ";end"
+  );
+}
+
 export function InstallHelper() {
   const [ua, setUa] = useState("");
-  const [showInApp, setShowInApp] = useState(false);
-  const [iosGuide, setIosGuide] = useState(false);
+  const [iosSheet, setIosSheet] = useState(false);
+  const [iosInApp, setIosInApp] = useState(false);
   const [androidGuide, setAndroidGuide] = useState(false);
   const [deferred, setDeferred] = useState<BIPEvent | null>(null);
   const [installed, setInstalled] = useState(false);
@@ -33,24 +47,23 @@ export function InstallHelper() {
   useEffect(() => {
     const u = navigator.userAgent || "";
     setUa(u);
-    if (isStandalone()) return; // 이미 설치 실행 중이면 안내 불필요
-    if (isInApp(u)) {
-      setShowInApp(true);
-      // 안드로이드: 카카오 등 인앱이면 크롬으로 자동 열기 시도
-      if (isAndroid(u)) {
-        try {
-          const url = window.location.href.replace(/^https?:\/\//, "");
-          const intent =
-            "intent://" +
-            url +
-            "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" +
-            encodeURIComponent(window.location.href) +
-            ";end";
-          window.location.href = intent;
-        } catch {
-          // 무시 (버튼으로 수동 시도 가능)
-        }
+    if (isStandalone()) return;
+
+    if (isInApp(u) && isAndroid(u)) {
+      try {
+        window.location.href = chromeIntent(window.location.href);
+      } catch {
+        // fallback to install button
       }
+      return;
+    }
+
+    if (isInApp(u) && isIOS(u)) {
+      setIosInApp(true);
+    }
+
+    if (isIOS(u) && isSafari(u) && !isInApp(u)) {
+      setIosSheet(true);
     }
 
     const onBIP = (e: Event) => {
@@ -67,14 +80,11 @@ export function InstallHelper() {
   }, []);
 
   function openInChrome() {
-    const url = window.location.href.replace(/^https?:\/\//, "");
-    const intent =
-      "intent://" +
-      url +
-      "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" +
-      encodeURIComponent(window.location.href) +
-      ";end";
-    window.location.href = intent;
+    try {
+      window.location.href = chromeIntent(window.location.href);
+    } catch {
+      // ignore
+    }
   }
 
   async function copyUrl() {
@@ -83,70 +93,90 @@ export function InstallHelper() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // 클립보드 미지원
+      // ignore
     }
   }
 
   async function install() {
-    if (!deferred) {
-      if (isIOS(ua)) setIosGuide(true);
-      else if (isAndroid(ua)) setAndroidGuide(true);
+    if (deferred) {
+      await deferred.prompt();
+      await deferred.userChoice;
+      setDeferred(null);
       return;
     }
-    await deferred.prompt();
-    await deferred.userChoice;
-    setDeferred(null);
+    if (isIOS(ua)) setIosSheet(true);
+    else if (isAndroid(ua)) setAndroidGuide(true);
   }
 
   if (isStandalone() || installed) return null;
 
   return (
     <>
-      {/* 인앱 브라우저 안내 배너 */}
-      {showInApp && (
+      {iosInApp && (
         <div className="fixed inset-x-0 top-0 z-50 bg-[#0033A0] px-4 py-3 text-white shadow-lg">
           <div className="mx-auto flex max-w-sm flex-col gap-2">
             <p className="text-sm font-semibold">
-              ⚠️ 카카오톡 등 인앱 브라우저에서는 일부 기능이 제한됩니다.
+              📱 Safari로 열어야 홈 화면에 추가할 수 있어요.
             </p>
-            {isAndroid(ua) ? (
-              <button
-                onClick={openInChrome}
-                className="rounded-md bg-white px-3 py-2 text-sm font-bold text-[#0033A0]"
-              >
-                크롬으로 열기
-              </button>
-            ) : (
-              <div className="space-y-1">
-                <p className="text-xs text-white/90">
-                  오른쪽 위 ··· 메뉴 → <b>“다른 브라우저로 열기”</b> 또는 <b>Safari</b>로 열어주세요.
-                </p>
-                <button
-                  onClick={copyUrl}
-                  className="rounded-md bg-white px-3 py-2 text-sm font-bold text-[#0033A0]"
-                >
-                  {copied ? "주소 복사됨!" : "주소 복사하기"}
-                </button>
-              </div>
-            )}
+            <p className="text-xs text-white/90">
+              오른쪽 위 <b>···</b> 또는 하단 메뉴 → <b>“Safari로 열기”</b>를 눌러주세요.
+            </p>
+            <button
+              onClick={copyUrl}
+              className="rounded-md bg-white px-3 py-2 text-sm font-bold text-[#0033A0]"
+            >
+              {copied ? "주소 복사됨! Safari에 붙여넣기" : "주소 복사하기"}
+            </button>
           </div>
         </div>
       )}
 
-      {/* 설치 버튼 (우상단 고정) */}
-      {!showInApp && (deferred || isIOS(ua) || isAndroid(ua)) && (
-        <div className="fixed bottom-4 right-3 z-50 flex flex-col items-end gap-1">
+      {iosSheet && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4" onClick={() => setIosSheet(false)}>
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/apple-touch-icon.png" alt="앱 아이콘" className="h-12 w-12 rounded-xl" />
+              <div>
+                <div className="font-bold text-[#0A2540]">홈 화면에 추가</div>
+                <div className="text-xs text-neutral-500">KRC 건설공사실록을 앱처럼 사용하세요</div>
+              </div>
+            </div>
+            <ol className="space-y-2 text-sm text-neutral-700">
+              <li className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0033A0] text-xs font-bold text-white">1</span>
+                Safari 하단의 <b>공유 버튼</b> <span className="inline-block">⬆️</span> 을 누릅니다
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0033A0] text-xs font-bold text-white">2</span>
+                <b>“홈 화면에 추가”</b> 를 선택합니다
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0033A0] text-xs font-bold text-white">3</span>
+                오른쪽 위 <b>“추가”</b> 를 누르면 완료!
+              </li>
+            </ol>
+            <button
+              onClick={() => setIosSheet(false)}
+              className="mt-4 w-full rounded-lg bg-[#0033A0] py-2.5 text-sm font-bold text-white"
+            >
+              확인했어요
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!iosInApp && (deferred || isIOS(ua) || isAndroid(ua)) && (
+        <div className="fixed bottom-4 right-3 z-40 flex flex-col items-end gap-1">
           <button
             onClick={install}
             className="flex items-center gap-1.5 rounded-full bg-[#FE5000] px-3 py-2 text-xs font-bold text-white shadow-lg ring-2 ring-white/50 hover:bg-[#E04800]"
           >
             📲 앱 설치
           </button>
-          {iosGuide && (
-            <p className="max-w-[200px] rounded-lg bg-black/70 px-2 py-1 text-right text-[11px] text-white">
-              Safari 하단 <b>공유</b> → <b>“홈 화면에 추가”</b>
-            </p>
-          )}
           {androidGuide && (
             <p className="max-w-[210px] rounded-lg bg-black/70 px-2 py-1 text-right text-[11px] text-white">
               크롬 우측 상단 <b>⋮</b> → <b>“앱 설치”</b> 또는 <b>“홈 화면에 추가”</b>
