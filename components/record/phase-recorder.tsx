@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ActionButton } from "@/components/kit/buttons";
 import { Button } from "@/components/ui/button";
 import { InspectHelper } from "@/components/record/inspect-helper";
+import { PhotoEditor } from "@/components/record/photo-editor";
 
 type Phase = {
   id: string;
@@ -204,6 +205,7 @@ export function PhaseRecorder({
 
   const [subTypeId, setSubTypeId] = useState<string>(subTypes[0]?.id || "");
   const [selectedDate, setSelectedDate] = useState<string>(todayStr());
+  const [editTarget, setEditTarget] = useState<{ phaseId: string; file: File } | null>(null);
   const [step, setStep] = useState(0); // 현재 단계 탭 인덱스
   const [editing, setEditing] = useState(false); // 텍스트 기록 작성 모드
   const [guideOpen, setGuideOpen] = useState(false);
@@ -467,6 +469,17 @@ export function PhaseRecorder({
 
   return (
     <div className="space-y-4 pb-4">
+      {editTarget && (
+        <PhotoEditor
+          file={editTarget.file}
+          onCancel={() => setEditTarget(null)}
+          onDone={(edited) => {
+            const t = editTarget;
+            setEditTarget(null);
+            if (t) upload(t.phaseId, "photo", edited);
+          }}
+        />
+      )}
       <div className="flex items-end justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold text-[#0033A0]">{structureName}</h1>
@@ -629,7 +642,7 @@ export function PhaseRecorder({
                     disabled={uploading}
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) upload(p.id, "photo", f);
+                      if (f) setEditTarget({ phaseId: p.id, file: f });
                       e.target.value = "";
                     }}
                   />

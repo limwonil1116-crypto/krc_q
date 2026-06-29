@@ -1,0 +1,81 @@
+
+
+===== async function upload =====
+async function upload(phaseId: string, assetType: "photo" | "video", file: File) {
+    setBusy(phaseId);
+    try {
+      const fd = new FormData();
+      fd.append("siteStructureId", siteStructureId);
+      fd.append("subTypeId", subTypeId);
+      fd.append("phaseTemplateId", phaseId);
+      fd.append("inspectionDate", selectedDate);
+      fd.append("assetType", assetType);
+      fd.append("file", file);
+      const res = await fetch("/api/records/assets", { method: "POST", body: fd });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || ("업로드 실패 (" + res.status + ")"));
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      alert("업로드 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+===== file input 영역 =====
+<label className={uploadBtn}>
+                  📷 사진 추가
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) upload(p.id, "photo", f);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+
+===== 'assetType' 주변 =====
+tApplicable: boolean;
+  notApplicableReason: string | null;
+  status: string;
+};
+type Asset = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  assetType: string;
+  fileName: string;
+  mimeType: string;
+};
+
+const GUIDE_IMG = new Set(["F1", "F2", "F3", "F4", "F5"]);
+const WD = ["일", "월", "화", "수", "목", "금", "토"];
+
+function ymd(d: Date) {
+  ret
+
+===== 'accept="image' 주변 =====
+div className="flex flex-wrap items-center gap-2">
+                <label className={uploadBtn}>
+                  📷 사진 추가
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+           
