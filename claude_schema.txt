@@ -38,6 +38,7 @@ export const users = pgTable("users", {
   kakaoId: varchar("kakao_id", { length: 64 }),
   name: varchar("name", { length: 80 }).notNull(),
   phone: varchar("phone", { length: 30 }),
+  branch: varchar("branch", { length: 50 }),
   role: text("role").$type<"contractor" | "supervisor" | "client" | "admin">().notNull(),
   status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
@@ -98,6 +99,9 @@ export const constructionSites = pgTable("construction_sites", {
   siteManagerName: varchar("site_manager_name", { length: 80 }),
   siteManagerPhone: varchar("site_manager_phone", { length: 30 }),
   siteManagerEmail: varchar("site_manager_email", { length: 255 }),
+  contractorLogoDriveId: text("contractor_logo_drive_id"),
+  contractorLogoName: varchar("contractor_logo_name", { length: 255 }),
+  contractorCompany: varchar("contractor_company", { length: 150 }),
   address: text("address").notNull(),
   lat: numeric("lat", { precision: 10, scale: 7 }),
   lng: numeric("lng", { precision: 10, scale: 7 }),
@@ -204,9 +208,58 @@ function driveClient() {
   return google.drive({ version: "v3", auth: oauth2 });
 }
 
-export async function uploadToDrive(params: { name: string; mimeType: string; buffer: Buffer }) {
+type Drive = ReturnType<typeof driveClient>;
+
+function sanitize(name: string) {
+  return (name || "untitled").replace(/['\\]/g, " ").replace(/\s+/g, " ").trim().slice(0, 120) || "untitled";
+}
+
+async function ensureFolder(drive: Drive, name: string, parentId: string): Promise<string> {
+  const safe = sanitize(name);
+  const q = [
+    "mimeType='application/vnd.google-apps.folder'",
+    "trashed=false",
+    `name='${safe.replace(/'/g, "\\'")}'`,
+    `'${parentId}' in parents`,
+  ].join(" and ");
+  const list = await drive.files.list({ q, fields: "files(id,name)", pageSize: 1 });
+  const found = list.data.files?.[0];
+  if (found?.id) return found.id;
+  const created = await drive.files.create({
+    requestBody: {
+      name: safe,
+      mimeType: "application/vnd.google-apps.folder",
+      parents: [parentId],
+    },
+    fields: "id",
+  });
+  return created.data.id as string;
+}
+
+export async function ensureFolderPath(names: string[]): Promise<string | undefined> {
+  const root = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  if (!root) return undefined;
   const drive = driveClient();
-  const folder = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  let parent = root;
+  for (const n of names) {
+    if (!n) continue;
+    parent = await ensureFolder(drive, n, parent);
+  }
+  return parent;
+}
+
+export async function uploadToDrive(params: {
+  name: string;
+  mimeType: string;
+  buffer: Buffer;
+  folderPath?: string[];
+}) {
+  const drive = driveClient();
+  let folder: string | undefined = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  if (params.folderPath && params.folderPath.length > 0) {
+    const target = await ensureFolderPath(params.folderPath);
+    if (target) folder = target;
+  }
   const res = await drive.files.create({
     requestBody: { name: params.name, parents: folder ? [folder] : undefined },
     media: { mimeType: params.mimeType, body: Readable.from(params.buffer) },
@@ -244,9 +297,21 @@ const PROJECT_TYPES = [
   "다목적용수", "체계재편", "논범용화", "배수개선", "경지정리", "대행위탁사업",
   "방조제개보수", "수리시설개보수", "수질개선", "지역개발", "기타",
 ];
-const EXECUTORS = [
-  "천안지사", "공주지사", "보령지사", "아산지사", "서산태안지사", "논산지사",
-  "세종대전금산지사", "부여지사", "서천지사", "청양지사", "홍성지사", "예산지사", "당진지사",
+const EXECUTORS: { value: string; label: string }[] = [
+  { value: "본부내근", label: "충남본부 내근" },
+  { value: "천안", label: "천안지사" },
+  { value: "공주", label: "공주지사" },
+  { value: "보령", label: "보령지사" },
+  { value: "아산", label: "아산지사" },
+  { value: "서산태안", label: "서산태안지사" },
+  { value: "논산", label: "논산지사" },
+  { value: "세종대전금산", label: "세종대전금산지사" },
+  { value: "부여", label: "부여지사" },
+  { value: "서천", label: "서천지사" },
+  { value: "청양", label: "청양지사" },
+  { value: "홍성", label: "홍성지사" },
+  { value: "예산", label: "예산지사" },
+  { value: "당진", label: "당진지사" },
 ];
 const WORK_TYPES = ["철근콘크리트", "토목", "건축", "조경", "기타"];
 
@@ -268,6 +333,8 @@ type InitialSite = {
   lng?: number | null;
   startedOn?: string | null;
   endedOn?: string | null;
+  contractorLogoName?: string | null;
+  contractorCompany?: string | null;
 };
 
 type Form = {
@@ -280,6 +347,7 @@ type Form = {
   supervisorName: string;
   supervisorPhone: string;
   supervisorEmail: string;
+  contractorCompany: string;
   siteManagerName: string;
   siteManagerPhone: string;
   siteManagerEmail: string;
@@ -310,6 +378,7 @@ function buildInitial(initial?: InitialSite): Form {
     supervisorName: initial?.supervisorName ?? "",
     supervisorPhone: initial?.supervisorPhone ?? "",
     supervisorEmail: initial?.supervisorEmail ?? "",
+    contractorCompany: initial?.contractorCompany ?? "",
     siteManagerName: initial?.siteManagerName ?? "",
     siteManagerPhone: initial?.siteManagerPhone ?? "",
     siteManagerEmail: initial?.siteManagerEmail ?? "",
@@ -338,6 +407,59 @@ export function SiteForm({
   const [f, setF] = useState<Form>(buildInitial(initial));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [logoName, setLogoName] = useState<string>(initial?.contractorLogoName ?? "");
+  const [logoVer, setLogoVer] = useState(0);
+  const [logoBusy, setLogoBusy] = useState(false);
+
+  async function uploadLogo(file: File) {
+    if (!siteId) return;
+    setLogoBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/sites/${siteId}/logo`, { method: "POST", body: fd });
+      let data: { ok?: boolean; error?: string; name?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "로고 업로드 실패");
+        return;
+      }
+      setLogoName(data.name || file.name);
+      setLogoVer((v) => v + 1);
+    } catch (e) {
+      alert("로고 업로드 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLogoBusy(false);
+    }
+  }
+
+  async function deleteLogo() {
+    if (!siteId || !confirm("시공사 로고를 삭제할까요?")) return;
+    setLogoBusy(true);
+    try {
+      const res = await fetch(`/api/sites/${siteId}/logo`, { method: "DELETE" });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "로고 삭제 실패");
+        return;
+      }
+      setLogoName("");
+      setLogoVer((v) => v + 1);
+    } catch (e) {
+      alert("로고 삭제 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLogoBusy(false);
+    }
+  }
 
   const onText =
     (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -373,6 +495,7 @@ export function SiteForm({
         supervisorName: f.supervisorName,
         supervisorPhone: f.supervisorPhone,
         supervisorEmail: f.supervisorEmail,
+        contractorCompany: f.contractorCompany,
         siteManagerName: f.siteManagerName,
         siteManagerPhone: f.siteManagerPhone,
         siteManagerEmail: f.siteManagerEmail,
@@ -454,8 +577,8 @@ export function SiteForm({
             <select className={selectCls} value={f.executor} onChange={onText("executor")}>
               <option value="">선택하세요</option>
               {EXECUTORS.map((x) => (
-                <option key={x} value={x}>
-                  {x}
+                <option key={x.value} value={x.value}>
+                  {x.label}
                 </option>
               ))}
             </select>
@@ -505,6 +628,14 @@ export function SiteForm({
       <StepSection step="STEP 03" title="현장소장 정보">
         <div className="space-y-3">
           <div className="space-y-1">
+            <Label>시공사 (회사명)</Label>
+            <Input
+              value={f.contractorCompany}
+              onChange={onText("contractorCompany")}
+              placeholder="예: 00건설(주)"
+            />
+          </div>
+          <div className="space-y-1">
             <Label>현장소장 이름</Label>
             <Input value={f.siteManagerName} onChange={onText("siteManagerName")} />
           </div>
@@ -518,6 +649,52 @@ export function SiteForm({
           </div>
         </div>
       </StepSection>
+
+      {isEdit && (
+        <StepSection step="로고" title="시공사 로고" desc="영상 첫 화면 하단에 농어촌공사 로고와 함께 표시됩니다. (4MB 이하 이미지)">
+          <div className="flex items-center gap-4">
+            <div className="flex h-20 w-32 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white">
+              {logoName ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`/api/sites/${siteId}/logo/raw?v=${logoVer}`}
+                  alt="시공사 로고"
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-xs text-neutral-400">로고 없음</span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-[#0033A0] hover:bg-neutral-50">
+                {logoBusy ? "처리 중..." : logoName ? "로고 변경" : "로고 업로드"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={logoBusy}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadLogo(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {logoName && (
+                <button
+                  type="button"
+                  onClick={deleteLogo}
+                  disabled={logoBusy}
+                  className="ml-2 rounded-md border border-neutral-300 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-neutral-50"
+                >
+                  삭제
+                </button>
+              )}
+              {logoName && <p className="text-xs text-neutral-500">{logoName}</p>}
+            </div>
+          </div>
+        </StepSection>
+      )}
 
       <StepSection step="STEP 04" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
         <KakaoMapPicker
@@ -575,9 +752,21 @@ const PROJECT_TYPES = [
   "다목적용수", "체계재편", "논범용화", "배수개선", "경지정리", "대행위탁사업",
   "방조제개보수", "수리시설개보수", "수질개선", "지역개발", "기타",
 ];
-const EXECUTORS = [
-  "천안지사", "공주지사", "보령지사", "아산지사", "서산태안지사", "논산지사",
-  "세종대전금산지사", "부여지사", "서천지사", "청양지사", "홍성지사", "예산지사", "당진지사",
+const EXECUTORS: { value: string; label: string }[] = [
+  { value: "본부내근", label: "충남본부 내근" },
+  { value: "천안", label: "천안지사" },
+  { value: "공주", label: "공주지사" },
+  { value: "보령", label: "보령지사" },
+  { value: "아산", label: "아산지사" },
+  { value: "서산태안", label: "서산태안지사" },
+  { value: "논산", label: "논산지사" },
+  { value: "세종대전금산", label: "세종대전금산지사" },
+  { value: "부여", label: "부여지사" },
+  { value: "서천", label: "서천지사" },
+  { value: "청양", label: "청양지사" },
+  { value: "홍성", label: "홍성지사" },
+  { value: "예산", label: "예산지사" },
+  { value: "당진", label: "당진지사" },
 ];
 const WORK_TYPES = ["철근콘크리트", "토목", "건축", "조경", "기타"];
 
@@ -599,6 +788,8 @@ type InitialSite = {
   lng?: number | null;
   startedOn?: string | null;
   endedOn?: string | null;
+  contractorLogoName?: string | null;
+  contractorCompany?: string | null;
 };
 
 type Form = {
@@ -611,6 +802,7 @@ type Form = {
   supervisorName: string;
   supervisorPhone: string;
   supervisorEmail: string;
+  contractorCompany: string;
   siteManagerName: string;
   siteManagerPhone: string;
   siteManagerEmail: string;
@@ -641,6 +833,7 @@ function buildInitial(initial?: InitialSite): Form {
     supervisorName: initial?.supervisorName ?? "",
     supervisorPhone: initial?.supervisorPhone ?? "",
     supervisorEmail: initial?.supervisorEmail ?? "",
+    contractorCompany: initial?.contractorCompany ?? "",
     siteManagerName: initial?.siteManagerName ?? "",
     siteManagerPhone: initial?.siteManagerPhone ?? "",
     siteManagerEmail: initial?.siteManagerEmail ?? "",
@@ -669,6 +862,59 @@ export function SiteForm({
   const [f, setF] = useState<Form>(buildInitial(initial));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [logoName, setLogoName] = useState<string>(initial?.contractorLogoName ?? "");
+  const [logoVer, setLogoVer] = useState(0);
+  const [logoBusy, setLogoBusy] = useState(false);
+
+  async function uploadLogo(file: File) {
+    if (!siteId) return;
+    setLogoBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/sites/${siteId}/logo`, { method: "POST", body: fd });
+      let data: { ok?: boolean; error?: string; name?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "로고 업로드 실패");
+        return;
+      }
+      setLogoName(data.name || file.name);
+      setLogoVer((v) => v + 1);
+    } catch (e) {
+      alert("로고 업로드 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLogoBusy(false);
+    }
+  }
+
+  async function deleteLogo() {
+    if (!siteId || !confirm("시공사 로고를 삭제할까요?")) return;
+    setLogoBusy(true);
+    try {
+      const res = await fetch(`/api/sites/${siteId}/logo`, { method: "DELETE" });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "로고 삭제 실패");
+        return;
+      }
+      setLogoName("");
+      setLogoVer((v) => v + 1);
+    } catch (e) {
+      alert("로고 삭제 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLogoBusy(false);
+    }
+  }
 
   const onText =
     (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -704,6 +950,7 @@ export function SiteForm({
         supervisorName: f.supervisorName,
         supervisorPhone: f.supervisorPhone,
         supervisorEmail: f.supervisorEmail,
+        contractorCompany: f.contractorCompany,
         siteManagerName: f.siteManagerName,
         siteManagerPhone: f.siteManagerPhone,
         siteManagerEmail: f.siteManagerEmail,
@@ -785,8 +1032,8 @@ export function SiteForm({
             <select className={selectCls} value={f.executor} onChange={onText("executor")}>
               <option value="">선택하세요</option>
               {EXECUTORS.map((x) => (
-                <option key={x} value={x}>
-                  {x}
+                <option key={x.value} value={x.value}>
+                  {x.label}
                 </option>
               ))}
             </select>
@@ -836,6 +1083,14 @@ export function SiteForm({
       <StepSection step="STEP 03" title="현장소장 정보">
         <div className="space-y-3">
           <div className="space-y-1">
+            <Label>시공사 (회사명)</Label>
+            <Input
+              value={f.contractorCompany}
+              onChange={onText("contractorCompany")}
+              placeholder="예: 00건설(주)"
+            />
+          </div>
+          <div className="space-y-1">
             <Label>현장소장 이름</Label>
             <Input value={f.siteManagerName} onChange={onText("siteManagerName")} />
           </div>
@@ -849,6 +1104,52 @@ export function SiteForm({
           </div>
         </div>
       </StepSection>
+
+      {isEdit && (
+        <StepSection step="로고" title="시공사 로고" desc="영상 첫 화면 하단에 농어촌공사 로고와 함께 표시됩니다. (4MB 이하 이미지)">
+          <div className="flex items-center gap-4">
+            <div className="flex h-20 w-32 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white">
+              {logoName ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`/api/sites/${siteId}/logo/raw?v=${logoVer}`}
+                  alt="시공사 로고"
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-xs text-neutral-400">로고 없음</span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-[#0033A0] hover:bg-neutral-50">
+                {logoBusy ? "처리 중..." : logoName ? "로고 변경" : "로고 업로드"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={logoBusy}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadLogo(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {logoName && (
+                <button
+                  type="button"
+                  onClick={deleteLogo}
+                  disabled={logoBusy}
+                  className="ml-2 rounded-md border border-neutral-300 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-neutral-50"
+                >
+                  삭제
+                </button>
+              )}
+              {logoName && <p className="text-xs text-neutral-500">{logoName}</p>}
+            </div>
+          </div>
+        </StepSection>
+      )}
 
       <StepSection step="STEP 04" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
         <KakaoMapPicker

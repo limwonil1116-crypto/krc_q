@@ -1,0 +1,30 @@
+app\api\ai\inspect\route.ts
+   const subTypeName: string = (body.subTypeName || "").toString().slice(0, 100);
+
+app\api\records\assets\route.ts
+   const subTypeId = String(fd.get("subTypeId") || "");
+
+app\api\records\reset\route.ts
+   const subTypeId = (b.subTypeId ?? "").trim();
+
+app\api\records\route.ts
+   const subTypeId = (b.subTypeId ?? "").trim();
+
+app\api\records\submit\route.ts
+   const subTypeId = (b.subTypeId ?? "").trim();
+
+app\client\sites\[id]\structures\[structureId]\page.tsx
+   const subTypes = await db
+
+app\contractor\sites\[id]\structures\[structureId]\page.tsx
+   const subTypes = await db
+
+components\record\ai-write-button.tsx
+   subTypeName,
+
+components\record\phase-recorder.tsx
+   subTypeId: string | null;
+
+lib\db\schema.ts
+   subTypeId: uuid("sub_type_id"),
+

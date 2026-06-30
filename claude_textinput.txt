@@ -1,0 +1,175 @@
+
+
+===== async function save =====
+async function saveText(p: Phase, i: number) {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteStructureId,
+          subTypeId,
+          phaseTemplateId: p.id,
+          inspectionDate: selectedDate,
+          textDescription: form.textDescription,
+          notApplicable: form.notApplicable,
+          notApplicableReason: form.notApplicableReason,
+          inspectionContent: i === 0 ? form.inspectionContent : null,
+          inspectionPartFromMain: i === 0 && form.partFromMain !== "" ? Number(form.partFromMain) : null,
+          inspectionPartFromSub: i === 0 && form.partFromSub !== "" ? Number(form.partFromSub) : null,
+          inspectionPartToMain: i === 0 && form.partToMain !== "" ? Number(form.partToMain) : null,
+          inspectionPartToSub: i === 0 && form.partToSub !== "" ? Number(form.partToSub) : null,
+        }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        setError(data.error || ("서버 오류 (" + res.status + ")"));
+        return;
+      }
+      setEditing(false);
+      router.refresh();
+    } catch (e) {
+      setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+===== 'textarea' 주변 =====
+ange={(e) => setForm((f) => ({ ...f, notApplicable: e.target.checked }))}
+                  />
+                  이 단계는 해당 없음
+                </label>
+                {form.notApplicable ? (
+                  <div className="space-y-1">
+                    <Label>해당없음 사유</Label>
+                    <textarea
+                      className={taCls}
+                      value={form.notApplicableReason}
+                      onChange={(e) => setForm((f) => ({ ...f, notApplicableReason: e.target.value }))}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {step === 0 && (
+                      <>
+              
+
+===== 'textDescription' 주변 =====
+: string | null;
+  sortOrder: number;
+  minPhotoCount: number;
+  minVideoCount: number;
+  isRequired: boolean;
+};
+type SubType = { id: string; name: string };
+type Rec = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  title: string | null;
+  textDescription: string | null;
+  inspectionContent: string | null;
+  inspectionPartFromMain: number | null;
+  inspectionPartFromSub: number | null;
+  inspectionPartToMain: number | null;
+  inspectionPartToSub: number | null;
+  voiceMemoText: string | null;
+  notApplicable: boolean;
+  notApplicableReason: string | null;
+  status: string;
+};
+type Asset = {
+  id: string;
+  phaseTemplateId: string;
+ 
+
+===== 'inspectionContent' 주변 =====
+er;
+  minPhotoCount: number;
+  minVideoCount: number;
+  isRequired: boolean;
+};
+type SubType = { id: string; name: string };
+type Rec = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  title: string | null;
+  textDescription: string | null;
+  inspectionContent: string | null;
+  inspectionPartFromMain: number | null;
+  inspectionPartFromSub: number | null;
+  inspectionPartToMain: number | null;
+  inspectionPartToSub: number | null;
+  voiceMemoText: string | null;
+  notApplicable: boolean;
+  notApplicableReason: string | null;
+  status: string;
+};
+type Asset = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspe
+
+===== '검측' 주변 =====
+set(a.phaseTemplateId, arr);
+    });
+
+  const submittedCurrent = Array.from(recMap.values()).some((r) => r.status === "submitted");
+  const hasCurrent = recMap.size > 0 || assetMap.size > 0;
+
+  async function submitInspection(action: "submit" | "cancel") {
+    if (action === "submit" && !confirm("이 검측일자 기록을 제출할까요? 제출 후에도 '제출 취소'로 다시 수정할 수 있습니다.")) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/records/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate, action }),
+      });
+      let data: { ok?: boolean; error?: string 
+
+===== InspectHelper 호출부(제거대상) =====
+el";
+import { ActionButton } from "@/components/kit/buttons";
+import { Button } from "@/components/ui/button";
+import { InspectHelper } from "@/components/record/inspect-helper";
+import { PhotoEditor } from "@/components/record/photo-editor";
+
+type Phase = {
+  id: string;
+  code: string;
+  name: string;
+  guideText: string | null;
+  sortOrder: number;
+  minPhotoCount: number;
+  minVideoCount: number;
+  isRequired: boolean;
+};
+type SubType = { id: string; name: string };
+type Rec = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId
+
+===== state 'useState' =====
+import { useEffect, useMemo, useState } from "react";
+
+===== state 'useState' =====
+const [vy, setVy] = useState(init.getFullYear());
+
+===== state 'useState' =====
+const [vm, setVm] = useState(init.getMonth());

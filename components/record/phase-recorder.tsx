@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { ActionButton } from "@/components/kit/buttons";
 import { Button } from "@/components/ui/button";
-import { InspectHelper } from "@/components/record/inspect-helper";
+import { AiWriteButton } from "@/components/record/ai-write-button";
 import { PhotoEditor } from "@/components/record/photo-editor";
 
 type Phase = {
@@ -604,14 +604,7 @@ export function PhaseRecorder({
               </button>
             </div>
 
-            <div className="mt-2">
-              <InspectHelper
-                assetIds={photos.map((a) => a.id)}
-                phaseName={p.name}
-                structureTypeName={typeName}
-                text={r?.textDescription || ""}
-              />
-            </div>
+
 
             {guideOpen && (
               <div className="mt-2 space-y-2">
@@ -780,6 +773,14 @@ export function PhaseRecorder({
                     )}
                     <div className="space-y-1">
                       <Label>설명내용</Label>
+                      <AiWriteButton
+                        assetIds={photos.map((a) => a.id)}
+                        phaseName={p.name}
+                        structureTypeName={typeName}
+                        guideText={p.guideText || ""}
+                        currentText={form.textDescription}
+                        onApply={(t) => setForm((f) => ({ ...f, textDescription: t }))}
+                      />
                       <textarea
                         className={taCls}
                         value={form.textDescription}

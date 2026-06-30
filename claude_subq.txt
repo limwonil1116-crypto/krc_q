@@ -1,0 +1,10 @@
+
+
+===== client =====
+const subTypes = await db
+    .select({ id: structureTypes.id, name: structureTypes.name })
+    .from(structureTypes)
+    .where(and(eq(structureTypes.parentId, ss.structureTypeId), eq(structureTypes.isActive, true)))
+    .orderBy(structureTypes.sortOrder);
+
+===== client phases =====

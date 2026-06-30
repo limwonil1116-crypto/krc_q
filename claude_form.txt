@@ -1,0 +1,44 @@
+
+
+===== form state 선언 =====
+const [form, setForm] = useState({
+    textDescription: "",
+    inspectionContent: "",
+    partFromMain: "",
+    partFromSub: "",
+    partToMain: "",
+    partToSub: "",
+    notApplicable: false,
+    notApplicableReason: "",
+  });
+
+===== textDescription textarea =====
+                   </div>
+                          <p className="text-xs text-neutral-400">예: NO.0+00 ~ NO.0+00 (측점 구간)</p>
+                        </div>
+                      </>
+                    )}
+                    <div className="space-y-1">
+                      <Label>설명내용</Label>
+                      <textarea
+                        className={taCls}
+                        value={form.textDescription}
+                        onChange={(e) => setForm((f) => ({ ...f, textDescription: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+===== <InspectHelper> JSX =====
+ onClick={() => setGuideOpen((v) => !v)}
+              >
+                촬영 가이드 보기 {guideOpen ? "▲" : "▼"}
+              </button>
+            </div>
+
+            <div className="mt-2">
+              <InspectHelper
+                assetIds={photos.map((a) => a.id)}
+                phaseName={p.name}
+                structureTypeName={typeName}
+                text={r?.textDescription || ""}
+              />

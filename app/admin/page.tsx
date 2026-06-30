@@ -13,8 +13,14 @@ export default function Page() {
         <StatCard value={0} label="영상 생성" />
         <StatCard value={0} label="메일 발송" />
       </div>
-      <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
-        구조물 마스터·단계 템플릿·사용자 승인 기능은 다음 단계에서 추가됩니다.
+      <div className="grid gap-3 sm:grid-cols-2">
+        <a href="/admin/guides" className="rounded-2xl border border-neutral-200 bg-white p-5 hover:border-[#0033A0] hover:shadow">
+          <div className="text-lg font-bold text-[#0033A0]">🤖 검측 가이드 관리</div>
+          <p className="mt-1 text-sm text-neutral-500">구조물·세부유형별 단계 가이드를 작성합니다. AI 기록 작성에 반영됩니다.</p>
+        </a>
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-5 text-center text-sm text-neutral-400">
+          구조물 마스터·사용자 승인 기능은 다음 단계에서 추가됩니다.
+        </div>
       </div>
     </div>
   );
