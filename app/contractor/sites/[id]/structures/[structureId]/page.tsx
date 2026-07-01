@@ -39,7 +39,7 @@ export default async function StructurePhasesPage({
 
   // 세부 항목 = 구조물 대분류의 자식
   const subTypes = await db
-    .select({ id: structureTypes.id, name: structureTypes.name })
+    .select({ id: structureTypes.id, name: structureTypes.name, guideText: structureTypes.guideText })
     .from(structureTypes)
     .where(and(eq(structureTypes.parentId, ss.structureTypeId), eq(structureTypes.isActive, true)))
     .orderBy(structureTypes.sortOrder);

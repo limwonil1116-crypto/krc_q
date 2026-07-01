@@ -19,7 +19,7 @@ type Phase = {
   minVideoCount: number;
   isRequired: boolean;
 };
-type SubType = { id: string; name: string };
+type SubType = { id: string; name: string; guideText?: string | null };
 type Rec = {
   id: string;
   phaseTemplateId: string;
@@ -777,7 +777,7 @@ export function PhaseRecorder({
                         assetIds={photos.map((a) => a.id)}
                         phaseName={p.name}
                         structureTypeName={typeName}
-                        guideText={p.guideText || ""}
+                        guideText={subTypes.find((s) => s.id === subTypeId)?.guideText || p.guideText || ""}
                         currentText={form.textDescription}
                         onApply={(t) => setForm((f) => ({ ...f, textDescription: t }))}
                       />
