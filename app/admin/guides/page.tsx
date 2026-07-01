@@ -19,6 +19,8 @@ export default function GuidesPage() {
   const [savingCode, setSavingCode] = useState<string | null>(null);
   const [busyUpload, setBusyUpload] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
+  const [parentSpecs, setParentSpecs] = useState<{ id: string; fileName: string; mimeType: string }[]>([]);
+  const [busyParentSpec, setBusyParentSpec] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/guides")
@@ -37,9 +39,49 @@ export default function GuidesPage() {
     setAssets([]);
     setTexts({});
     setMsg("");
+    setParentSpecs([]);
     const r = await fetch(`/api/admin/guides?parentId=${id}`);
     const d = await r.json();
     if (d.ok) setChildren(d.children || []);
+    loadParentSpecs(id);
+  }
+
+  async function loadParentSpecs(parentId: string) {
+    const r = await fetch(`/api/admin/guides?parentSpecId=${parentId}`);
+    const d = await r.json();
+    if (d.ok) setParentSpecs(d.specs || []);
+  }
+
+  async function uploadParentSpec(file: File) {
+    if (!parent) return;
+    setBusyParentSpec(true);
+    setMsg("");
+    try {
+      const fd = new FormData();
+      fd.append("structureTypeId", parent.id);
+      fd.append("assetKind", "spec");
+      fd.append("file", file);
+      const r = await fetch("/api/admin/guides", { method: "POST", body: fd });
+      const d = await r.json();
+      if (!r.ok || !d.ok) {
+        setMsg(d.error || "시방서 업로드 실패");
+        return;
+      }
+      loadParentSpecs(parent.id);
+    } finally {
+      setBusyParentSpec(false);
+    }
+  }
+
+  async function removeParentSpec(id: string) {
+    if (!confirm("이 시방서를 삭제할까요?")) return;
+    const r = await fetch(`/api/admin/guides?assetId=${id}`, { method: "DELETE" });
+    const d = await r.json();
+    if (!r.ok || !d.ok) {
+      setMsg(d.error || "삭제 실패");
+      return;
+    }
+    setParentSpecs((prev) => prev.filter((s) => s.id !== id));
   }
 
   async function pickSub(id: string, name: string) {
@@ -165,9 +207,45 @@ export default function GuidesPage() {
           ))}
         </div>
 
-        {/* 세부항목 */}
-        <div className="space-y-1 rounded-2xl border border-neutral-200 bg-white p-3">
-          <div className="mb-1 text-xs font-bold text-neutral-500">② 세부항목(공종)</div>
+        {/* 세부항목 + 대분류 시방서 */}
+        <div className="space-y-3">
+          {parent && (
+            <div className="space-y-2 rounded-2xl border border-[#0033A0]/20 bg-[#F5F8FF] p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#0033A0]">📄 대분류 시방서 ({parentSpecs.length})</span>
+                <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#0033A0]/30 bg-white px-2 py-1 text-xs font-semibold text-[#0033A0] hover:bg-neutral-50">
+                  {busyParentSpec ? "업로드..." : "＋시방서"}
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.hwp,.hwpx,.txt"
+                    className="hidden"
+                    disabled={busyParentSpec}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadParentSpec(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-[11px] text-neutral-500">이 대분류의 모든 세부항목·단계 가이드 생성 시 참고됩니다.</p>
+              {parentSpecs.length > 0 && (
+                <ul className="space-y-1">
+                  {parentSpecs.map((s) => (
+                    <li key={s.id} className="flex items-center justify-between rounded border border-neutral-200 bg-white px-2 py-1 text-xs">
+                      <span className="truncate">📄 {s.fileName}</span>
+                      <button type="button" onClick={() => removeParentSpec(s.id)} className="ml-1 shrink-0 text-red-600 hover:underline">
+                        삭제
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-1 rounded-2xl border border-neutral-200 bg-white p-3">
+            <div className="mb-1 text-xs font-bold text-neutral-500">② 세부항목(공종)</div>
           {!parent ? (
             <p className="text-sm text-neutral-400">대분류를 선택하세요.</p>
           ) : children.length === 0 ? (
@@ -187,6 +265,7 @@ export default function GuidesPage() {
               </button>
             ))
           )}
+          </div>
         </div>
 
         {/* F1~F5 편집 */}

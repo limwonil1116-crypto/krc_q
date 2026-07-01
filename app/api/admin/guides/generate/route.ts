@@ -79,18 +79,35 @@ export async function POST(req: Request) {
       .from(guideAssets)
       .where(and(eq(guideAssets.subTypeId, subTypeId), eq(guideAssets.phaseCode, phaseCode)));
 
+    // 대분류 시방서 (부모 structureType 에 붙은 spec)
+    const parentSpecs = sub.parentId
+      ? await db
+          .select({ mimeType: guideAssets.mimeType, storageFileId: guideAssets.storageFileId })
+          .from(guideAssets)
+          .where(and(eq(guideAssets.structureTypeId, sub.parentId), eq(guideAssets.assetKind, "spec")))
+      : [];
+
     const parts: Array<{ inlineData: { mimeType: string; data: string } } | { text: string }> = [];
 
-    // 시방서 PDF (최대 2개, 각 15MB)
+    // 시방서 PDF: 대분류 시방서 우선 + 세부항목 시방서 (합쳐서 최대 3개, 각 15MB)
     let specCount = 0;
-    for (const a of assets) {
-      if (a.assetKind !== "spec" || !a.storageFileId) continue;
+    for (const a of parentSpecs) {
+      if (!a.storageFileId) continue;
       const b64 = await streamToBase64(a.storageFileId, 15 * 1024 * 1024);
       if (b64) {
         parts.push({ inlineData: { mimeType: a.mimeType || "application/pdf", data: b64 } });
         specCount++;
       }
-      if (specCount >= 2) break;
+      if (specCount >= 3) break;
+    }
+    for (const a of assets) {
+      if (a.assetKind !== "spec" || !a.storageFileId) continue;
+      if (specCount >= 3) break;
+      const b64 = await streamToBase64(a.storageFileId, 15 * 1024 * 1024);
+      if (b64) {
+        parts.push({ inlineData: { mimeType: a.mimeType || "application/pdf", data: b64 } });
+        specCount++;
+      }
     }
     // 참고사진 (최대 3장)
     let refCount = 0;
