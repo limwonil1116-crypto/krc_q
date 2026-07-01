@@ -64,18 +64,33 @@ export default function GuidesPage() {
     }
   }
 
-  async function saveText(code: string) {
+  async function saveText(code: string, phaseName: string) {
     if (!sub) return;
     setSavingCode(code);
     setMsg("");
     try {
-      const r = await fetch("/api/admin/guides", {
+      // 1) 관리자가 입력한 텍스트 먼저 저장
+      await fetch("/api/admin/guides", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subTypeId: sub.id, phaseCode: code, guideText: texts[code] || "" }),
       });
-      const d = await r.json();
-      setMsg(!r.ok || !d.ok ? d.error || "저장 실패" : "저장 완료");
+      // 2) 시방서·참고사진을 반영해 AI가 가이드 자동 생성(덮어씀)
+      setMsg("AI가 시방서·사진을 반영해 가이드를 생성 중...");
+      const g = await fetch("/api/admin/guides/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subTypeId: sub.id, phaseCode: code, phaseName, currentText: texts[code] || "" }),
+      });
+      const gd = await g.json();
+      if (g.ok && gd.ok && gd.guideText) {
+        setTexts((prev) => ({ ...prev, [code]: gd.guideText }));
+        setMsg(`AI 가이드 생성 완료 (시방서 ${gd.specCount || 0}건·참고사진 ${gd.refCount || 0}장 반영)`);
+      } else {
+        setMsg(gd.error || "저장은 됐으나 AI 생성 실패 (입력 텍스트는 저장됨)");
+      }
+    } catch {
+      setMsg("처리 중 오류가 발생했습니다.");
     } finally {
       setSavingCode(null);
     }
@@ -210,11 +225,11 @@ export default function GuidesPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => saveText(p.code)}
+                        onClick={() => saveText(p.code, p.name)}
                         disabled={savingCode === p.code}
                         className="rounded-md bg-[#0033A0] px-3 py-1.5 text-sm font-bold text-white hover:bg-[#002A80] disabled:opacity-50"
                       >
-                        {savingCode === p.code ? "저장 중..." : "저장"}
+                        {savingCode === p.code ? "생성 중..." : "저장 + AI 가이드 생성"}
                       </button>
                     </div>
 
