@@ -6,7 +6,7 @@ import { BottomNav } from "@/components/kit/bottom-nav";
 export default async function RoleLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.role !== "client") redirect("/");
+  if (session.user.role !== "client" && session.user.role !== "admin") redirect("/");
 
   return (
     <div className="min-h-screen bg-neutral-50">
