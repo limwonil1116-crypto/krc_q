@@ -7,16 +7,20 @@ type Result = { text: string; measurements: string[]; notes: string[] };
 export function AiWriteButton({
   assetIds,
   phaseName,
+  phaseCode,
   structureTypeName,
   subTypeName,
+  subTypeId,
   guideText,
   currentText,
   onApply,
 }: {
   assetIds: string[];
   phaseName: string;
+  phaseCode?: string;
   structureTypeName: string;
   subTypeName?: string;
+  subTypeId?: string;
   guideText?: string;
   currentText: string;
   onApply: (text: string) => void;
@@ -36,8 +40,10 @@ export function AiWriteButton({
         body: JSON.stringify({
           assetIds,
           phaseName,
+          phaseCode: phaseCode || "",
           structureTypeName,
           subTypeName: subTypeName || "",
+          subTypeId: subTypeId || "",
           guideText: guideText || "",
           userMemo: currentText || "",
         }),

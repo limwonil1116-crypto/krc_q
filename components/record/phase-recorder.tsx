@@ -776,7 +776,10 @@ export function PhaseRecorder({
                       <AiWriteButton
                         assetIds={photos.map((a) => a.id)}
                         phaseName={p.name}
+                        phaseCode={p.code}
                         structureTypeName={typeName}
+                        subTypeName={subTypes.find((s) => s.id === subTypeId)?.name || ""}
+                        subTypeId={subTypeId}
                         guideText={subTypes.find((s) => s.id === subTypeId)?.guideText || p.guideText || ""}
                         currentText={form.textDescription}
                         onApply={(t) => setForm((f) => ({ ...f, textDescription: t }))}
