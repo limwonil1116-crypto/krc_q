@@ -56,6 +56,7 @@ export const structureTypes = pgTable("structure_types", {
   code: varchar("code", { length: 50 }).notNull().unique(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
+  guideText: text("guide_text"),
   parentId: uuid("parent_id"),
   isRequiredCheck: boolean("is_required_check").notNull().default(true),
   isActive: boolean("is_active").notNull().default(true),
@@ -189,4 +190,19 @@ export const recordAssets = pgTable("record_assets", {
   createdBy: uuid("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+
+export const guideAssets = pgTable("guide_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  structureTypeId: uuid("structure_type_id").notNull().references(() => structureTypes.id, { onDelete: "cascade" }),
+  assetKind: text("asset_kind").$type<"reference" | "spec">().notNull().default("reference"),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+  fileSizeBytes: bigint("file_size_bytes", { mode: "number" }).notNull().default(0),
+  storageProvider: text("storage_provider").$type<"google_drive" | "supabase" | "vercel_blob">().notNull().default("google_drive"),
+  storageFileId: text("storage_file_id"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
