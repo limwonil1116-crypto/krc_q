@@ -1,0 +1,74 @@
+
+
+===== contractor: 'const phases' @1470 =====
+const phases = await db
+    .select({
+      id: phaseTemplates.id,
+      code: phaseTemplates.code,
+      name: phaseTemplates.name,
+      guideText: phaseTemplates.guideText,
+      sortOrder: phaseTemplates.sortOrder,
+      minPhotoCount: phaseTemplates.minPhotoCount,
+      minVideoCount: phaseTemplates.minVideoCount,
+      isRequired: phaseTemplates.isRequired,
+    })
+    .from(phaseTemplates)
+    .where(and(eq(phaseTemplates.structureTypeId, ss.structureTypeId), eq(phaseTemplates.isActive, true)))
+    .orderBy(asc(phaseTemplates.sortOrder));
+
+===== contractor: 'phaseTemplates' @207 =====
+phaseTemplates,
+  constructionRecords,
+  recordAssets,
+} from "@/lib/db/schema";
+
+===== contractor: 'phaseTemplates' @1518 =====
+phaseTemplates.id,
+      code: phaseTemplates.code,
+      name: phaseTemplates.name,
+      guideText: phaseTemplates.guideText,
+      sortOrder: phaseTemplates.sortOrder,
+      minPhotoCount: phaseTemplates.minPhotoCount,
+      minVideoCount: phaseTemplates.minVideoCount,
+      isRequired: phaseTemplates.isRequired,
+    })
+    .from(phaseTemplates)
+    .where(and(eq(phaseTemplates.structureTypeId, ss.structureTypeId), eq(phaseTemplates.isActive, true)))
+    .orderBy(asc(phaseTemplates.sortOrder));
+
+===== contractor: 'phaseTemplates' @1549 =====
+phaseTemplates.code,
+      name: phaseTemplates.name,
+      guideText: phaseTemplates.guideText,
+      sortOrder: phaseTemplates.sortOrder,
+      minPhotoCount: phaseTemplates.minPhotoCount,
+      minVideoCount: phaseTemplates.minVideoCount,
+      isRequired: phaseTemplates.isRequired,
+    })
+    .from(phaseTemplates)
+    .where(and(eq(phaseTemplates.structureTypeId, ss.structureTypeId), eq(phaseTemplates.isActive, true)))
+    .orderBy(asc(phaseTemplates.sortOrder));
+
+===== contractor: 'phases =' @1476 =====
+phases = await db
+    .select({
+      id: phaseTemplates.id,
+      code: phaseTemplates.code,
+      name: phaseTemplates.name,
+      guideText: phaseTemplates.guideText,
+      sortOrder: phaseTemplates.sortOrder,
+      minPhotoCount: phaseTemplates.minPhotoCount,
+      minVideoCount: phaseTemplates.minVideoCount,
+      isRequired: phaseTemplates.isRequired,
+    })
+    .from(phaseTemplates)
+    .where(and(eq(phaseTemplates.structureTypeId, ss.structureTypeId), eq(phaseTemplates.isActive, true)))
+    .orderBy(asc(phaseTemplates.sortOrder));
+
+===== contractor: phases prop =====
+     typeName={ss.typeName}
+      subTypes={subTypes}
+      phases={phases}
+      records={recs}
+      assets={assets}
+      videoHref={`/contractor/sites/${id}/structures/${struct

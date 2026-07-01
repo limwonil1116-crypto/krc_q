@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { and, eq, asc } from "drizzle-orm";
+import { and, eq, asc, inArray } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { structureTypes, guideAssets } from "@/lib/db/schema";
+import { structureTypes, phaseTemplates, guideAssets } from "@/lib/db/schema";
 import { uploadToDrive, deleteFromDrive } from "@/lib/drive";
 
 export const runtime = "nodejs";
@@ -14,8 +14,9 @@ async function requireAdmin() {
   return session.user.id;
 }
 
-// GET: ?structureTypeId=x 있으면 그 단계의 guideText + 자료목록
-//      없으면 구조물 트리(부모+자식)
+// GET:
+//  ?structureTypeId=x  -> 그 구조물의 F1~F5 단계 목록(guideText) + 단계별 자료
+//  없으면              -> 구조물 목록 (단계가 있는 부모 구조물)
 export async function GET(req: Request) {
   const uid = await requireAdmin();
   if (!uid) return NextResponse.json({ error: "관리자만 접근할 수 있습니다." }, { status: 403 });
@@ -24,28 +25,43 @@ export async function GET(req: Request) {
   const structureTypeId = searchParams.get("structureTypeId");
 
   if (structureTypeId) {
-    const rows = await db
-      .select({ id: structureTypes.id, name: structureTypes.name, guideText: structureTypes.guideText })
-      .from(structureTypes)
-      .where(eq(structureTypes.id, structureTypeId))
-      .limit(1);
-    if (!rows[0]) return NextResponse.json({ error: "단계를 찾을 수 없습니다." }, { status: 404 });
-
-    const assets = await db
+    const phases = await db
       .select({
-        id: guideAssets.id,
-        assetKind: guideAssets.assetKind,
-        fileName: guideAssets.fileName,
-        mimeType: guideAssets.mimeType,
-        storageFileId: guideAssets.storageFileId,
+        id: phaseTemplates.id,
+        code: phaseTemplates.code,
+        name: phaseTemplates.name,
+        guideText: phaseTemplates.guideText,
+        sortOrder: phaseTemplates.sortOrder,
       })
-      .from(guideAssets)
-      .where(eq(guideAssets.structureTypeId, structureTypeId))
-      .orderBy(asc(guideAssets.sortOrder), asc(guideAssets.createdAt));
+      .from(phaseTemplates)
+      .where(and(eq(phaseTemplates.structureTypeId, structureTypeId), eq(phaseTemplates.isActive, true)))
+      .orderBy(asc(phaseTemplates.sortOrder));
 
-    return NextResponse.json({ ok: true, item: rows[0], assets });
+    const phaseIds = phases.map((p) => p.id);
+    let assets: {
+      id: string;
+      phaseTemplateId: string | null;
+      assetKind: "reference" | "spec";
+      fileName: string;
+      mimeType: string;
+    }[] = [];
+    if (phaseIds.length > 0) {
+      assets = await db
+        .select({
+          id: guideAssets.id,
+          phaseTemplateId: guideAssets.phaseTemplateId,
+          assetKind: guideAssets.assetKind,
+          fileName: guideAssets.fileName,
+          mimeType: guideAssets.mimeType,
+        })
+        .from(guideAssets)
+        .where(inArraySafe(guideAssets.phaseTemplateId, phaseIds))
+        .orderBy(asc(guideAssets.sortOrder), asc(guideAssets.createdAt));
+    }
+    return NextResponse.json({ ok: true, phases, assets });
   }
 
+  // 단계(phaseTemplates)를 가진 구조물만 목록으로
   const all = await db
     .select({
       id: structureTypes.id,
@@ -58,25 +74,34 @@ export async function GET(req: Request) {
     .where(eq(structureTypes.isActive, true))
     .orderBy(asc(structureTypes.sortOrder));
 
-  const parents = all.filter((s) => !s.parentId);
-  const tree = parents.map((p) => ({ ...p, children: all.filter((c) => c.parentId === p.id) }));
-  const orphanChildren = all.filter((s) => s.parentId && !parents.some((p) => p.id === s.parentId));
-  return NextResponse.json({ ok: true, tree, orphanChildren });
+  // 단계가 존재하는 structureTypeId 집합
+  const withPhases = await db
+    .select({ sid: phaseTemplates.structureTypeId })
+    .from(phaseTemplates)
+    .where(eq(phaseTemplates.isActive, true));
+  const sidSet = new Set(withPhases.map((r) => r.sid));
+
+  const structures = all.filter((s) => sidSet.has(s.id));
+  return NextResponse.json({ ok: true, structures });
 }
 
-// PATCH: guideText 저장 { structureTypeId, guideText }
+function inArraySafe(col: Parameters<typeof inArray>[0], vals: string[]) {
+  return inArray(col, vals.length > 0 ? vals : ["00000000-0000-0000-0000-000000000000"]);
+}
+
+// PATCH: 단계 guideText 저장 { phaseTemplateId, guideText }
 export async function PATCH(req: Request) {
   const uid = await requireAdmin();
   if (!uid) return NextResponse.json({ error: "관리자만 접근할 수 있습니다." }, { status: 403 });
   try {
     const body = await req.json();
-    const structureTypeId = String(body.structureTypeId || "");
+    const phaseTemplateId = String(body.phaseTemplateId || "");
     const guideText = String(body.guideText ?? "").slice(0, 8000);
-    if (!structureTypeId) return NextResponse.json({ error: "단계 ID가 필요합니다." }, { status: 400 });
+    if (!phaseTemplateId) return NextResponse.json({ error: "단계 ID가 필요합니다." }, { status: 400 });
     await db
-      .update(structureTypes)
+      .update(phaseTemplates)
       .set({ guideText: guideText || null, updatedAt: new Date() })
-      .where(eq(structureTypes.id, structureTypeId));
+      .where(eq(phaseTemplates.id, phaseTemplateId));
     return NextResponse.json({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "오류";
@@ -84,39 +109,50 @@ export async function PATCH(req: Request) {
   }
 }
 
-// POST: 자료 업로드 (multipart) fields: structureTypeId, assetKind(reference|spec), file
+// POST: 자료 업로드 fields: phaseTemplateId, assetKind(reference|spec), file
 export async function POST(req: Request) {
   const uid = await requireAdmin();
   if (!uid) return NextResponse.json({ error: "관리자만 접근할 수 있습니다." }, { status: 403 });
   try {
     const fd = await req.formData();
-    const structureTypeId = String(fd.get("structureTypeId") || "");
+    const phaseTemplateId = String(fd.get("phaseTemplateId") || "");
     const assetKind = String(fd.get("assetKind") || "reference") === "spec" ? "spec" : "reference";
     const file = fd.get("file");
-    if (!structureTypeId || !(file instanceof File)) {
+    if (!phaseTemplateId || !(file instanceof File)) {
       return NextResponse.json({ error: "단계/파일 정보가 필요합니다." }, { status: 400 });
     }
 
-    const stRows = await db
-      .select({ id: structureTypes.id, name: structureTypes.name })
-      .from(structureTypes)
-      .where(eq(structureTypes.id, structureTypeId))
+    const ptRows = await db
+      .select({
+        id: phaseTemplates.id,
+        name: phaseTemplates.name,
+        structureTypeId: phaseTemplates.structureTypeId,
+      })
+      .from(phaseTemplates)
+      .where(eq(phaseTemplates.id, phaseTemplateId))
       .limit(1);
-    const st = stRows[0];
-    if (!st) return NextResponse.json({ error: "단계를 찾을 수 없습니다." }, { status: 404 });
+    const pt = ptRows[0];
+    if (!pt) return NextResponse.json({ error: "단계를 찾을 수 없습니다." }, { status: 404 });
+
+    const stRows = await db
+      .select({ name: structureTypes.name })
+      .from(structureTypes)
+      .where(eq(structureTypes.id, pt.structureTypeId))
+      .limit(1);
+    const structName = stRows[0]?.name || "구조물";
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const mimeType = file.type || "application/octet-stream";
     const cleanName = (file.name || "upload").replace(/[\\/]/g, "_");
     const driveName = `${Date.now()}_${cleanName}`;
     const kindFolder = assetKind === "spec" ? "시방서" : "참고사진";
-    const folderPath = ["_검측가이드", st.name || structureTypeId, kindFolder];
+    const folderPath = ["_검측가이드", structName, pt.name || "단계", kindFolder];
     const up = await uploadToDrive({ name: driveName, mimeType, buffer, folderPath });
 
     const [row] = await db
       .insert(guideAssets)
       .values({
-        structureTypeId,
+        phaseTemplateId,
         assetKind,
         fileName: cleanName,
         mimeType,
@@ -135,7 +171,7 @@ export async function POST(req: Request) {
   }
 }
 
-// DELETE: ?assetId=x  자료 삭제(드라이브+DB)
+// DELETE: ?assetId=x
 export async function DELETE(req: Request) {
   const uid = await requireAdmin();
   if (!uid) return NextResponse.json({ error: "관리자만 접근할 수 있습니다." }, { status: 403 });
@@ -150,7 +186,7 @@ export async function DELETE(req: Request) {
       try {
         await deleteFromDrive(a.storageFileId);
       } catch {
-        // 드라이브 삭제 실패해도 DB 는 지움
+        // 무시
       }
     }
     await db.delete(guideAssets).where(eq(guideAssets.id, assetId));

@@ -195,7 +195,8 @@ export const recordAssets = pgTable("record_assets", {
 
 export const guideAssets = pgTable("guide_assets", {
   id: uuid("id").primaryKey().defaultRandom(),
-  structureTypeId: uuid("structure_type_id").notNull().references(() => structureTypes.id, { onDelete: "cascade" }),
+  structureTypeId: uuid("structure_type_id").references(() => structureTypes.id, { onDelete: "cascade" }),
+  phaseTemplateId: uuid("phase_template_id").references(() => phaseTemplates.id, { onDelete: "cascade" }),
   assetKind: text("asset_kind").$type<"reference" | "spec">().notNull().default("reference"),
   fileName: varchar("file_name", { length: 255 }).notNull(),
   mimeType: varchar("mime_type", { length: 100 }).notNull(),
