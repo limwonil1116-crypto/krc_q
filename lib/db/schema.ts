@@ -197,6 +197,8 @@ export const guideAssets = pgTable("guide_assets", {
   id: uuid("id").primaryKey().defaultRandom(),
   structureTypeId: uuid("structure_type_id").references(() => structureTypes.id, { onDelete: "cascade" }),
   phaseTemplateId: uuid("phase_template_id").references(() => phaseTemplates.id, { onDelete: "cascade" }),
+  subTypeId: uuid("sub_type_id").references(() => structureTypes.id, { onDelete: "cascade" }),
+  phaseCode: varchar("phase_code", { length: 50 }),
   assetKind: text("asset_kind").$type<"reference" | "spec">().notNull().default("reference"),
   fileName: varchar("file_name", { length: 255 }).notNull(),
   mimeType: varchar("mime_type", { length: 100 }).notNull(),
@@ -205,5 +207,15 @@ export const guideAssets = pgTable("guide_assets", {
   storageFileId: text("storage_file_id"),
   sortOrder: integer("sort_order").notNull().default(0),
   createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+
+export const guideEntries = pgTable("guide_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subTypeId: uuid("sub_type_id").notNull().references(() => structureTypes.id, { onDelete: "cascade" }),
+  phaseCode: varchar("phase_code", { length: 50 }).notNull(),
+  guideText: text("guide_text"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

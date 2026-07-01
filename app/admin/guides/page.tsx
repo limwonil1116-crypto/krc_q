@@ -3,17 +3,20 @@
 import { useEffect, useState } from "react";
 
 type Structure = { id: string; name: string; code: string; parentId: string | null; sortOrder: number };
-type Phase = { id: string; code: string; name: string; guideText: string | null; sortOrder: number };
-type GuideAsset = { id: string; phaseTemplateId: string | null; assetKind: "reference" | "spec"; fileName: string; mimeType: string };
+type Child = { id: string; name: string; sortOrder: number };
+type Phase = { code: string; name: string; sortOrder: number; parentGuideText: string; subGuideText: string };
+type GuideAsset = { id: string; phaseCode: string | null; assetKind: "reference" | "spec"; fileName: string; mimeType: string };
 
 export default function GuidesPage() {
   const [structures, setStructures] = useState<Structure[]>([]);
-  const [sel, setSel] = useState<{ id: string; name: string } | null>(null);
+  const [parent, setParent] = useState<{ id: string; name: string } | null>(null);
+  const [children, setChildren] = useState<Child[]>([]);
+  const [sub, setSub] = useState<{ id: string; name: string } | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [assets, setAssets] = useState<GuideAsset[]>([]);
   const [texts, setTexts] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savingCode, setSavingCode] = useState<string | null>(null);
   const [busyUpload, setBusyUpload] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
 
@@ -26,21 +29,34 @@ export default function GuidesPage() {
       .catch(() => {});
   }, []);
 
-  async function pick(id: string, name: string) {
-    setSel({ id, name });
+  async function pickParent(id: string, name: string) {
+    setParent({ id, name });
+    setChildren([]);
+    setSub(null);
+    setPhases([]);
+    setAssets([]);
+    setTexts({});
+    setMsg("");
+    const r = await fetch(`/api/admin/guides?parentId=${id}`);
+    const d = await r.json();
+    if (d.ok) setChildren(d.children || []);
+  }
+
+  async function pickSub(id: string, name: string) {
+    setSub({ id, name });
     setPhases([]);
     setAssets([]);
     setTexts({});
     setMsg("");
     setLoading(true);
     try {
-      const r = await fetch(`/api/admin/guides?structureTypeId=${id}`);
+      const r = await fetch(`/api/admin/guides?subTypeId=${id}`);
       const d = await r.json();
       if (d.ok) {
         setPhases(d.phases || []);
         setAssets(d.assets || []);
         const t: Record<string, string> = {};
-        (d.phases || []).forEach((p: Phase) => (t[p.id] = p.guideText || ""));
+        (d.phases || []).forEach((p: Phase) => (t[p.code] = p.subGuideText || ""));
         setTexts(t);
       }
     } finally {
@@ -48,28 +64,31 @@ export default function GuidesPage() {
     }
   }
 
-  async function saveText(phaseId: string) {
-    setSavingId(phaseId);
+  async function saveText(code: string) {
+    if (!sub) return;
+    setSavingCode(code);
     setMsg("");
     try {
       const r = await fetch("/api/admin/guides", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phaseTemplateId: phaseId, guideText: texts[phaseId] || "" }),
+        body: JSON.stringify({ subTypeId: sub.id, phaseCode: code, guideText: texts[code] || "" }),
       });
       const d = await r.json();
       setMsg(!r.ok || !d.ok ? d.error || "저장 실패" : "저장 완료");
     } finally {
-      setSavingId(null);
+      setSavingCode(null);
     }
   }
 
-  async function uploadFile(phaseId: string, kind: "reference" | "spec", file: File) {
-    setBusyUpload(phaseId + kind);
+  async function uploadFile(code: string, kind: "reference" | "spec", file: File) {
+    if (!sub) return;
+    setBusyUpload(code + kind);
     setMsg("");
     try {
       const fd = new FormData();
-      fd.append("phaseTemplateId", phaseId);
+      fd.append("subTypeId", sub.id);
+      fd.append("phaseCode", code);
       fd.append("assetKind", kind);
       fd.append("file", file);
       const r = await fetch("/api/admin/guides", { method: "POST", body: fd });
@@ -78,11 +97,9 @@ export default function GuidesPage() {
         setMsg(d.error || "업로드 실패");
         return;
       }
-      if (sel) {
-        const rr = await fetch(`/api/admin/guides?structureTypeId=${sel.id}`);
-        const dd = await rr.json();
-        if (dd.ok) setAssets(dd.assets || []);
-      }
+      const rr = await fetch(`/api/admin/guides?subTypeId=${sub.id}`);
+      const dd = await rr.json();
+      if (dd.ok) setAssets(dd.assets || []);
     } finally {
       setBusyUpload(null);
     }
@@ -100,7 +117,7 @@ export default function GuidesPage() {
   }
 
   const taCls =
-    "min-h-[110px] w-full rounded-md border border-neutral-300 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
+    "min-h-[100px] w-full rounded-md border border-neutral-300 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
   const upBtn =
     "inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-[#0033A0] hover:bg-neutral-50";
 
@@ -109,23 +126,23 @@ export default function GuidesPage() {
       <div>
         <h1 className="text-xl font-bold text-[#0033A0]">검측 가이드 관리</h1>
         <p className="text-sm text-neutral-500">
-          구조물을 선택하면 5단계(F1~F5)별로 가이드/프롬프트와 참고사진·시방서를 등록할 수 있습니다. AI 검측 기록 작성 시 각 단계의 가이드를 참고합니다.
+          대분류 → 세부항목(공종) → 5단계(F1~F5) 순으로 가이드를 작성합니다. 세부항목별로 정밀한 가이드를 작성하면 AI가 더 정확하게 검측 기록을 작성합니다.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
-        {/* 구조물 목록 */}
+      <div className="grid gap-4 md:grid-cols-[200px_200px_1fr]">
+        {/* 대분류 */}
         <div className="space-y-1 rounded-2xl border border-neutral-200 bg-white p-3">
-          <div className="mb-1 text-xs font-bold text-neutral-500">구조물 선택</div>
-          {structures.length === 0 && <p className="text-sm text-neutral-400">단계가 등록된 구조물이 없습니다.</p>}
+          <div className="mb-1 text-xs font-bold text-neutral-500">① 대분류</div>
+          {structures.length === 0 && <p className="text-sm text-neutral-400">구조물이 없습니다.</p>}
           {structures.map((s) => (
             <button
               key={s.id}
               type="button"
-              onClick={() => pick(s.id, s.name)}
+              onClick={() => pickParent(s.id, s.name)}
               className={
                 "w-full rounded-md px-2.5 py-2 text-left text-sm font-semibold " +
-                (sel?.id === s.id ? "bg-[#0033A0] text-white" : "text-[#0A2540] hover:bg-neutral-100")
+                (parent?.id === s.id ? "bg-[#0033A0] text-white" : "text-[#0A2540] hover:bg-neutral-100")
               }
             >
               {s.name}
@@ -133,30 +150,56 @@ export default function GuidesPage() {
           ))}
         </div>
 
-        {/* F1~F5 단계별 편집 */}
+        {/* 세부항목 */}
+        <div className="space-y-1 rounded-2xl border border-neutral-200 bg-white p-3">
+          <div className="mb-1 text-xs font-bold text-neutral-500">② 세부항목(공종)</div>
+          {!parent ? (
+            <p className="text-sm text-neutral-400">대분류를 선택하세요.</p>
+          ) : children.length === 0 ? (
+            <p className="text-sm text-neutral-400">세부항목이 없습니다.</p>
+          ) : (
+            children.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => pickSub(c.id, c.name)}
+                className={
+                  "w-full rounded-md px-2.5 py-2 text-left text-sm " +
+                  (sub?.id === c.id ? "bg-[#0033A0] text-white font-semibold" : "text-neutral-700 hover:bg-neutral-100")
+                }
+              >
+                {c.name}
+              </button>
+            ))
+          )}
+        </div>
+
+        {/* F1~F5 편집 */}
         <div className="space-y-4">
-          {!sel ? (
+          {!sub ? (
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-400">
-              왼쪽에서 구조물을 선택하세요.
+              세부항목을 선택하면 단계별 가이드를 작성할 수 있습니다.
             </div>
           ) : loading ? (
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-400">불러오는 중...</div>
           ) : phases.length === 0 ? (
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-400">
-              이 구조물에 단계가 없습니다.
+              단계 정의가 없습니다. (대분류에 F1~F5 단계가 필요)
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <div className="text-base font-bold text-[#0A2540]">{sel.name} · 단계별 가이드</div>
+                <div className="text-base font-bold text-[#0A2540]">
+                  {parent?.name} · {sub.name} · 단계별 가이드
+                </div>
                 {msg && <span className="text-sm text-[#0033A0]">{msg}</span>}
               </div>
 
               {phases.map((p, i) => {
-                const photos = assets.filter((a) => a.phaseTemplateId === p.id && a.assetKind === "reference");
-                const specs = assets.filter((a) => a.phaseTemplateId === p.id && a.assetKind === "spec");
+                const photos = assets.filter((a) => a.phaseCode === p.code && a.assetKind === "reference");
+                const specs = assets.filter((a) => a.phaseCode === p.code && a.assetKind === "spec");
                 return (
-                  <div key={p.id} className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
+                  <div key={p.code} className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0033A0] text-xs font-bold text-white">
@@ -167,28 +210,33 @@ export default function GuidesPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => saveText(p.id)}
-                        disabled={savingId === p.id}
+                        onClick={() => saveText(p.code)}
+                        disabled={savingCode === p.code}
                         className="rounded-md bg-[#0033A0] px-3 py-1.5 text-sm font-bold text-white hover:bg-[#002A80] disabled:opacity-50"
                       >
-                        {savingId === p.id ? "저장 중..." : "저장"}
+                        {savingCode === p.code ? "저장 중..." : "저장"}
                       </button>
                     </div>
 
+                    {p.parentGuideText && (
+                      <div className="rounded-lg bg-neutral-50 p-2 text-xs text-neutral-500">
+                        <span className="font-semibold text-neutral-600">대분류 공통 가이드:</span> {p.parentGuideText}
+                      </div>
+                    )}
+
                     <textarea
                       className={taCls}
-                      value={texts[p.id] || ""}
-                      onChange={(e) => setTexts((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                      placeholder={"이 단계의 가이드/프롬프트를 시방서 기준으로 작성하세요.\n예) 스타프로 폭·두께 측정, 철근 간격 확인, 허용오차 ±..."}
+                      value={texts[p.code] || ""}
+                      onChange={(e) => setTexts((prev) => ({ ...prev, [p.code]: e.target.value }))}
+                      placeholder={`${sub.name}의 이 단계 가이드를 시방서 기준으로 작성하세요.`}
                     />
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {/* 참고사진 */}
                       <div className="space-y-2 rounded-lg border border-neutral-100 bg-neutral-50 p-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-neutral-600">참고사진 ({photos.length})</span>
                           <label className={upBtn}>
-                            {busyUpload === p.id + "reference" ? "업로드..." : "＋사진"}
+                            {busyUpload === p.code + "reference" ? "업로드..." : "＋사진"}
                             <input
                               type="file"
                               accept="image/*"
@@ -196,7 +244,7 @@ export default function GuidesPage() {
                               disabled={busyUpload !== null}
                               onChange={(e) => {
                                 const f = e.target.files?.[0];
-                                if (f) uploadFile(p.id, "reference", f);
+                                if (f) uploadFile(p.code, "reference", f);
                                 e.target.value = "";
                               }}
                             />
@@ -225,12 +273,11 @@ export default function GuidesPage() {
                         )}
                       </div>
 
-                      {/* 시방서 */}
                       <div className="space-y-2 rounded-lg border border-neutral-100 bg-neutral-50 p-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-neutral-600">시방서 ({specs.length})</span>
                           <label className={upBtn}>
-                            {busyUpload === p.id + "spec" ? "업로드..." : "＋시방서"}
+                            {busyUpload === p.code + "spec" ? "업로드..." : "＋시방서"}
                             <input
                               type="file"
                               accept=".pdf,.doc,.docx,.hwp,.hwpx,.txt"
@@ -238,7 +285,7 @@ export default function GuidesPage() {
                               disabled={busyUpload !== null}
                               onChange={(e) => {
                                 const f = e.target.files?.[0];
-                                if (f) uploadFile(p.id, "spec", f);
+                                if (f) uploadFile(p.code, "spec", f);
                                 e.target.value = "";
                               }}
                             />
@@ -261,9 +308,6 @@ export default function GuidesPage() {
                   </div>
                 );
               })}
-              <p className="text-xs text-neutral-400">
-                * 시방서는 파일로 보관됩니다. AI는 위 단계별 &lsquo;가이드/프롬프트&rsquo; 텍스트를 사용합니다. (시방서 자동 분석은 다음 단계)
-              </p>
             </>
           )}
         </div>
