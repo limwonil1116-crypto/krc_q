@@ -3,59 +3,14 @@
 import { useEffect, useState } from "react";
 
 type Structure = { id: string; name: string; code: string; parentId: string | null; sortOrder: number };
-type Child = { id: string; name: string; sortOrder: number };
-type Phase = { code: string; name: string; sortOrder: number; parentGuideText: string; subGuideText: string };
-type GuideAsset = { id: string; phaseCode: string | null; assetKind: "reference" | "spec"; fileName: string; mimeType: string };
-
-async function compressImage(file: File, maxSide = 1600, quality = 0.8): Promise<File> {
-  if (!file.type.startsWith("image/")) return file;
-  try {
-    const dataUrl: string = await new Promise((res, rej) => {
-      const fr = new FileReader();
-      fr.onload = () => res(fr.result as string);
-      fr.onerror = rej;
-      fr.readAsDataURL(file);
-    });
-    const img: HTMLImageElement = await new Promise((res, rej) => {
-      const im = new Image();
-      im.onload = () => res(im);
-      im.onerror = rej;
-      im.src = dataUrl;
-    });
-    let w = img.naturalWidth;
-    let h = img.naturalHeight;
-    const scale = Math.min(1, maxSide / Math.max(w, h));
-    w = Math.round(w * scale);
-    h = Math.round(h * scale);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(img, 0, 0, w, h);
-    const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, "image/jpeg", quality));
-    if (!blob) return file;
-    const name = (file.name || "photo").replace(/\.[^.]+$/, "") + ".jpg";
-    return new File([blob], name, { type: "image/jpeg" });
-  } catch {
-    return file;
-  }
-}
+type Spec = { id: string; fileName: string; mimeType: string };
 
 export default function GuidesPage() {
   const [structures, setStructures] = useState<Structure[]>([]);
   const [parent, setParent] = useState<{ id: string; name: string } | null>(null);
-  const [children, setChildren] = useState<Child[]>([]);
-  const [sub, setSub] = useState<{ id: string; name: string } | null>(null);
-  const [phases, setPhases] = useState<Phase[]>([]);
-  const [assets, setAssets] = useState<GuideAsset[]>([]);
-  const [texts, setTexts] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-  const [savingCode, setSavingCode] = useState<string | null>(null);
-  const [busyUpload, setBusyUpload] = useState<string | null>(null);
+  const [specs, setSpecs] = useState<Spec[]>([]);
+  const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
-  const [parentSpecs, setParentSpecs] = useState<{ id: string; fileName: string; mimeType: string }[]>([]);
-  const [busyParentSpec, setBusyParentSpec] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/guides")
@@ -68,28 +23,20 @@ export default function GuidesPage() {
 
   async function pickParent(id: string, name: string) {
     setParent({ id, name });
-    setChildren([]);
-    setSub(null);
-    setPhases([]);
-    setAssets([]);
-    setTexts({});
+    setSpecs([]);
     setMsg("");
-    setParentSpecs([]);
-    const r = await fetch(`/api/admin/guides?parentId=${id}`);
-    const d = await r.json();
-    if (d.ok) setChildren(d.children || []);
-    loadParentSpecs(id);
+    loadSpecs(id);
   }
 
-  async function loadParentSpecs(parentId: string) {
+  async function loadSpecs(parentId: string) {
     const r = await fetch(`/api/admin/guides?parentSpecId=${parentId}`);
     const d = await r.json();
-    if (d.ok) setParentSpecs(d.specs || []);
+    if (d.ok) setSpecs(d.specs || []);
   }
 
-  async function uploadParentSpec(file: File) {
+  async function uploadSpec(file: File) {
     if (!parent) return;
-    setBusyParentSpec(true);
+    setBusy(true);
     setMsg("");
     try {
       const fd = new FormData();
@@ -102,13 +49,14 @@ export default function GuidesPage() {
         setMsg(d.error || "시방서 업로드 실패");
         return;
       }
-      loadParentSpecs(parent.id);
+      setMsg("시방서 업로드 완료");
+      loadSpecs(parent.id);
     } finally {
-      setBusyParentSpec(false);
+      setBusy(false);
     }
   }
 
-  async function removeParentSpec(id: string) {
+  async function removeSpec(id: string) {
     if (!confirm("이 시방서를 삭제할까요?")) return;
     const r = await fetch(`/api/admin/guides?assetId=${id}`, { method: "DELETE" });
     const d = await r.json();
@@ -116,117 +64,22 @@ export default function GuidesPage() {
       setMsg(d.error || "삭제 실패");
       return;
     }
-    setParentSpecs((prev) => prev.filter((s) => s.id !== id));
+    setSpecs((prev) => prev.filter((s) => s.id !== id));
   }
-
-  async function pickSub(id: string, name: string) {
-    setSub({ id, name });
-    setPhases([]);
-    setAssets([]);
-    setTexts({});
-    setMsg("");
-    setLoading(true);
-    try {
-      const r = await fetch(`/api/admin/guides?subTypeId=${id}`);
-      const d = await r.json();
-      if (d.ok) {
-        setPhases(d.phases || []);
-        setAssets(d.assets || []);
-        const t: Record<string, string> = {};
-        (d.phases || []).forEach((p: Phase) => (t[p.code] = p.subGuideText || ""));
-        setTexts(t);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function saveText(code: string, phaseName: string) {
-    if (!sub) return;
-    setSavingCode(code);
-    setMsg("");
-    try {
-      // 1) 관리자가 입력한 텍스트 먼저 저장
-      await fetch("/api/admin/guides", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subTypeId: sub.id, phaseCode: code, guideText: texts[code] || "" }),
-      });
-      // 2) 시방서·참고사진을 반영해 AI가 가이드 자동 생성(덮어씀)
-      setMsg("AI가 시방서·사진을 반영해 가이드를 생성 중...");
-      const g = await fetch("/api/admin/guides/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subTypeId: sub.id, phaseCode: code, phaseName, currentText: texts[code] || "" }),
-      });
-      const gd = await g.json();
-      if (g.ok && gd.ok && gd.guideText) {
-        setTexts((prev) => ({ ...prev, [code]: gd.guideText }));
-        setMsg(`AI 가이드 생성 완료 (시방서 ${gd.specCount || 0}건·참고사진 ${gd.refCount || 0}장 반영)`);
-      } else {
-        setMsg(gd.error || "저장은 됐으나 AI 생성 실패 (입력 텍스트는 저장됨)");
-      }
-    } catch {
-      setMsg("처리 중 오류가 발생했습니다.");
-    } finally {
-      setSavingCode(null);
-    }
-  }
-
-  async function uploadFile(code: string, kind: "reference" | "spec", file: File) {
-    if (!sub) return;
-    setBusyUpload(code + kind);
-    setMsg("");
-    try {
-      const toSend = kind === "reference" ? await compressImage(file) : file;
-      const fd = new FormData();
-      fd.append("subTypeId", sub.id);
-      fd.append("phaseCode", code);
-      fd.append("assetKind", kind);
-      fd.append("file", toSend);
-      const r = await fetch("/api/admin/guides", { method: "POST", body: fd });
-      const d = await r.json();
-      if (!r.ok || !d.ok) {
-        setMsg(d.error || "업로드 실패");
-        return;
-      }
-      const rr = await fetch(`/api/admin/guides?subTypeId=${sub.id}`);
-      const dd = await rr.json();
-      if (dd.ok) setAssets(dd.assets || []);
-    } finally {
-      setBusyUpload(null);
-    }
-  }
-
-  async function removeAsset(id: string) {
-    if (!confirm("이 자료를 삭제할까요?")) return;
-    const r = await fetch(`/api/admin/guides?assetId=${id}`, { method: "DELETE" });
-    const d = await r.json();
-    if (!r.ok || !d.ok) {
-      setMsg(d.error || "삭제 실패");
-      return;
-    }
-    setAssets((prev) => prev.filter((a) => a.id !== id));
-  }
-
-  const taCls =
-    "min-h-[100px] w-full rounded-md border border-neutral-300 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
-  const upBtn =
-    "inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-[#0033A0] hover:bg-neutral-50";
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-[#0033A0]">검측 가이드 관리</h1>
+        <h1 className="text-xl font-bold text-[#0033A0]">검측 가이드 · 시방서 관리</h1>
         <p className="text-sm text-neutral-500">
-          대분류 → 세부항목(공종) → 5단계(F1~F5) 순으로 가이드를 작성합니다. 세부항목별로 정밀한 가이드를 작성하면 AI가 더 정확하게 검측 기록을 작성합니다.
+          대분류별로 시방서를 등록해 두면, 작업자가 AI 검측 기록을 작성할 때 해당 시방서를 참고하여 설명 내용을 작성합니다.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-[200px_200px_1fr]">
-        {/* 대분류 */}
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        {/* 대분류 목록 */}
         <div className="space-y-1 rounded-2xl border border-neutral-200 bg-white p-3">
-          <div className="mb-1 text-xs font-bold text-neutral-500">① 대분류</div>
+          <div className="mb-1 text-xs font-bold text-neutral-500">대분류 선택</div>
           {structures.length === 0 && <p className="text-sm text-neutral-400">구조물이 없습니다.</p>}
           {structures.map((s) => (
             <button
@@ -243,34 +96,51 @@ export default function GuidesPage() {
           ))}
         </div>
 
-        {/* 세부항목 + 대분류 시방서 */}
+        {/* 시방서 보관함 */}
         <div className="space-y-3">
-          {parent && (
-            <div className="space-y-2 rounded-2xl border border-[#0033A0]/20 bg-[#F5F8FF] p-3">
+          {!parent ? (
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-400">
+              왼쪽에서 대분류를 선택하세요.
+            </div>
+          ) : (
+            <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#0033A0]">📄 대분류 시방서 ({parentSpecs.length})</span>
-                <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#0033A0]/30 bg-white px-2 py-1 text-xs font-semibold text-[#0033A0] hover:bg-neutral-50">
-                  {busyParentSpec ? "업로드..." : "＋시방서"}
+                <div className="text-base font-bold text-[#0A2540]">{parent.name} · 시방서 ({specs.length})</div>
+                <label className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-[#0033A0] px-3 py-1.5 text-sm font-bold text-white hover:bg-[#002A80]">
+                  {busy ? "업로드 중..." : "＋ 시방서 추가"}
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx,.hwp,.hwpx,.txt"
                     className="hidden"
-                    disabled={busyParentSpec}
+                    disabled={busy}
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) uploadParentSpec(f);
+                      if (f) uploadSpec(f);
                       e.target.value = "";
                     }}
                   />
                 </label>
               </div>
-              <p className="text-[11px] text-neutral-500">이 대분류의 모든 세부항목·단계 가이드 생성 시 참고됩니다.</p>
-              {parentSpecs.length > 0 && (
-                <ul className="space-y-1">
-                  {parentSpecs.map((s) => (
-                    <li key={s.id} className="flex items-center justify-between rounded border border-neutral-200 bg-white px-2 py-1 text-xs">
+              {msg && <p className="text-sm text-[#0033A0]">{msg}</p>}
+              <p className="text-xs text-neutral-400">
+                * PDF/HWP/DOC 등. 이 대분류의 모든 세부항목·단계에 공통 적용됩니다. (촬영 단계 구성은 기존 설정이 그대로 유지됩니다.)
+              </p>
+
+              {specs.length === 0 ? (
+                <p className="text-sm text-neutral-400">등록된 시방서가 없습니다.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {specs.map((s) => (
+                    <li
+                      key={s.id}
+                      className="flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm"
+                    >
                       <span className="truncate">📄 {s.fileName}</span>
-                      <button type="button" onClick={() => removeParentSpec(s.id)} className="ml-1 shrink-0 text-red-600 hover:underline">
+                      <button
+                        type="button"
+                        onClick={() => removeSpec(s.id)}
+                        className="ml-2 shrink-0 text-red-600 hover:underline"
+                      >
                         삭제
                       </button>
                     </li>
@@ -278,167 +148,6 @@ export default function GuidesPage() {
                 </ul>
               )}
             </div>
-          )}
-
-          <div className="space-y-1 rounded-2xl border border-neutral-200 bg-white p-3">
-            <div className="mb-1 text-xs font-bold text-neutral-500">② 세부항목(공종)</div>
-          {!parent ? (
-            <p className="text-sm text-neutral-400">대분류를 선택하세요.</p>
-          ) : children.length === 0 ? (
-            <p className="text-sm text-neutral-400">세부항목이 없습니다.</p>
-          ) : (
-            children.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => pickSub(c.id, c.name)}
-                className={
-                  "w-full rounded-md px-2.5 py-2 text-left text-sm " +
-                  (sub?.id === c.id ? "bg-[#0033A0] text-white font-semibold" : "text-neutral-700 hover:bg-neutral-100")
-                }
-              >
-                {c.name}
-              </button>
-            ))
-          )}
-          </div>
-        </div>
-
-        {/* F1~F5 편집 */}
-        <div className="space-y-4">
-          {!sub ? (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-400">
-              세부항목을 선택하면 단계별 가이드를 작성할 수 있습니다.
-            </div>
-          ) : loading ? (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-400">불러오는 중...</div>
-          ) : phases.length === 0 ? (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-400">
-              단계 정의가 없습니다. (대분류에 F1~F5 단계가 필요)
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <div className="text-base font-bold text-[#0A2540]">
-                  {parent?.name} · {sub.name} · 단계별 가이드
-                </div>
-                {msg && <span className="text-sm text-[#0033A0]">{msg}</span>}
-              </div>
-
-              {phases.map((p, i) => {
-                const photos = assets.filter((a) => a.phaseCode === p.code && a.assetKind === "reference");
-                const specs = assets.filter((a) => a.phaseCode === p.code && a.assetKind === "spec");
-                return (
-                  <div key={p.code} className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0033A0] text-xs font-bold text-white">
-                          {i + 1}
-                        </span>
-                        <span className="text-sm font-bold text-[#0A2540]">{p.name}</span>
-                        <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] text-neutral-500">{p.code}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => saveText(p.code, p.name)}
-                        disabled={savingCode === p.code}
-                        className="rounded-md bg-[#0033A0] px-3 py-1.5 text-sm font-bold text-white hover:bg-[#002A80] disabled:opacity-50"
-                      >
-                        {savingCode === p.code ? "생성 중..." : "저장 + AI 가이드 생성"}
-                      </button>
-                    </div>
-
-                    {p.parentGuideText && (
-                      <div className="rounded-lg bg-neutral-50 p-2 text-xs text-neutral-500">
-                        <span className="font-semibold text-neutral-600">대분류 공통 가이드:</span> {p.parentGuideText}
-                      </div>
-                    )}
-
-                    <textarea
-                      className={taCls}
-                      value={texts[p.code] || ""}
-                      onChange={(e) => setTexts((prev) => ({ ...prev, [p.code]: e.target.value }))}
-                      placeholder={`${sub.name}의 이 단계 가이드를 시방서 기준으로 작성하세요.`}
-                    />
-
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-2 rounded-lg border border-neutral-100 bg-neutral-50 p-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-neutral-600">참고사진 ({photos.length})</span>
-                          <label className={upBtn}>
-                            {busyUpload === p.code + "reference" ? "업로드..." : "＋사진"}
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              disabled={busyUpload !== null}
-                              onChange={(e) => {
-                                const f = e.target.files?.[0];
-                                if (f) uploadFile(p.code, "reference", f);
-                                e.target.value = "";
-                              }}
-                            />
-                          </label>
-                        </div>
-                        {photos.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {photos.map((a) => (
-                              <div key={a.id} className="relative">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={`/api/admin/guides/raw?assetId=${a.id}`}
-                                  alt={a.fileName}
-                                  className="h-16 w-16 rounded border border-neutral-200 object-cover"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => removeAsset(a.id)}
-                                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 rounded-lg border border-neutral-100 bg-neutral-50 p-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-neutral-600">시방서 ({specs.length})</span>
-                          <label className={upBtn}>
-                            {busyUpload === p.code + "spec" ? "업로드..." : "＋시방서"}
-                            <input
-                              type="file"
-                              accept=".pdf,.doc,.docx,.hwp,.hwpx,.txt"
-                              className="hidden"
-                              disabled={busyUpload !== null}
-                              onChange={(e) => {
-                                const f = e.target.files?.[0];
-                                if (f) uploadFile(p.code, "spec", f);
-                                e.target.value = "";
-                              }}
-                            />
-                          </label>
-                        </div>
-                        {specs.length > 0 && (
-                          <ul className="space-y-1">
-                            {specs.map((a) => (
-                              <li key={a.id} className="flex items-center justify-between rounded border border-neutral-200 bg-white px-2 py-1 text-xs">
-                                <span className="truncate">📄 {a.fileName}</span>
-                                <button type="button" onClick={() => removeAsset(a.id)} className="ml-1 shrink-0 text-red-600 hover:underline">
-                                  삭제
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </>
           )}
         </div>
       </div>
