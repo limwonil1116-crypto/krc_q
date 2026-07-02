@@ -8,6 +8,21 @@ export const authConfig = {
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
+  cookies: {
+    // OAuth(카카오) 왕복 중 PKCE/state 검증값이 유실되지 않도록 명시
+    pkceCodeVerifier: {
+      name: "authjs.pkce.code_verifier",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true, maxAge: 900 },
+    },
+    state: {
+      name: "authjs.state",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true, maxAge: 900 },
+    },
+    nonce: {
+      name: "authjs.nonce",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
+    },
+  },
   providers: [], // 실제 provider 는 auth.ts 에서 추가
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
