@@ -3,7 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { recordAssets, guideEntries, guideAssets, structureTypes } from "@/lib/db/schema";
+import { recordAssets, guideEntries, guideAssets } from "@/lib/db/schema";
 import { getDriveStream } from "@/lib/drive";
 
 export const runtime = "nodejs";
@@ -22,23 +22,6 @@ async function streamToBase64(fileId: string): Promise<string | null> {
     });
     const buf = Buffer.concat(chunks);
     if (buf.length > 5 * 1024 * 1024) return null;
-    return buf.toString("base64");
-  } catch {
-    return null;
-  }
-}
-
-async function streamToBase64Big(fileId: string): Promise<string | null> {
-  try {
-    const stream = await getDriveStream(fileId);
-    const chunks: Buffer[] = [];
-    await new Promise<void>((resolve, reject) => {
-      stream.on("data", (c: Buffer) => chunks.push(Buffer.from(c)));
-      stream.on("end", () => resolve());
-      stream.on("error", reject);
-    });
-    const buf = Buffer.concat(chunks);
-    if (buf.length > 15 * 1024 * 1024) return null;
     return buf.toString("base64");
   } catch {
     return null;
@@ -112,29 +95,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // 대분류 시방서 (subTypeId -> 부모 structureType -> spec PDF) 최대 2개
-    const specPdfs: { mimeType: string; data: string }[] = [];
-    if (subTypeId) {
-      const subRow = await db
-        .select({ parentId: structureTypes.parentId })
-        .from(structureTypes)
-        .where(eq(structureTypes.id, subTypeId))
-        .limit(1);
-      const parentId = subRow[0]?.parentId || null;
-      if (parentId) {
-        const specRows = await db
-          .select({ storageFileId: guideAssets.storageFileId, mimeType: guideAssets.mimeType })
-          .from(guideAssets)
-          .where(and(eq(guideAssets.structureTypeId, parentId), eq(guideAssets.assetKind, "spec")));
-        for (const s of specRows) {
-          if (!s.storageFileId) continue;
-          const b64 = await streamToBase64Big(s.storageFileId);
-          if (b64) specPdfs.push({ mimeType: s.mimeType || "application/pdf", data: b64 });
-          if (specPdfs.length >= 2) break;
-        }
-      }
-    }
-
     const hasGuide = !!(subGuideText || guideTextIn);
     const sys = [
       "당신은 한국 농어촌공사(KRC) 농업기반시설 건설공사의 '검측 기록'을 작성하는 보조 도구입니다.",
@@ -148,7 +108,6 @@ export async function POST(req: Request) {
         ? "제공된 '참고사진'은 이 단계에서 올바르게 촬영·검측된 예시입니다. 참고사진과 비교하여 검측사진을 평가하되, 기록은 검측사진 기준으로 작성하세요."
         : "",
       hasGuide ? "아래 '검측 가이드'에 제시된 확인 항목을 우선적으로 반영하세요." : "",
-      "시방서(PDF)가 제공되면, 해당 공종·단계에 관련된 시방 기준(치수, 허용오차, 확인항목)에 비추어 사진을 판단하고 기록에 근거로 반영하세요. 단, 시방서에 없는 수치를 지어내지 마세요.",
       "반드시 아래 JSON 형식만 출력하세요(코드펜스/설명 없이 순수 JSON):",
       '{"text":"검측 기록란에 바로 넣을 검측 내용(2~5문장)","measurements":["사진에서 읽은 수치/치수 항목(없으면 빈 배열)"],"notes":["작성자가 추가 확인하면 좋을 참고사항 0~3개"]}',
     ].filter(Boolean).join("\n");
@@ -166,7 +125,6 @@ export async function POST(req: Request) {
       `검측 단계: ${phaseName || "미상"}${phaseCode ? ` (${phaseCode})` : ""}\n` +
       (guideBlock ? `\n${guideBlock}\n` : "") +
       (userMemo ? `\n[작업자 메모]\n${userMemo}\n` : "") +
-      (specPdfs.length > 0 ? `\n첨부된 시방서 ${specPdfs.length}건을 검측 기준 근거로 참고하세요.\n` : "") +
       (referenceImages.length > 0 ? `\n※ 앞쪽 ${referenceImages.length}장은 참고사진(모범 예시), 이후가 검측사진입니다.\n` : "") +
       `\n위 정보${inspectionImages.length > 0 ? "와 첨부 사진들" : ""}을 바탕으로 검측 기록을 JSON으로 작성하세요.`;
 
@@ -178,7 +136,6 @@ export async function POST(req: Request) {
 
     // parts: 참고사진 -> 검측사진 -> 텍스트
     const parts: Array<{ inlineData: { mimeType: string; data: string } } | { text: string }> = [];
-    specPdfs.forEach((s) => parts.push({ inlineData: { mimeType: s.mimeType, data: s.data } }));
     referenceImages.forEach((data) => parts.push({ inlineData: { mimeType: "image/jpeg", data } }));
     inspectionImages.forEach((data) => parts.push({ inlineData: { mimeType: "image/jpeg", data } }));
     parts.push({ text: userText });
