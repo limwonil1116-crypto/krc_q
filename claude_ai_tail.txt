@@ -1,0 +1,31 @@
+push({ inlineData: { mimeType: "image/jpeg", data } }));
+    inspectionImages.forEach((data) => parts.push({ inlineData: { mimeType: "image/jpeg", data } }));
+    parts.push({ text: userText });
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts }],
+      generationConfig: {
+        maxOutputTokens: 1024,
+        responseMimeType: "application/json",
+      },
+    });
+
+    const out = (result.response.text() || "").trim();
+
+    try {
+      const clean = out.replace(/```json/gi, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      return NextResponse.json({ ok: true, result: parsed, imageCount: inspectionImages.length, refCount: referenceImages.length, specCount: specPdfs.length, _debug: { photos: inspectionImages.length, refs: referenceImages.length, specs: specPdfs.length } });
+    } catch {
+      return NextResponse.json({
+        ok: true,
+        result: { text: out.slice(0, 800), measurements: [], notes: [] },
+        imageCount: inspectionImages.length,
+      });
+    }
+  } catch (e) {
+    console.error("[ai:inspect]", e);
+    const msg = e instanceof Error ? e.message : "알 수 없는 오류";
+    return NextResponse.json({ error: "AI 분석 오류: " + msg }, { status: 500 });
+  }
+}

@@ -198,22 +198,57 @@ export async function POST(req: Request) {
     const result = await model.generateContent({
       contents: [{ role: "user", parts }],
       generationConfig: {
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,
+        temperature: 0.4,
         responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            text: { type: "string" },
+            measurements: { type: "array", items: { type: "string" } },
+            notes: { type: "array", items: { type: "string" } },
+          },
+          required: ["text"],
+        },
       },
     });
 
     const out = (result.response.text() || "").trim();
 
+    // 중첩 JSON 방어: 파싱 결과의 text 안에 또 JSON 이 들어있으면 한 번 더 파싱
+    function coerce(obj: unknown): { text: string; measurements: string[]; notes: string[] } {
+      let o = obj as { text?: unknown; measurements?: unknown; notes?: unknown };
+      // text 가 통째로 JSON 문자열이면 재파싱
+      if (typeof o.text === "string") {
+        const t = o.text.trim();
+        if (t.startsWith("{") && t.includes("\"text\"")) {
+          try {
+            const inner = JSON.parse(t.replace(/```json/gi, "").replace(/```/g, "").trim());
+            if (inner && typeof inner === "object") o = inner as typeof o;
+          } catch {
+            // 잘린 JSON: text: "..." 안의 내용만이라도 뽑기
+            const m = t.match(/"text"\s*:\s*"([\s\S]*)/);
+            if (m) o = { text: m[1].replace(/"\s*[},]?\s*$/, "").replace(/\\n/g, "\n"), measurements: [], notes: [] };
+          }
+        }
+      }
+      return {
+        text: typeof o.text === "string" ? o.text : "",
+        measurements: Array.isArray(o.measurements) ? (o.measurements as string[]) : [],
+        notes: Array.isArray(o.notes) ? (o.notes as string[]) : [],
+      };
+    }
+
     try {
       const clean = out.replace(/```json/gi, "").replace(/```/g, "").trim();
-      const parsed = JSON.parse(clean);
+      const parsed = coerce(JSON.parse(clean));
       return NextResponse.json({ ok: true, result: parsed, imageCount: inspectionImages.length, refCount: referenceImages.length, specCount: specPdfs.length, _debug: { photos: inspectionImages.length, refs: referenceImages.length, specs: specPdfs.length } });
     } catch {
       return NextResponse.json({
         ok: true,
-        result: { text: out.slice(0, 800), measurements: [], notes: [] },
+        result: { text: out.slice(0, 1500), measurements: [], notes: [] },
         imageCount: inspectionImages.length,
+        _debug: { photos: inspectionImages.length, refs: referenceImages.length, specs: specPdfs.length },
       });
     }
   } catch (e) {
