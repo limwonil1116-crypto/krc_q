@@ -1,0 +1,6 @@
+app\layout.tsx
+  -> ['apple-touch']
+app\manifest.ts
+  -> ['standalone']
+components\kit\install-helper.tsx
+  -> ['standalone', 'beforeinstallprompt', 'navigator.userAgent', 'KAKAOTALK', 'inapp', 'Instagram', '홈 화면', 'apple-touch', 'display-mode', 'installPrompt']
