@@ -201,15 +201,6 @@ export async function POST(req: Request) {
         maxOutputTokens: 2048,
         temperature: 0.4,
         responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            text: { type: "string" },
-            measurements: { type: "array", items: { type: "string" } },
-            notes: { type: "array", items: { type: "string" } },
-          },
-          required: ["text"],
-        },
       },
     });
 
