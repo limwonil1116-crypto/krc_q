@@ -13,10 +13,12 @@ function todayStr() {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
 }
 
-async function ownsSite(userId: string, siteId: string) {
+async function ownsSite(userId: string, siteId: string, role?: string) {
   const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
   const site = rows[0];
   if (!site) return false;
+  // 발주처(농어촌공사)는 모든 현장 접근 가능
+  if (role === "client") return true;
   const orgId = await getMyOrgId(userId);
   return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
 }
@@ -44,7 +46,7 @@ export async function POST(req: Request) {
     const ssRows = await db.select().from(siteStructures).where(eq(siteStructures.id, siteStructureId)).limit(1);
     const ss = ssRows[0];
     if (!ss) return NextResponse.json({ error: "구조물을 찾을 수 없습니다." }, { status: 404 });
-    if (!(await ownsSite(userId, ss.siteId))) {
+    if (!(await ownsSite(userId, ss.siteId, role))) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
 
