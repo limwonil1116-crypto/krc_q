@@ -14,11 +14,15 @@ const providers = [
       const email = credentials?.email as string | undefined;
       const password = credentials?.password as string | undefined;
       if (!email || !password) return null;
+      const _t0 = Date.now();
       const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const _t1 = Date.now();
       const u = rows[0];
       if (!u || !u.passwordHash) return null;
       if (u.status !== "active") return null;
       const ok = await bcrypt.compare(password, u.passwordHash);
+      const _t2 = Date.now();
+      console.log("[auth:timing] db=" + (_t1 - _t0) + "ms bcrypt=" + (_t2 - _t1) + "ms");
       if (!ok) return null;
       return { id: u.id, email: u.email ?? undefined, name: u.name, role: u.role };
     },
