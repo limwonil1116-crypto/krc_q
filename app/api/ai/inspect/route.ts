@@ -137,20 +137,27 @@ export async function POST(req: Request) {
 
     const hasGuide = !!(subGuideText || guideTextIn);
     const sys = [
-      "당신은 한국 농어촌공사(KRC) 농업기반시설 건설공사의 '검측 기록'을 작성하는 보조 도구입니다.",
-      "현장 검측 사진(스타프·줄자 등 측정 수치, 도면 표시, 시공 상태)을 분석하여, 검측 기록란에 들어갈 '검측 내용 문장'을 한국어로 간결하고 사실적으로 작성합니다.",
-      "작성 원칙:",
-      "- 사진에서 실제로 확인되는 것만 기술하세요(측정값, 부재, 상태). 보이지 않는 것을 추측하지 마세요.",
-      "- 줄자·스타프 등 눈금/수치가 보이면 그 값을 읽어 기록에 포함하세요(예: '바닥 폭 0.00m 확인').",
-      "- 공공 검측 문서 어투(간결한 개조식/서술식)로 작성. 과장·홍보성 표현 금지.",
-      "- 합격/불합격 같은 최종 판정은 단정하지 말고, 확인된 사실 위주로 기술하세요.",
+      "당신은 한국 농어촌공사(KRC) 농업기반시설 건설공사의 '검측 기록'을 작성하는 전문가입니다.",
+      "현장 검측 사진(스타프·줄자 등 측정 수치, 도면, 시공 상태)과 시방서를 분석하여, 검측 기록란에 들어갈 검측 내용을 한국어로 상세하고 사실적으로 작성합니다.",
+      "",
+      "[작성 형식]",
+      "- 순수한 서술형 문장으로만 작성하세요. JSON·코드펜스·머리말·따옴표 묶음 없이 본문 텍스트만 출력합니다.",
+      "- 4~8문장, 충분히 구체적으로 작성하세요. 너무 짧게 요약하지 마세요.",
+      "",
+      "[작성 원칙]",
+      "- 사진에서 실제로 확인되는 것을 기술하세요(측정값, 부재, 배근/타설/다짐 상태 등). 보이지 않는 것을 지어내지 마세요.",
+      "- 줄자·스타프 등 눈금/수치가 보이면 그 값을 읽어 기록에 포함하세요(예: '바닥 폭 1.00m 측정').",
+      "- 공공 검측 문서 어투(간결한 서술식). 과장·홍보성 표현 금지. 합격/불합격 단정은 피하고 확인된 사실 위주.",
       referenceImages.length > 0
-        ? "제공된 '참고사진'은 이 단계에서 올바르게 촬영·검측된 예시입니다. 참고사진과 비교하여 검측사진을 평가하되, 기록은 검측사진 기준으로 작성하세요."
+        ? "- 제공된 참고사진은 이 단계의 모범 촬영·검측 예시입니다. 비교 기준으로 삼되, 기록은 실제 검측사진 기준으로 작성하세요."
         : "",
-      hasGuide ? "아래 '검측 가이드'에 제시된 확인 항목을 우선적으로 반영하세요." : "",
-      "시방서(PDF)가 제공되면, 해당 공종·단계에 관련된 시방 기준(치수, 허용오차, 확인항목)에 비추어 사진을 판단하고 기록에 근거로 반영하세요. 단, 시방서에 없는 수치를 지어내지 마세요.",
-      "반드시 아래 JSON 형식만 출력하세요(코드펜스/설명 없이 순수 JSON):",
-      '{"text":"검측 기록란에 바로 넣을 검측 내용(2~5문장)","measurements":["사진에서 읽은 수치/치수 항목(없으면 빈 배열)"],"notes":["작성자가 추가 확인하면 좋을 참고사항 0~3개"]}',
+      hasGuide ? "- 아래 '검측 가이드'의 확인 항목을 우선 반영하세요." : "",
+      "",
+      "[시방서 활용 - 매우 중요]",
+      "- 첨부된 시방서(PDF)에서 이 공종·단계에 해당하는 시방 기준(허용오차, 기준 치수, 다짐도, 배근 간격, 재료 기준 등)을 찾아, 검측 내용에 반드시 구체적으로 인용하세요.",
+      "- 예: '설계 바닥폭 1.00m에 대해 시방 허용오차 ±30mm 이내로 확인됨', 'KCS 기준 다짐도 90% 이상 요구'.",
+      "- 사진의 측정값을 시방 기준과 비교하여 적합 여부를 사실 위주로 언급하세요.",
+      "- 단, 시방서에 없는 수치는 지어내지 말고, 관련 기준이 없으면 일반 표준시방 지식 범위에서만 신중히 언급하세요.",
     ].filter(Boolean).join("\n");
 
     const guideBlock = [
@@ -168,7 +175,7 @@ export async function POST(req: Request) {
       (userMemo ? `\n[작업자 메모]\n${userMemo}\n` : "") +
       (specPdfs.length > 0 ? `\n첨부된 시방서 ${specPdfs.length}건을 검측 기준 근거로 참고하세요.\n` : "") +
       (referenceImages.length > 0 ? `\n※ 앞쪽 ${referenceImages.length}장은 참고사진(모범 예시), 이후가 검측사진입니다.\n` : "") +
-      `\n위 정보${inspectionImages.length > 0 ? "와 첨부 사진들" : ""}을 바탕으로 검측 기록을 JSON으로 작성하세요.`;
+      `\n위 정보${inspectionImages.length > 0 ? "와 첨부 사진들" : ""}을 바탕으로, 시방 기준을 인용한 상세한 검측 기록을 서술형 문장으로 작성하세요.`;
 
     console.log("[ai:inspect] 진단", JSON.stringify({
       subTypeId,
@@ -200,48 +207,32 @@ export async function POST(req: Request) {
       generationConfig: {
         maxOutputTokens: 2048,
         temperature: 0.4,
-        responseMimeType: "application/json",
       },
     });
 
-    const out = (result.response.text() || "").trim();
+    let out = (result.response.text() || "").trim();
 
-    // 중첩 JSON 방어: 파싱 결과의 text 안에 또 JSON 이 들어있으면 한 번 더 파싱
-    function coerce(obj: unknown): { text: string; measurements: string[]; notes: string[] } {
-      let o = obj as { text?: unknown; measurements?: unknown; notes?: unknown };
-      // text 가 통째로 JSON 문자열이면 재파싱
-      if (typeof o.text === "string") {
-        const t = o.text.trim();
-        if (t.startsWith("{") && t.includes("\"text\"")) {
-          try {
-            const inner = JSON.parse(t.replace(/```json/gi, "").replace(/```/g, "").trim());
-            if (inner && typeof inner === "object") o = inner as typeof o;
-          } catch {
-            // 잘린 JSON: text: "..." 안의 내용만이라도 뽑기
-            const m = t.match(/"text"\s*:\s*"([\s\S]*)/);
-            if (m) o = { text: m[1].replace(/"\s*[},]?\s*$/, "").replace(/\\n/g, "\n"), measurements: [], notes: [] };
-          }
-        }
+    // 혹시 모델이 JSON/코드펜스로 감싸면 본문만 추출
+    out = out.replace(/```json/gi, "").replace(/```/g, "").trim();
+    if (out.startsWith("{") && out.includes('"text"')) {
+      try {
+        const j = JSON.parse(out);
+        if (j && typeof j.text === "string") out = j.text;
+      } catch {
+        const m = out.match(/"text"\s*:\s*"([\s\S]*?)"\s*[,}]/);
+        if (m) out = m[1].replace(/\\n/g, "\n").replace(/\\"/g, '"');
       }
-      return {
-        text: typeof o.text === "string" ? o.text : "",
-        measurements: Array.isArray(o.measurements) ? (o.measurements as string[]) : [],
-        notes: Array.isArray(o.notes) ? (o.notes as string[]) : [],
-      };
     }
+    out = out.trim();
 
-    try {
-      const clean = out.replace(/```json/gi, "").replace(/```/g, "").trim();
-      const parsed = coerce(JSON.parse(clean));
-      return NextResponse.json({ ok: true, result: parsed, imageCount: inspectionImages.length, refCount: referenceImages.length, specCount: specPdfs.length, _debug: { photos: inspectionImages.length, refs: referenceImages.length, specs: specPdfs.length } });
-    } catch {
-      return NextResponse.json({
-        ok: true,
-        result: { text: out.slice(0, 1500), measurements: [], notes: [] },
-        imageCount: inspectionImages.length,
-        _debug: { photos: inspectionImages.length, refs: referenceImages.length, specs: specPdfs.length },
-      });
-    }
+    return NextResponse.json({
+      ok: true,
+      result: { text: out, measurements: [], notes: [] },
+      imageCount: inspectionImages.length,
+      refCount: referenceImages.length,
+      specCount: specPdfs.length,
+      _debug: { photos: inspectionImages.length, refs: referenceImages.length, specs: specPdfs.length },
+    });
   } catch (e) {
     console.error("[ai:inspect]", e);
     const msg = e instanceof Error ? e.message : "알 수 없는 오류";
