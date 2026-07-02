@@ -170,6 +170,18 @@ export async function POST(req: Request) {
       (referenceImages.length > 0 ? `\n※ 앞쪽 ${referenceImages.length}장은 참고사진(모범 예시), 이후가 검측사진입니다.\n` : "") +
       `\n위 정보${inspectionImages.length > 0 ? "와 첨부 사진들" : ""}을 바탕으로 검측 기록을 JSON으로 작성하세요.`;
 
+    console.log("[ai:inspect] 진단", JSON.stringify({
+      subTypeId,
+      phaseCode,
+      assetIdsIn: assetIds.length,
+      inspectionImages: inspectionImages.length,
+      referenceImages: referenceImages.length,
+      specPdfs: specPdfs.length,
+      subGuideLen: subGuideText.length,
+      guideInLen: guideTextIn.length,
+      model: GEMINI_MODEL,
+    }));
+
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
       model: GEMINI_MODEL,
@@ -196,7 +208,7 @@ export async function POST(req: Request) {
     try {
       const clean = out.replace(/```json/gi, "").replace(/```/g, "").trim();
       const parsed = JSON.parse(clean);
-      return NextResponse.json({ ok: true, result: parsed, imageCount: inspectionImages.length, refCount: referenceImages.length });
+      return NextResponse.json({ ok: true, result: parsed, imageCount: inspectionImages.length, refCount: referenceImages.length, specCount: specPdfs.length, _debug: { photos: inspectionImages.length, refs: referenceImages.length, specs: specPdfs.length } });
     } catch {
       return NextResponse.json({
         ok: true,
