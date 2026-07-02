@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
     const role = session?.user?.role;
-    if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+    if (!session?.user?.id || (role !== "contractor" && role !== "client" && role !== "admin")) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
     const userId = session.user.id;

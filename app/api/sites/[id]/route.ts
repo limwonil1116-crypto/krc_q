@@ -11,7 +11,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const { id } = await params;
     const session = await auth();
     const role = session?.user?.role;
-    if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+    if (!session?.user?.id || (role !== "contractor" && role !== "client" && role !== "admin")) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
     const userId = session.user.id;

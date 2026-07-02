@@ -17,8 +17,8 @@ async function ownsSite(userId: string, siteId: string, role?: string) {
   const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
   const site = rows[0];
   if (!site) return false;
-  // 발주처(농어촌공사)는 모든 현장 접근 가능
-  if (role === "client") return true;
+  // 발주처(농어촌공사) 및 관리자는 모든 현장 접근 가능
+  if (role === "client" || role === "admin") return true;
   const orgId = await getMyOrgId(userId);
   return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
 }
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
     const role = session?.user?.role;
-    if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+    if (!session?.user?.id || (role !== "contractor" && role !== "client" && role !== "admin")) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
     const userId = session.user.id;

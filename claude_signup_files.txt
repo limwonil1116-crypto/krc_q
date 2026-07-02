@@ -1,0 +1,5 @@
+[6] app\api\signup\route.ts
+[6] app\api\onboarding\route.ts
+[4] auth.ts
+[3] components\onboarding-form.tsx
+[3] app\mypage\page.tsx

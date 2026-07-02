@@ -1,0 +1,96 @@
+
+[admin포함] app\api\account\route.ts
+  ) || null;
+  }
+
+  // 분류(role) 변경 — contractor / client 만 본인이 변경 가능 (admin/supervisor 는 변경 불가)
+  if (typeof body.role === "string" && (me.role === "contractor" |
+
+[admin빠짐-확인] app\api\assets\[assetId]\route.ts
+  ams }: { params: Promise<{ assetId: string }> }) {
+  try {
+    const { assetId } = await params;
+    const session = await auth();
+    const role = session?.use
+
+[admin빠짐-확인] app\api\records\route.ts
+  === orgId || site.clientOrgId === orgId));
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.use
+
+[admin포함] app\api\records\assets\route.ts
+  === orgId || site.clientOrgId === orgId));
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.use
+
+[admin빠짐-확인] app\api\records\reset\route.ts
+  x검측일자x단계)의 기록 행 + 첨부(드라이브 포함) 삭제 -> 미작성으로 초기화
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.use
+
+[admin빠짐-확인] app\api\records\submit\route.ts
+  === orgId || site.clientOrgId === orgId));
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.use
+
+[admin빠짐-확인] app\api\records\video\route.ts
+  === orgId));
+  return { ok: owns, site };
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.user
+
+[admin빠짐-확인] app\api\sites\route.ts
+  ma";
+import { getMyOrgId } from "@/lib/org";
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.use
+
+[admin빠짐-확인] app\api\sites\[id]\route.ts
+  est, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const session = await auth();
+    const role = session?.use
+
+[admin빠짐-확인] app\api\sites\[id]\logo\route.ts
+  est, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const session = await auth();
+    const role = session?.use
+
+[admin빠짐-확인] app\api\sites\[id]\structures\route.ts
+  est, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const session = await auth();
+    const role = session?.use
+
+[admin빠짐-확인] app\api\sites\[id]\structures\[structureId]\route.ts
+  { id: string; structureId: string }> }
+) {
+  try {
+    const { id, structureId } = await params;
+    const session = await auth();
+    const role = session?.use

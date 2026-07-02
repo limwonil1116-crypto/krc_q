@@ -1,0 +1,49 @@
+
+===== app/api/assets/[assetId]/route.ts =====
+L11: async function ownsSite(userId: string, siteId: string) {
+L24: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+L38: if (!rec || !(await ownsSite(session.user.id, rec.siteId))) {
+
+===== app/api/records/route.ts =====
+L13: async function ownsSite(userId: string, siteId: string) {
+L25: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+L42: if (!(await ownsSite(userId, ss.siteId))) {
+
+===== app/api/records/reset/route.ts =====
+L11: async function ownsSite(userId: string, siteId: string) {
+L24: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+L41: if (!(await ownsSite(userId, ss.siteId))) {
+
+===== app/api/records/submit/route.ts =====
+L10: async function ownsSite(userId: string, siteId: string) {
+L22: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+L39: if (!(await ownsSite(userId, ss.siteId))) {
+
+===== app/api/records/video/route.ts =====
+L13: async function ownsSite(userId: string, siteId: string) {
+L26: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+L42: const owned = await ownsSite(userId, ss.siteId);
+
+===== app/api/sites/route.ts =====
+L11: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+L31: clientOrgId: role === "client" ? orgId : (b.clientOrgId || null),
+L32: contractorOrgId: role === "contractor" ? orgId : null,
+L58: participantRole: role === "client" ? "client_manager" : "contractor_manager",
+
+===== app/api/sites/[id]/route.ts =====
+L14: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+L43: clientOrgId: role === "contractor" ? (b.clientOrgId || null) : site.clientOrgId,
+
+===== app/api/sites/[id]/logo/route.ts =====
+L11: async function ownsSite(userId: string, siteId: string) {
+L26: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+L30: const owned = await ownsSite(userId, id);
+L82: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+L86: const owned = await ownsSite(userId, id);
+
+===== app/api/sites/[id]/structures/route.ts =====
+L24: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+
+===== app/api/sites/[id]/structures/[structureId]/route.ts =====
+L27: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
+L62: if (!session?.user?.id || (role !== "contractor" && role !== "client")) {
