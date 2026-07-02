@@ -1,0 +1,46 @@
+===== uploadFile =====
+async function uploadFile(code: string, kind: "reference" | "spec", file: File) {
+    if (!sub) return;
+    setBusyUpload(code + kind);
+    setMsg("");
+    try {
+      const fd = new FormData();
+      fd.append("subTypeId", sub.id);
+      fd.append("phaseCode", code);
+      fd.append("assetKind", kind);
+      fd.append("file", file);
+      const r = await fetch("/api/admin/guides", { method: "POST", body: fd });
+      const d = await r.json();
+      if (!r.ok || !d.ok) {
+        setMsg(d.error || "업로드 실패");
+        return;
+      }
+      const rr = await fetch(`/api/admin/guides?subTypeId=${sub.id}`);
+      const dd = await rr.json();
+      if (dd.ok) setAssets(dd.assets || []);
+    } finally {
+      setBusyUpload(null);
+    }
+  }
+
+===== uploadParentSpec =====
+async function uploadParentSpec(file: File) {
+    if (!parent) return;
+    setBusyParentSpec(true);
+    setMsg("");
+    try {
+      const fd = new FormData();
+      fd.append("structureTypeId", parent.id);
+      fd.append("assetKind", "spec");
+      fd.append("file", file);
+      const r = await fetch("/api/admin/guides", { method: "POST", body: fd });
+      const d = await r.json();
+      if (!r.ok || !d.ok) {
+        setMsg(d.error || "시방서 업로드 실패");
+        return;
+      }
+      loadParentSpecs(parent.id);
+    } finally {
+      setBusyParentSpec(false);
+    }
+  }

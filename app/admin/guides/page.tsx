@@ -7,6 +7,41 @@ type Child = { id: string; name: string; sortOrder: number };
 type Phase = { code: string; name: string; sortOrder: number; parentGuideText: string; subGuideText: string };
 type GuideAsset = { id: string; phaseCode: string | null; assetKind: "reference" | "spec"; fileName: string; mimeType: string };
 
+async function compressImage(file: File, maxSide = 1600, quality = 0.8): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  try {
+    const dataUrl: string = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result as string);
+      fr.onerror = rej;
+      fr.readAsDataURL(file);
+    });
+    const img: HTMLImageElement = await new Promise((res, rej) => {
+      const im = new Image();
+      im.onload = () => res(im);
+      im.onerror = rej;
+      im.src = dataUrl;
+    });
+    let w = img.naturalWidth;
+    let h = img.naturalHeight;
+    const scale = Math.min(1, maxSide / Math.max(w, h));
+    w = Math.round(w * scale);
+    h = Math.round(h * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(img, 0, 0, w, h);
+    const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, "image/jpeg", quality));
+    if (!blob) return file;
+    const name = (file.name || "photo").replace(/\.[^.]+$/, "") + ".jpg";
+    return new File([blob], name, { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
+
 export default function GuidesPage() {
   const [structures, setStructures] = useState<Structure[]>([]);
   const [parent, setParent] = useState<{ id: string; name: string } | null>(null);
@@ -143,11 +178,12 @@ export default function GuidesPage() {
     setBusyUpload(code + kind);
     setMsg("");
     try {
+      const toSend = kind === "reference" ? await compressImage(file) : file;
       const fd = new FormData();
       fd.append("subTypeId", sub.id);
       fd.append("phaseCode", code);
       fd.append("assetKind", kind);
-      fd.append("file", file);
+      fd.append("file", toSend);
       const r = await fetch("/api/admin/guides", { method: "POST", body: fd });
       const d = await r.json();
       if (!r.ok || !d.ok) {
