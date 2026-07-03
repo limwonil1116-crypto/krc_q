@@ -77,6 +77,9 @@ export default async function StructurePhasesPage({
       notApplicable: constructionRecords.notApplicable,
       notApplicableReason: constructionRecords.notApplicableReason,
       status: constructionRecords.status,
+      latitude: constructionRecords.latitude,
+      longitude: constructionRecords.longitude,
+      locationAddress: constructionRecords.locationAddress,
     })
     .from(constructionRecords)
     .where(eq(constructionRecords.siteStructureId, structureId));

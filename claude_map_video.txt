@@ -1,0 +1,15 @@
+=== 카카오맵 관련 ===
+app\(auth)\login\page.tsx
+  []
+components\kit\install-helper.tsx
+  ['주소']
+components\kit\kakao-map-picker.tsx
+  ['kakao.maps', 'LatLng', 'geocoder', '지도', '주소', 'latitude', 'longitude']
+components\site\site-form.tsx
+  ['지도', '주소']
+components\site\structure-manager.tsx
+  ['지도', '주소']
+
+=== 동영상 관련 ===
+components\record\video-composer.tsx
+components\record\video-exporter.tsx

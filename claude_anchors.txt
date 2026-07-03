@@ -1,0 +1,81 @@
+
+
+===== Rec type =====
+type Rec = {
+  id: string;
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  title: string | null;
+  textDescription: string | null;
+  inspectionContent: string | null;
+  inspectionPartFromMain: number | null;
+  inspectionPartFromSub: number | null;
+  inspectionPartToMain: number | null;
+  inspectionPartToSub: number | null;
+  voiceMemoText: string | null;
+  notApplicable: boolean;
+  notApplicableReason: string | null;
+  status: string;
+};
+
+===== form init =====
+const [form, setForm] = useState({
+    textDescription: "",
+    inspectionContent: "",
+    partFromMain: "",
+    partFromSub: "",
+    partToMain: "",
+    partToSub: "",
+    notApplicable: false,
+    notApplicableReason: "",
+  });
+
+===== form load =====
+nction openEdit(p: Phase) {
+    const r = recMap.get(p.id);
+    setForm({
+      textDescription: r?.textDescription ?? "",
+      inspectionContent: r?.inspectionContent ?? "",
+      partFromMain: r?.inspectionPartFromMain != null ? String(r.inspectionPartFromMain) : "",
+      partFromSub: r?.inspectionPartFromSub != null ? String(r.inspectionPartFromSub) : "",
+      partToMain: r?.inspectionPartToMain != null ? String(r.inspectionPartToMain) : "",
+      partToSub: r?.inspecti
+
+===== records POST body =====
+const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteStructureId,
+          subTypeId,
+          phaseTemplateId: p.id,
+          inspectionDate: selectedDate,
+          textDescription: form.textDescription,
+          notApplicable: form.notApplicable,
+          notApplicableReason: form.notApplicableReason,
+          inspectionContent: i === 0 ? form.inspectionContent : null,
+          inspectionPartFromMain: i === 0 && form.partFromMain !== "" ? Number(form.partFromMain) : null,
+          inspectionPartFromSub: i === 0 && form.partFromSub !== "" ? Number(form.partFromSub) : n
+
+===== AiWriteButton~textarea =====
+     )}
+                    <div className="space-y-1">
+                      <Label>설명내용</Label>
+                      <AiWriteButton
+                        assetIds={photos.map((a) => a.id)}
+                        phaseName={p.name}
+                        phaseCode={p.code}
+                        structureTypeName={typeName}
+                        subTypeName={subTypes.find((s) => s.id === subTypeId)?.name || ""}
+                        subTypeId={subTypeId}
+                        guideText={subTypes.find((s) => s.id === subTypeId)?.guideText || p.guideText || ""}
+                        currentText={form.textDescription}
+                        onApply={(t) => setForm((f) => ({ ...f, textDescription: t }))}
+                      />
+                      <textarea
+                        className={taCls}
+                        value={form.textDescription}
+                        onChange={(e) => setForm((f) => ({ ...f, textDescription: e.target.value }))}
+                      />
+               

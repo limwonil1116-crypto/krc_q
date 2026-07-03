@@ -1,26 +1,5 @@
-import { NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { constructionSites, siteStructures, constructionRecords } from "@/lib/db/schema";
-import { getMyOrgId } from "@/lib/org";
 
-function todayStr() {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
-}
-
-async function ownsSite(userId: string, siteId: string) {
-  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
-  const site = rows[0];
-  if (!site) return false;
-  const _sess = await auth();
-  const _role = _sess?.user?.role;
-  if (_role === "client" || _role === "admin") return true;
-  const orgId = await getMyOrgId(userId);
-  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
-}
-
+===== POST 함수 =====
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -61,9 +40,6 @@ export async function POST(req: Request) {
       notApplicable,
       notApplicableReason: notApplicable ? (b.notApplicableReason ?? "").trim() || null : null,
       status: notApplicable ? ("ready" as const) : ("draft" as const),
-      latitude: typeof b.latitude === "number" ? b.latitude : null,
-      longitude: typeof b.longitude === "number" ? b.longitude : null,
-      locationAddress: (b.locationAddress ?? "").trim() || null,
       recordedAt: new Date(),
     };
 
@@ -88,14 +64,4 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, id: existing[0].id });
     }
 
-    const [row] = await db
-      .insert(constructionRecords)
-      .values({ siteId: ss.siteId, siteStructureId, phaseTemplateId, ...values, createdBy: userId })
-      .returning();
-    return NextResponse.json({ ok: true, id: row.id });
-  } catch (e) {
-    console.error("[records:post]", e);
-    const msg = e instanceof Error ? e.message : "알 수 없는 오류";
-    return NextResponse.json({ error: "기록 저장 오류: " + msg }, { status: 500 });
-  }
-}
+    const [row] = await 

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ActionButton } from "@/components/kit/buttons";
 import { Button } from "@/components/ui/button";
 import { AiWriteButton } from "@/components/record/ai-write-button";
+import { KakaoMapPicker } from "@/components/kit/kakao-map-picker";
 import { PhotoEditor } from "@/components/record/photo-editor";
 
 type Phase = {
@@ -36,6 +37,9 @@ type Rec = {
   notApplicable: boolean;
   notApplicableReason: string | null;
   status: string;
+  latitude: number | null;
+  longitude: number | null;
+  locationAddress: string | null;
 };
 type Asset = {
   id: string;
@@ -222,6 +226,9 @@ export function PhaseRecorder({
     partToSub: "",
     notApplicable: false,
     notApplicableReason: "",
+    lat: null as number | null,
+    lng: null as number | null,
+    address: "",
   });
 
   const markedDates = useMemo(() => {
@@ -312,6 +319,9 @@ export function PhaseRecorder({
   function openEdit(p: Phase) {
     const r = recMap.get(p.id);
     setForm({
+      lat: r?.latitude ?? null,
+      lng: r?.longitude ?? null,
+      address: r?.locationAddress ?? "",
       textDescription: r?.textDescription ?? "",
       inspectionContent: r?.inspectionContent ?? "",
       partFromMain: r?.inspectionPartFromMain != null ? String(r.inspectionPartFromMain) : "",
@@ -337,6 +347,9 @@ export function PhaseRecorder({
           subTypeId,
           phaseTemplateId: p.id,
           inspectionDate: selectedDate,
+          latitude: i === 0 && typeof form.lat === "number" ? form.lat : null,
+          longitude: i === 0 && typeof form.lng === "number" ? form.lng : null,
+          locationAddress: i === 0 ? (form.address || null) : null,
           textDescription: form.textDescription,
           notApplicable: form.notApplicable,
           notApplicableReason: form.notApplicableReason,
@@ -773,6 +786,18 @@ export function PhaseRecorder({
                     )}
                     <div className="space-y-1">
                       <Label>설명내용</Label>
+{step === 0 && (
+                        <div className="mb-3 space-y-1">
+                          <Label>검측 위치 (지도)</Label>
+                          <KakaoMapPicker
+                            value={{ lat: form.lat, lng: form.lng, address: form.address }}
+                            onChange={(v) => setForm((f) => ({ ...f, lat: v.lat, lng: v.lng, address: v.address }))}
+                          />
+                          {form.address && (
+                            <p className="text-xs text-neutral-600">📍 {form.address}</p>
+                          )}
+                        </div>
+                      )}
                       <AiWriteButton
                         assetIds={photos.map((a) => a.id)}
                         phaseName={p.name}

@@ -1,0 +1,22 @@
+
+===== contractor recs 쿼리 =====
+const recs = await db
+    .select({
+      id: constructionRecords.id,
+      phaseTemplateId: constructionRecords.phaseTemplateId,
+      subTypeId: constructionRecords.subTypeId,
+      inspectionDate: constructionRecords.inspectionDate,
+      title: constructionRecords.title,
+      textDescription: constructionRecords.textDescription,
+      inspectionContent: constructionRecords.inspectionContent,
+      inspectionPartFromMain: constructionRecords.inspectionPartFromMain,
+      inspectionPartFromSub: constructionRecords.inspectionPartFromSub,
+      inspectionPartToMain: constructionRecords.inspectionPartToMain,
+      inspectionPartToSub: constructionRecords.inspectionPartToSub,
+      voiceMemoText: constructionRecords.voiceMemoText,
+      notApplicable: constructionRecords.notApplicable,
+      notApplicableReason: constructionRecords.notApplicableReason,
+      status: constructionRecords.status,
+    })
+    .from(constructionRecords)
+    .where(eq(constructionRecords.siteStructureId, structureId));

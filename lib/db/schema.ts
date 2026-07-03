@@ -9,6 +9,7 @@ import {
   boolean,
   integer,
   bigint,
+  doublePrecision,
 } from "drizzle-orm/pg-core";
 
 export const organizations = pgTable("organizations", {
@@ -156,6 +157,9 @@ export const constructionRecords = pgTable("construction_records", {
   title: varchar("title", { length: 200 }),
   textDescription: text("text_description"),
   voiceMemoText: text("voice_memo_text"),
+  latitude: doublePrecision("latitude"),
+  longitude: doublePrecision("longitude"),
+  locationAddress: text("location_address"),
   notApplicable: boolean("not_applicable").notNull().default(false),
   notApplicableReason: text("not_applicable_reason"),
   status: text("status").$type<"draft" | "ready" | "submitted" | "revision_requested" | "approved">().notNull().default("draft"),

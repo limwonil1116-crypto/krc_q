@@ -1,0 +1,134 @@
+
+
+===== KakaoMapPicker 시그니처+props =====
+export function KakaoMapPicker({
+  value,
+  onChange,
+}: {
+  value: Value;
+  onChange: (v: { lat: number; lng: number; address: string }) => void;
+}) {
+  const KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapObj = useRef<any>(null);
+  const markerObj = useRef<any>(null);
+  const [ready, setReady] = useState(false);
+  const [query, setQuery] = useState("");
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
+  // 이미 로드된 경우(뒤로가기/캐시) 대비
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.kakao && window.kakao.maps) {
+      setReady(true);
+    }
+  }, []);
+
+  const placeMarker = useCallback(
+    (lat: number, lng: number, addr: string) => {
+      const kakao = window.kakao;
+      if (!kakao || !mapObj.current) return;
+      const coords = new kakao.maps.LatLng(lat, lng);
+      mapObj.current.setCenter(coords);
+ 
+
+===== 타입(type ) =====
+type Value = { lat: number | null; lng: number | null; address: string };
+
+export function KakaoMapPicker({
+  value,
+  onChange,
+}: {
+  value: Value;
+  onChange: (v: { lat: number; lng: number; address: string }) => void;
+}) {
+  const KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapObj = useRef<any>(null);
+  const markerObj = useRef<any>(null)
+
+===== site-form 사용 예 =====
+t-xs text-neutral-500">{logoName}</p>}
+            </div>
+          </div>
+        </StepSection>
+      )}
+
+      <StepSection step="STEP 04" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
+        <KakaoMapPicker
+          value={{ lat: f.lat, lng: f.lng, address: f.address }}
+          onChange={(v) => setF((p) => ({ ...p, lat: v.lat, lng: v.lng, address: v.address }))}
+        />
+        <div className="mt-3 space-y-1">
+          <Label>현장 주소 *</Label>
+          <Input value={f.address} onChange={onText("address")} />
+        </div>
+      </StepSection>
+
+      <StepSection step="STEP 05" 
+
+===== form state =====
+const [form, setForm] = useState({
+    textDescription: "",
+    inspectionContent: "",
+    partFromMain: "",
+    partFromSub: "",
+    partToMain: "",
+    partToSub: "",
+    notApplicable: false,
+    notApplicableReason: "",
+  });
+
+  const markedDates = useMemo(() => {
+    const set = new Set<string>();
+    records.filter((r) => r.subTypeId === subTypeId).forEach((r) => r.inspectionDate && set.add(
+
+===== saveText =====
+"");
+    setEditing(true);
+  }
+
+  async function saveText(p: Phase, i: number) {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteStructureId,
+          subTypeId,
+          phaseTemplateId: p.id,
+          inspectionDate: selectedDate,
+          textDescription: form.textDescription,
+          notApplicable: form.notApplicable,
+          notApplicableReason: form.notApplicableReason,
+          inspectionContent: i === 0 ? form.inspectionContent : null,
+          inspectionPartFromMain: i === 0 && form.partFromMain !== "" ? Number(form.partFromMain) : null,
+          inspectionPartFromSub: i === 0 && form.partFromSub !== "" ? Number(form.partFromSub) : null,
+          inspectionPartToMain: i === 0 && form.partToMain !== "" ? Number(form.partToMain) : null
+
+===== p.code 사용부 =====
+              촬영 가이드 보기 {guideOpen ? "▲" : "▼"}
+              </button>
+            </div>
+
+
+
+            {guideOpen && (
+              <div className="mt-2 space-y-2">
+                {GUIDE_IMG.has(p.code) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`/guides/${p.code.toLowerCase()}.jpg`}
+                    alt={`${p.name} 촬영 예시`}
+                    className="w-full rounded-lg border border-neutral-200"
+        
+
+===== 활성 phase 상태 =====
+, setSelectedDate] = useState<string>(todayStr());
+  const [editTarget, setEditTarget] = useState<{ phaseId: string; file: File } | null>(null);
+  const [step, setStep] = useState(0); // 현재 단계 탭 인덱스
+  const [editing, setEditing] = useState(false); // 텍스트 기록 작성 모드
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [busy, setBusy] = useStat

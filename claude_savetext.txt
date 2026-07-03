@@ -1,0 +1,144 @@
+
+
+===== saveText =====
+async function saveText(p: Phase, i: number) {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteStructureId,
+          subTypeId,
+          phaseTemplateId: p.id,
+          inspectionDate: selectedDate,
+          textDescription: form.textDescription,
+          notApplicable: form.notApplicable,
+          notApplicableReason: form.notApplicableReason,
+          inspectionContent: i === 0 ? form.inspectionContent : null,
+          inspectionPartFromMain: i === 0 && form.partFromMain !== "" ? Number(form.partFromMain) : null,
+          inspectionPartFromSub: i === 0 && form.partFromSub !== "" ? Number(form.partFromSub) : null,
+          inspectionPartToMain: i === 0 && form.partToMain !== "" ? Number(form.partToMain) : null,
+          inspectionPartToSub: i === 0 && form.partToSub !== "" ? Number(form.partToSub) : null,
+        }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        setError(data.error || ("서버 오류 (" + res.status + ")"));
+        return;
+      }
+      setEditing(false);
+      router.refresh();
+    } catch (e) {
+      setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+===== /api/records fetch @8570 =====
+ 후에도 '제출 취소'로 다시 수정할 수 있습니다.")) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/records/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate, action }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || ("처리 실패 (" + res.status + ")"));
+        return;
+      }
+      if (action === "submit" && videoHref) {
+        // 제출 완료 -> 영상 미리보기로 이동하여 자동 생성·드라이브 저장
+        router.push(`${videoHre
+
+===== /api/records fetch @10676 =====
+nction saveText(p: Phase, i: number) {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteStructureId,
+          subTypeId,
+          phaseTemplateId: p.id,
+          inspectionDate: selectedDate,
+          textDescription: form.textDescription,
+          notApplicable: form.notApplicable,
+          notApplicableReason: form.notApplicableReason,
+          inspectionContent: i === 0 ? form.inspectionContent : null,
+          inspectionPartFromMain: i === 0 && form.partFromMain !== "" ? Number(form.partFromMain) : null,
+          inspectionPar
+
+===== /api/records fetch @12184 =====
+ase) {
+    if (!confirm(`'${p.name}' 단계의 기록과 첨부 파일을 모두 삭제하고 초기화할까요?`)) return;
+    try {
+      const res = await fetch("/api/records/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, phaseTemplateId: p.id, inspectionDate: selectedDate }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || "초기화 실패");
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("초기화 중 오류가 발생했습니다.");
+    }
+  }
+
+  async function upload(phaseId: string, assetType
+
+===== /api/records fetch @13175 =====
+, selectedDate);
+      fd.append("assetType", assetType);
+      fd.append("file", file);
+      const res = await fetch("/api/records/assets", { method: "POST", body: fd });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || ("업로드 실패 (" + res.status + ")"));
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      alert("업로드 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function removeAsset(id: string) {
+    if (!confirm("이 파일을 삭제할까요?")) return;
+    try {
+      const res = await fet
