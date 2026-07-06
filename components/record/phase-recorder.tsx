@@ -607,7 +607,7 @@ export function PhaseRecorder({
 
             <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
               <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>
-              <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>
+              {step > 1 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>)}
               <button
                 type="button"
                 className="rounded bg-[#EAF0FB] px-1.5 py-0.5 text-[#0033A0]"
@@ -653,6 +653,7 @@ export function PhaseRecorder({
                     }}
                   />
                 </label>
+                {step > 1 && (
                 <label className={uploadBtn}>
                   🎬 영상 추가
                   <input
@@ -667,6 +668,7 @@ export function PhaseRecorder({
                     }}
                   />
                 </label>
+                )}
                 {uploading && <span className="text-xs text-neutral-500">업로드 중...</span>}
               </div>
 

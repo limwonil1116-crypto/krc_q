@@ -1,0 +1,23 @@
+
+===== video label 블록 =====
+'<label className={uploadBtn}>\n                  🎬 영상 추가\n                  <input\n                    type="file"\n                    accept="video/*"\n                    className="hidden"\n                    disabled={uploading}\n                    onChange={(e) => {\n                      const f = e.target.files?.[0];\n                      if (f) upload(p.id, "video", f);\n                      e.target.value = "";\n                    }}\n                  />\n                </label>'
+----- (그대로) -----
+<label className={uploadBtn}>
+                  🎬 영상 추가
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) upload(p.id, "video", f);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+
+===== 영상 개수 span =====
+'<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>'
+----- (그대로) -----
+<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>
