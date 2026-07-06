@@ -8,6 +8,7 @@ import { ActionButton } from "@/components/kit/buttons";
 import { Button } from "@/components/ui/button";
 import { AiWriteButton } from "@/components/record/ai-write-button";
 import { KakaoMapPicker } from "@/components/kit/kakao-map-picker";
+import { Input } from "@/components/ui/input";
 import { PhotoEditor } from "@/components/record/photo-editor";
 
 type Phase = {
@@ -795,9 +796,14 @@ export function PhaseRecorder({
                             value={{ lat: form.lat, lng: form.lng, address: form.address }}
                             onChange={(v) => setForm((f) => ({ ...f, lat: v.lat, lng: v.lng, address: v.address }))}
                           />
-                          {form.address && (
-                            <p className="text-xs text-neutral-600">📍 {form.address}</p>
-                          )}
+                          <div className="mt-3 space-y-1">
+                            <Label>검측 위치 (주소)</Label>
+                            <Input
+                              value={form.address}
+                              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                              placeholder="지도를 클릭하거나 주소를 검색하면 자동 입력됩니다"
+                            />
+                          </div>
                         </div>
                       )}
                       <AiWriteButton

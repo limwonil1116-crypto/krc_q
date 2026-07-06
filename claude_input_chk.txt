@@ -1,0 +1,4 @@
+Input import: False
+Label import: True
+===== 현재 지도 블록 =====
+'{step === 0 && (\n                        <div className="mb-3 space-y-1">\n                          <Label>검측 위치 (지도)</Label>\n                          <KakaoMapPicker\n                            value={{ lat: form.lat, lng: form.lng, address: form.address }}\n                            onChange={(v) => setForm((f) => ({ ...f, lat: v.lat, lng: v.lng, address: v.address }))}\n                          />\n                          {form.address && (\n                            <p className="text-xs text-neutral-600">📍 {form.address}</p>\n                          )}\n                        </div>\n                      )}\n                      <AiWriteButton\n                        assetIds={'
