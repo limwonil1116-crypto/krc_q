@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { VideoExporter } from "@/components/record/video-exporter";
 
 type Phase = { id: string; code: string; name: string; sortOrder: number };
-type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null; status?: string };
+type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null; status?: string; latitude?: number | null; longitude?: number | null; locationAddress?: string | null };
 type Asset = {
   id: string;
   phaseTemplateId: string;
@@ -28,11 +28,13 @@ type Meta = {
 
 type Slide =
   | { kind: "title" }
+  | { kind: "location"; address: string; lat: number; lng: number }
   | { kind: "section"; label: string; text: string | null }
   | { kind: "image"; src: string; caption: string }
   | { kind: "video"; src: string; caption: string };
 
 const TITLE_MS = 4200;
+const LOCATION_MS = 3400;
 const SECTION_MS = 2600;
 const IMAGE_MS = 3200;
 
@@ -144,6 +146,18 @@ export function VideoComposer({
         byPhase.set(a.phaseTemplateId, arr);
       });
     const out: Slide[] = [{ kind: "title" }];
+    // 검측 위치(F1에 저장된 위도/경도/주소)가 있으면 위치 슬라이드 추가
+    const locRec = records.find(
+      (r) => r.inspectionDate === date && typeof r.latitude === "number" && typeof r.longitude === "number"
+    );
+    if (locRec && typeof locRec.latitude === "number" && typeof locRec.longitude === "number") {
+      out.push({
+        kind: "location",
+        address: locRec.locationAddress || "",
+        lat: locRec.latitude,
+        lng: locRec.longitude,
+      });
+    }
     [...phases]
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .forEach((p, i) => {
@@ -171,7 +185,7 @@ export function VideoComposer({
   useEffect(() => {
     if (!playing || !cur) return;
     if (cur.kind === "video") return; // 영상은 종료 시 자동 넘김
-    const ms = cur.kind === "title" ? TITLE_MS : cur.kind === "section" ? SECTION_MS : IMAGE_MS;
+    const ms = cur.kind === "title" ? TITLE_MS : cur.kind === "location" ? LOCATION_MS : cur.kind === "section" ? SECTION_MS : IMAGE_MS;
     const t = setTimeout(() => {
       setIdx((i) => {
         if (i + 1 < total) return i + 1;
@@ -286,6 +300,33 @@ export function VideoComposer({
                     <div className="text-white/50">{meta.contractorCompany ? "시공사" : "구조물"}</div>
                     <div className="truncate font-semibold">{meta.contractorCompany || meta.typeName || "-"}</div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {cur?.kind === "location" && (
+              <div key={`location-${idx}`} className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#002A80] px-8 text-center text-white">
+                <div
+                  className="krc-grid2 krc-zoom pointer-events-none absolute inset-0 opacity-[0.12]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+                    backgroundSize: "28px 28px",
+                  }}
+                />
+                <div className="krc-sweep2 pointer-events-none absolute inset-0" />
+                <span className="pointer-events-none absolute left-3 top-3 h-5 w-5 border-l-2 border-t-2 border-[#FE5000]" />
+                <span className="pointer-events-none absolute bottom-3 right-3 h-5 w-5 border-b-2 border-r-2 border-[#FE5000]" />
+                <div className="krc-pop relative z-10 text-6xl">📍</div>
+                <div className="krc-stroke krc-pop relative z-10 mt-2 text-3xl font-extrabold">검측 위치</div>
+                <div className="krc-grow2 relative z-10 mt-3 h-1 w-24 rounded-full bg-[#FE5000]" />
+                {cur.address && (
+                  <div className="krc-rise2 relative z-10 mt-4 max-w-xl text-xl font-semibold text-white" style={{ animationDelay: "0.3s" }}>
+                    {cur.address}
+                  </div>
+                )}
+                <div className="krc-rise2 relative z-10 mt-2 text-sm text-white/70" style={{ animationDelay: "0.45s" }}>
+                  좌표 {cur.lat.toFixed(6)}, {cur.lng.toFixed(6)}
                 </div>
               </div>
             )}

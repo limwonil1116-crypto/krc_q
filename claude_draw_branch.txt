@@ -1,0 +1,6 @@
+'\n            if (s.kind === "title") drawTitle(ctx);\n            else if (s.kind === "section") drawSection(ctx, s.label, s.text);'
+
+-----
+
+            if (s.kind === "title") drawTitle(ctx);
+            else if (s.kind === "section") drawSection(ctx, s.label, s.text);

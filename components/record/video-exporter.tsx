@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 export type ExportSlide =
   | { kind: "title" }
+  | { kind: "location"; address: string; lat: number; lng: number }
   | { kind: "section"; label: string; text: string | null }
   | { kind: "image"; src: string; caption: string }
   | { kind: "video"; src: string; caption: string };
@@ -181,6 +182,29 @@ export function VideoExporter({
     ctx.fillText(`검측일자 ${date}`, W - 44, 22);
   }
 
+  function drawLocation(ctx: CanvasRenderingContext2D, address: string, lat: number, lng: number) {
+    drawBackground(ctx, "#002A80");
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 40px sans-serif";
+    ctx.fillText("[ 검측 위치 ]", W / 2, 220);
+    ctx.fillStyle = ORANGE;
+    ctx.fillRect(W / 2 - 60, 250, 120, 6);
+    if (address) {
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 34px sans-serif";
+      const lines = wrapText(ctx, address, W - 200).slice(0, 3);
+      let y = 340;
+      lines.forEach((ln) => {
+        ctx.fillText(ln, W / 2, y);
+        y += 46;
+      });
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.font = "22px sans-serif";
+    ctx.fillText(`좌표  ${lat.toFixed(6)},  ${lng.toFixed(6)}`, W / 2, address ? 500 : 360);
+  }
+
   function drawSection(ctx: CanvasRenderingContext2D, label: string, text: string | null) {
     drawBackground(ctx, "#002A80");
     ctx.textAlign = "center";
@@ -309,6 +333,7 @@ export function VideoExporter({
       // 총 길이 추정(진행률용): 영상은 실제 길이 사용
       const durations = slides.map((s, i) => {
         if (s.kind === "title") return TITLE_SEC;
+        if (s.kind === "location") return SECTION_SEC;
         if (s.kind === "section") return SECTION_SEC;
         if (s.kind === "image") return IMAGE_SEC;
         const v = media[i] as HTMLVideoElement | null;
@@ -359,6 +384,7 @@ export function VideoExporter({
           for (let fr = 0; fr < frames; fr++) {
             if (cancelRef.current) break;
             if (s.kind === "title") drawTitle(ctx);
+            else if (s.kind === "location") drawLocation(ctx, s.address, s.lat, s.lng);
             else if (s.kind === "section") drawSection(ctx, s.label, s.text);
             else {
               const m = media[i] as HTMLImageElement | null;

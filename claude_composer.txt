@@ -1,0 +1,43 @@
+
+
+===== Rec type =====
+'type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null; status?: string };'
+----- 그대로 -----
+type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null; status?: string };
+
+===== Slide union =====
+'type Slide =\n  | { kind: "title" }\n  | { kind: "section"; label: string; text: string | null }\n  | { kind: "image"; src: string; caption: string }\n  | { kind: "video";'
+----- 그대로 -----
+type Slide =
+  | { kind: "title" }
+  | { kind: "section"; label: string; text: string | null }
+  | { kind: "image"; src: string; caption: string }
+  | { kind: "video";
+
+===== slides 시작(title push) =====
+'ter((a) => a.inspectionDate === date)\n      .forEach((a) => {\n        const arr = byPhase.get(a.phaseTemplateId) || [];\n        arr.push(a);\n        byPhase.set(a.phaseTemplateId, arr);\n      });\n    const out: Slide[] = [{ kind: "title" }];\n    [...phases]\n      .sort((a, b) => a.sortOrder - b.sortOrder)\n      .forEach((p, i) => {\n        const r = recMap.get(p.id);\n        const list = byPhase.get(p.id) || [];\n        const photos = list.filter'
+----- 그대로 -----
+ter((a) => a.inspectionDate === date)
+      .forEach((a) => {
+        const arr = byPhase.get(a.phaseTemplateId) || [];
+        arr.push(a);
+        byPhase.set(a.phaseTemplateId, arr);
+      });
+    const out: Slide[] = [{ kind: "title" }];
+    [...phases]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .forEach((p, i) => {
+        const r = recMap.get(p.id);
+        const list = byPhase.get(p.id) || [];
+        const photos = list.filter
+
+===== section 렌더 시작(=title 끝 지점) =====
+' </div>\n                </div>\n              </div>\n            )}\n\n            {cur?.kind === "section" && (\n              <div key={`section-${idx}`} className="relative flex h-full w-full flex-col '
+----- 그대로 -----
+ </div>
+                </div>
+              </div>
+            )}
+
+            {cur?.kind === "section" && (
+              <div key={`section-${idx}`} className="relative flex h-full w-full flex-col 

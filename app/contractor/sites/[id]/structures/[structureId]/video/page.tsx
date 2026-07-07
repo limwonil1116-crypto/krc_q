@@ -76,6 +76,9 @@ export default async function VideoPage({
       title: constructionRecords.title,
       textDescription: constructionRecords.textDescription,
       status: constructionRecords.status,
+      latitude: constructionRecords.latitude,
+      longitude: constructionRecords.longitude,
+      locationAddress: constructionRecords.locationAddress,
     })
     .from(constructionRecords)
     .where(eq(constructionRecords.siteStructureId, structureId));

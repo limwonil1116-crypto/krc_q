@@ -1,0 +1,47 @@
+
+
+===== ExportSlide 타입 =====
+type ExportSlide =
+  | { kind: "title" }
+  | { kind: "section";
+
+===== draw "title" =====
+ = slides.map((s, i) => {
+        if (s.kind === "title") return TITLE_SEC;
+        if (s.kind === "section") return SECTION_SEC;
+        if (s.kind === "image") return IMAGE_SEC;
+        const v = media[i] as HTMLVideoElement | null;
+        return v && v.duration && isFinite(v.duration) ? v.duration : IMAGE_SEC;
+      });
+      const totalSec = durations.reduce((a, b) => a + b, 0) || 1;
+      let elapsed = 0;
+      const frameMs = 100
+
+===== draw "section" =====
+title") return TITLE_SEC;
+        if (s.kind === "section") return SECTION_SEC;
+        if (s.kind === "image") return IMAGE_SEC;
+        const v = media[i] as HTMLVideoElement | null;
+        return v && v.duration && isFinite(v.duration) ? v.duration : IMAGE_SEC;
+      });
+      const totalSec = durations.reduce((a, b) => a + b, 0) || 1;
+      let elapsed = 0;
+      const frameMs = 1000 / FPS;
+
+      for (let i = 0; i < slides.length;
+
+===== draw "image" =====
+     const s = slides[i];
+        if (s.kind === "image") media[i] = await loadImage(s.src);
+        else if (s.kind === "video") media[i] = await loadVideo(s.src);
+        else media[i] = null;
+        setProgress(Math.round(((i + 1) / slides.length) * 15));
+      }
+
+      const stream = canvas.captureStream(FPS);
+
+      let audioCtx: AudioContext | null = null;
+      if (withBgm) {
+        try {
+          const Ctor =
+            wind
