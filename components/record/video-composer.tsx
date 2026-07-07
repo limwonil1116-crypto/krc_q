@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { VideoExporter } from "@/components/record/video-exporter";
 
 type Phase = { id: string; code: string; name: string; sortOrder: number };
-type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null; status?: string; latitude?: number | null; longitude?: number | null; locationAddress?: string | null };
+type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null; status?: string; latitude?: number | null; longitude?: number | null; locationAddress?: string | null; inspectionContent?: string | null; inspectionPartFromMain?: number | null; inspectionPartFromSub?: number | null; inspectionPartToMain?: number | null; inspectionPartToSub?: number | null };
 type Asset = {
   id: string;
   phaseTemplateId: string;
@@ -28,7 +28,7 @@ type Meta = {
 
 type Slide =
   | { kind: "title" }
-  | { kind: "location"; address: string; lat: number; lng: number }
+  | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null }
   | { kind: "section"; label: string; text: string | null }
   | { kind: "image"; src: string; caption: string }
   | { kind: "video"; src: string; caption: string };
@@ -151,11 +151,20 @@ export function VideoComposer({
       (r) => r.inspectionDate === date && typeof r.latitude === "number" && typeof r.longitude === "number"
     );
     if (locRec && typeof locRec.latitude === "number" && typeof locRec.longitude === "number") {
+      const _pf = locRec.inspectionPartFromMain != null || locRec.inspectionPartFromSub != null
+        ? `NO.${locRec.inspectionPartFromMain ?? 0}+${String(locRec.inspectionPartFromSub ?? 0).padStart(2, "0")}`
+        : "";
+      const _pt = locRec.inspectionPartToMain != null || locRec.inspectionPartToSub != null
+        ? `NO.${locRec.inspectionPartToMain ?? 0}+${String(locRec.inspectionPartToSub ?? 0).padStart(2, "0")}`
+        : "";
+      const _part = _pf && _pt ? `${_pf} ~ ${_pt}` : (_pf || _pt || "");
       out.push({
         kind: "location",
         address: locRec.locationAddress || "",
         lat: locRec.latitude,
         lng: locRec.longitude,
+        content: locRec.inspectionContent || null,
+        part: _part || null,
       });
     }
     [...phases]
@@ -328,6 +337,16 @@ export function VideoComposer({
                 <div className="krc-rise2 relative z-10 mt-2 text-sm text-white/70" style={{ animationDelay: "0.45s" }}>
                   좌표 {cur.lat.toFixed(6)}, {cur.lng.toFixed(6)}
                 </div>
+                {cur.content && (
+                  <div className="krc-rise2 relative z-10 mt-4 text-lg font-semibold text-white" style={{ animationDelay: "0.6s" }}>
+                    검측내용: {cur.content}
+                  </div>
+                )}
+                {cur.part && (
+                  <div className="krc-rise2 relative z-10 mt-1 text-base text-white/90" style={{ animationDelay: "0.72s" }}>
+                    검측부위: {cur.part}
+                  </div>
+                )}
               </div>
             )}
 
