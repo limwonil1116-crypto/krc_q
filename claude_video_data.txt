@@ -1,0 +1,46 @@
+
+
+===== contractor video page recs 쿼리 =====
+const records = await db
+    .select({
+      phaseTemplateId: constructionRecords.phaseTemplateId,
+      inspectionDate: constructionRecords.inspectionDate,
+      title: constructionRecords.title,
+      textDescription: constructionRecords.textDescription,
+      status: constructionRecords.status,
+    })
+    .from(constructionRecords)
+    .where(eq(constructionRecords.siteStructureId, structureId));
+
+===== contractor VideoComposer 호출 =====
+<VideoComposer meta={meta} phases={phases} records={records} assets={assets} dates={dates} siteStructureId={ss.id} submittedDates={submittedDates} initialDate={initialDate} autosaveOnLoad={autosaveFlag} />
+
+===== VideoComposer Rec type =====
+type Rec = { phaseTemplateId: string;
+
+===== VideoComposer Meta type =====
+type Meta = {
+  projectName: string;
+  districtName: string;
+  address: string;
+  workType: string | null;
+  executor: string | null;
+  structureName: string;
+  typeName: string;
+  contractorCompany: string | null;
+  hasLogo: boolean;
+  siteId: string;
+};
+
+===== title slide 렌더 근처 =====
+g;
+  contractorCompany: string | null;
+  hasLogo: boolean;
+  siteId: string;
+};
+
+type Slide =
+  | { kind: "title" }
+  | { kind: "section"; label: string; text: string | null }
+  | { kind: "image"; src: string; caption: string }
+  | { kind: "video"; s
