@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { Input } from "@/components/ui/input";
 import { PrimaryButton } from "@/components/kit/buttons";
+// VWorld 지도 캡처 테스트
 
 declare global {
   interface Window {
@@ -26,6 +27,65 @@ export function KakaoMapPicker({
   const markerObj = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
+  const [vwUrl, setVwUrl] = useState<string>("");
+  const [vwMsg, setVwMsg] = useState<string>("");
+
+  async function testVworld() {
+    setVwMsg("VWorld 지도 생성 중...");
+    setVwUrl("");
+    const key = process.env.NEXT_PUBLIC_VWORLD_API_KEY;
+    if (!key) { setVwMsg("❌ NEXT_PUBLIC_VWORLD_API_KEY 없음"); return; }
+    if (value.lat == null || value.lng == null) { setVwMsg("먼저 위치를 선택하세요"); return; }
+    try {
+      const z = 16, GRID = 3, TILE = 256;
+      const n = Math.pow(2, z);
+      const cx = ((value.lng + 180) / 360) * n;
+      const latRad = (value.lat * Math.PI) / 180;
+      const cy = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
+      const ctX = Math.floor(cx), ctY = Math.floor(cy);
+      const half = Math.floor(GRID / 2);
+      const canvas = document.createElement("canvas");
+      canvas.width = TILE * GRID;
+      canvas.height = TILE * GRID;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { setVwMsg("❌ canvas 없음"); return; }
+
+      const loadTile = (dx: number, dy: number) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            ctx.drawImage(img, (dx + half) * TILE, (dy + half) * TILE, TILE, TILE);
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = `https://api.vworld.kr/req/wmts/1.0.0/${key}/Base/${z}/${ctY + dy}/${ctX + dx}.png`;
+        });
+
+      const jobs: Promise<void>[] = [];
+      for (let dy = -half; dy <= half; dy++)
+        for (let dx = -half; dx <= half; dx++) jobs.push(loadTile(dx, dy));
+      await Promise.all(jobs);
+
+      // 중앙 마커
+      const mx = (cx - ctX + half) * TILE;
+      const my = (cy - ctY + half) * TILE;
+      ctx.beginPath();
+      ctx.arc(mx, my, 9, 0, Math.PI * 2);
+      ctx.fillStyle = "#FE5000";
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#fff";
+      ctx.stroke();
+
+      // toDataURL 이 CORS 오염되면 여기서 예외 발생
+      const dataUrl = canvas.toDataURL("image/png");
+      setVwUrl(dataUrl);
+      setVwMsg("✅ VWorld 캡처 성공!");
+    } catch (e) {
+      setVwMsg("❌ VWorld 캡처 실패: " + (e instanceof Error ? e.message : "알수없음"));
+    }
+  }
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -163,6 +223,22 @@ export function KakaoMapPicker({
           ? `선택 좌표: ${value.lat.toFixed(6)}, ${value.lng?.toFixed(6)}`
           : "지도를 클릭하거나 주소를 검색해 위치를 지정하세요."}
       </p>
+      {value.lat != null && (
+        <div className="space-y-2 rounded-lg border border-dashed border-emerald-300 bg-emerald-50 p-2">
+          <button
+            type="button"
+            onClick={testVworld}
+            className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-emerald-700"
+          >
+            🗺️ VWorld 지도 캡처 테스트
+          </button>
+          {vwMsg && <p className="text-xs font-semibold">{vwMsg}</p>}
+          {vwUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={vwUrl} alt="VWorld 지도" className="w-full rounded border border-neutral-300" />
+          )}
+        </div>
+      )}
     </div>
   );
 }
