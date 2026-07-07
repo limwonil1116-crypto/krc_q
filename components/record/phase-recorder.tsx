@@ -607,8 +607,8 @@ export function PhaseRecorder({
             </div>
 
             <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-              <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>
-              {step > 1 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>)}
+              {step <= 2 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>)}
+              {step >= 3 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>)}
               <button
                 type="button"
                 className="rounded bg-[#EAF0FB] px-1.5 py-0.5 text-[#0033A0]"
@@ -640,6 +640,7 @@ export function PhaseRecorder({
 
             <div className="mt-3 space-y-2 border-t border-neutral-100 pt-3">
               <div className="flex flex-wrap items-center gap-2">
+                {step <= 2 && (
                 <label className={uploadBtn}>
                   📷 사진 추가
                   <input
@@ -654,7 +655,8 @@ export function PhaseRecorder({
                     }}
                   />
                 </label>
-                {step > 1 && (
+                )}
+                {step >= 3 && (
                 <label className={uploadBtn}>
                   🎬 영상 추가
                   <input
@@ -675,7 +677,7 @@ export function PhaseRecorder({
 
               {list.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {photos.map((a) => (
+                  {step <= 2 && photos.map((a) => (
                     <div key={a.id} className="relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -693,7 +695,7 @@ export function PhaseRecorder({
                       </button>
                     </div>
                   ))}
-                  {videos.map((a) => (
+                  {step >= 3 && videos.map((a) => (
                     <div key={a.id} className="relative">
                       <a
                         href={`/api/assets/${a.id}/raw`}

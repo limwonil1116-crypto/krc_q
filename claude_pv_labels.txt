@@ -1,0 +1,12 @@
+===== PHOTO LABEL =====
+'<label className={uploadBtn}>\n                  📷 사진 추가\n                  <input\n                    type="file"\n                    accept="image/*"\n                    className="hidden"\n                    disabled={uploading}\n                    onChange={(e) => {\n                      const f = e.target.files?.[0];\n                      if (f) setEditTarget({ phaseId: p.id, file: f });\n                      e.target.value = "";\n                    }}\n                  />\n                </label>'
+===== VIDEO LABEL (current) =====
+'{step > 1 && (\n                <label className={uploadBtn}>\n                  🎬 영상 추가\n                  <input\n                    type="file"\n                    accept="video/*"\n                    className="hidden"\n                    disabled={uploading}\n                    onChange={(e) => {\n                      const f = e.target.files?.[0];\n                      if (f) upload(p.id, "video", f);\n                      e.target.value = "";\n                    }}\n                  />\n                </label>\n                )}'
+===== PHOTO SPAN =====
+'<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>'
+===== VIDEO SPAN (current) =====
+'{step > 1 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>)}'
+===== photos.map 시작 =====
+'{photos.map((a) => (\n                    <div key={a.id} cla'
+===== videos.map 시작 =====
+'{videos.map((a) => (\n                    <div key={a.id} cla'
