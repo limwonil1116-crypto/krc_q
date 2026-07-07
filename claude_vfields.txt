@@ -1,0 +1,29 @@
+=== video page records select ===
+const records = await db
+    .select({
+      phaseTemplateId: constructionRecords.phaseTemplateId,
+      inspectionDate: constructionRecords.inspectionDate,
+      title: constructionRecords.title,
+      textDescription: constructionRecords.textDescription,
+      status: constructionRecords.status,
+      latitude: constructionRecords.latitude,
+      longitude: constructionRecords.longitude,
+      locationAddress: constructionRecords.locationAddress,
+    })
+    
+inspectionContent 있음: False
+partFromMain 있음: False
+
+=== VideoComposer locRec push ===
+const locRec = records.find(
+      (r) => r.inspectionDate === date && typeof r.latitude === "number" && typeof r.longitude === "number"
+    );
+    if (locRec && typeof locRec.latitude === "number" && typeof locRec.longitude === "number") {
+      out.push({
+        kind: "location",
+        address: locRec.locationAddress || "",
+        lat: locRec.latitude,
+        lng: locRec.longitude,
+      });
+    }
+    

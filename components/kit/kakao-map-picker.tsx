@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { Input } from "@/components/ui/input";
 import { PrimaryButton } from "@/components/kit/buttons";
+import * as htmlToImage from "html-to-image";
 
 declare global {
   interface Window {
@@ -16,9 +17,11 @@ type Value = { lat: number | null; lng: number | null; address: string };
 export function KakaoMapPicker({
   value,
   onChange,
+  onCapture,
 }: {
   value: Value;
   onChange: (v: { lat: number; lng: number; address: string }) => void;
+  onCapture?: (dataUrl: string) => void;
 }) {
   const KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
   const mapRef = useRef<HTMLDivElement>(null);
@@ -26,6 +29,41 @@ export function KakaoMapPicker({
   const markerObj = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
+  const staticRef = useRef<HTMLDivElement>(null);
+  const [capUrl, setCapUrl] = useState<string>("");
+  const [capMsg, setCapMsg] = useState<string>("");
+
+  // 좌표가 정해지면 StaticMap 을 그려 자동 캡처 시도
+  useEffect(() => {
+    if (!ready || value.lat == null || value.lng == null) return;
+    const kakao = window.kakao;
+    if (!kakao || !kakao.maps || !staticRef.current) return;
+    let cancelled = false;
+    setCapMsg("지도 이미지 생성 중...");
+    setCapUrl("");
+    try {
+      staticRef.current.innerHTML = "";
+      const center = new kakao.maps.LatLng(value.lat, value.lng);
+      const staticMapOption = { center, level: 4, marker: [{ position: center }] };
+      new kakao.maps.StaticMap(staticRef.current, staticMapOption);
+      // 렌더 후 약간 대기했다가 캡처
+      const t = setTimeout(async () => {
+        if (cancelled || !staticRef.current) return;
+        try {
+          const dataUrl = await htmlToImage.toPng(staticRef.current, { cacheBust: true, pixelRatio: 1 });
+          if (cancelled) return;
+          setCapUrl(dataUrl);
+          setCapMsg("✅ 지도 캡처 성공");
+          onCapture?.(dataUrl);
+        } catch (e) {
+          setCapMsg("❌ 지도 캡처 실패: " + (e instanceof Error ? e.message : "알수없음"));
+        }
+      }, 1500);
+      return () => { cancelled = true; clearTimeout(t); };
+    } catch (e) {
+      setCapMsg("StaticMap 오류: " + (e instanceof Error ? e.message : "?"));
+    }
+  }, [ready, value.lat, value.lng, onCapture]);
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -163,6 +201,19 @@ export function KakaoMapPicker({
           ? `선택 좌표: ${value.lat.toFixed(6)}, ${value.lng?.toFixed(6)}`
           : "지도를 클릭하거나 주소를 검색해 위치를 지정하세요."}
       </p>
+      {/* StaticMap 자동 캡처용 (화면 밖에 렌더) */}
+      <div style={{ position: "absolute", left: -9999, top: 0, width: 640, height: 360 }}>
+        <div ref={staticRef} style={{ width: 640, height: 360 }} />
+      </div>
+      {value.lat != null && (
+        <div className="space-y-1 rounded-lg border border-neutral-200 bg-neutral-50 p-2">
+          <p className="text-xs font-semibold text-neutral-600">{capMsg || "지도 이미지 대기 중"}</p>
+          {capUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={capUrl} alt="검측 위치 지도" className="w-full rounded border border-neutral-300" />
+          )}
+        </div>
+      )}
     </div>
   );
 }
