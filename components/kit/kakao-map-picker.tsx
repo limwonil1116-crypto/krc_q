@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { Input } from "@/components/ui/input";
 import { PrimaryButton } from "@/components/kit/buttons";
-import * as htmlToImage from "html-to-image";
 
 declare global {
   interface Window {
@@ -27,21 +26,6 @@ export function KakaoMapPicker({
   const markerObj = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
-  const [capPreview, setCapPreview] = useState<string>("");
-  const [capMsg, setCapMsg] = useState<string>("");
-
-  async function testCapture() {
-    setCapMsg("캡처 중...");
-    setCapPreview("");
-    try {
-      if (!mapRef.current) { setCapMsg("지도 없음"); return; }
-      const dataUrl = await htmlToImage.toPng(mapRef.current, { cacheBust: true, pixelRatio: 1 });
-      setCapPreview(dataUrl);
-      setCapMsg("✅ 캡처 성공! 아래 미리보기 확인");
-    } catch (e) {
-      setCapMsg("❌ 캡처 실패: " + (e instanceof Error ? e.message : "알 수 없음"));
-    }
-  }
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -179,20 +163,6 @@ export function KakaoMapPicker({
           ? `선택 좌표: ${value.lat.toFixed(6)}, ${value.lng?.toFixed(6)}`
           : "지도를 클릭하거나 주소를 검색해 위치를 지정하세요."}
       </p>
-      <div className="space-y-2 rounded-lg border border-dashed border-amber-300 bg-amber-50 p-2">
-        <button
-          type="button"
-          onClick={testCapture}
-          className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-bold text-white hover:bg-amber-600"
-        >
-          📸 지도 캡처 테스트
-        </button>
-        {capMsg && <p className="text-xs font-semibold">{capMsg}</p>}
-        {capPreview && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={capPreview} alt="캡처 미리보기" className="w-full rounded border border-neutral-300" />
-        )}
-      </div>
     </div>
   );
 }
