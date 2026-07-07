@@ -3,6 +3,8 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
+// VWorld 는 국내 요청만 허용 -> 서울 리전에서 실행
+export const preferredRegion = "icn1";
 
 const TILE = 256;
 const GRID = 3; // 3x3 타일
