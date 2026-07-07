@@ -74,7 +74,7 @@ export async function GET(req: Request) {
 
   const W = TILE * GRID;
   const Hh = TILE * GRID;
-  const composites: sharp.OverlayOptions[] = [];
+  const composites: { input: Buffer; left: number; top: number }[] = [];
   for (const t of tiles) {
     if (!t.buf) continue;
     composites.push({
