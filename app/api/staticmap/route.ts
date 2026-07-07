@@ -17,25 +17,39 @@ function lonLatToTile(lon: number, lat: number, z: number) {
 }
 
 async function fetchTile(key: string, z: number, x: number, y: number): Promise<Buffer | null> {
-  const url = `https://api.vworld.kr/req/wmts/1.0.0/${key}/Base/${z}/${y}/${x}.png`;
-  try {
-    const res = await fetch(url, { headers: { Referer: "https://krc-q.vercel.app" } });
-    if (!res.ok) {
-      console.error(`[staticmap] tile ${z}/${y}/${x} status ${res.status}`);
-      return null;
+  const urls = [
+    `https://api.vworld.kr/req/wmts/1.0.0/${key}/Base/${z}/${y}/${x}.png`,
+    `http://api.vworld.kr/req/wmts/1.0.0/${key}/Base/${z}/${y}/${x}.png`,
+    `https://xdworld.vworld.kr/2d/Base/service/${z}/${x}/${y}.png`,
+  ];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Referer: "https://krc-q.vercel.app/",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+          Accept: "image/png,image/*,*/*",
+        },
+      });
+      if (!res.ok) {
+        console.error(`[staticmap] ${url} status ${res.status}`);
+        continue;
+      }
+      const ct = res.headers.get("content-type") || "";
+      if (!ct.includes("image")) {
+        const txt = await res.text();
+        console.error(`[staticmap] ${url} not image: ${ct} body=${txt.slice(0, 150)}`);
+        continue;
+      }
+      const ab = await res.arrayBuffer();
+      return Buffer.from(ab);
+    } catch (e) {
+      console.error(`[staticmap] ${url} fetch error:`, e instanceof Error ? e.message : e);
+      continue;
     }
-    const ct = res.headers.get("content-type") || "";
-    if (!ct.includes("image")) {
-      const txt = await res.text();
-      console.error(`[staticmap] tile ${z}/${y}/${x} not image: ${ct} body=${txt.slice(0, 200)}`);
-      return null;
-    }
-    const ab = await res.arrayBuffer();
-    return Buffer.from(ab);
-  } catch (e) {
-    console.error(`[staticmap] tile fetch error`, e);
-    return null;
   }
+  return null;
 }
 
 export async function GET(req: Request) {
