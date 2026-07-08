@@ -1,0 +1,16 @@
+
+
+===== vwUrl/vwMsg state =====
+'const [vwUrl, setVwUrl] = useState<string>("");\n  const [vwMsg, setVwMsg] = useState<string>("");'
+
+===== testVworld 함수 =====
+async function testVworld() {
+    setVwMsg("VWorld 지도 생성 중...");
+    setVwUrl("");
+    const url = await captureVworld();
+    if (url) { setVwUrl(url); setVwMsg("✅ VWorld 캡처 성공!"); onCapture?.(url); }
+    else setVwMsg("❌ VWorld 캡처 실패 (키/위치 확인)");
+  }
+
+===== 테스트 UI 블록 =====
+'{value.lat != null && (\n        <div className="space-y-2 rounded-lg border border-dashed border-emerald-300 bg-emerald-50 p-2">\n          <button\n            type="button"\n            onClick={testVworld}\n            className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-emerald-700"\n          >\n            🗺️ VWorld 지도 캡처 테스트\n          </button>\n          {vwMsg && <p className="text-xs font-semibold">{vwMsg}</p>}\n          {vwUrl && (\n            // eslint-disable-next-line @next/next/no-img-element\n            <img src={vwUrl} alt="VWorld 지도" className="w-full rounded border border-neutral-300" />\n          )}\n        </div>\n      )}\n    </div>\n  );\n}\n'

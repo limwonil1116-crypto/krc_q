@@ -316,48 +316,55 @@ export function VideoComposer({
             )}
 
             {cur?.kind === "location" && (
-              <div key={`location-${idx}`} className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#002A80] px-8 text-center text-white">
-                <div
-                  className="krc-grid2 krc-zoom pointer-events-none absolute inset-0 opacity-[0.12]"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-                    backgroundSize: "28px 28px",
-                  }}
-                />
-                <div className="krc-sweep2 pointer-events-none absolute inset-0" />
-                <span className="pointer-events-none absolute left-3 top-3 h-5 w-5 border-l-2 border-t-2 border-[#FE5000]" />
-                <span className="pointer-events-none absolute bottom-3 right-3 h-5 w-5 border-b-2 border-r-2 border-[#FE5000]" />
-                <div className="krc-pop relative z-10 text-6xl">📍</div>
-                <div className="krc-stroke krc-pop relative z-10 mt-2 text-3xl font-extrabold">검측 위치</div>
-                <div className="krc-grow2 relative z-10 mt-3 h-1 w-24 rounded-full bg-[#FE5000]" />
-                {cur.mapSrc && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={cur.mapSrc}
-                    alt="검측 위치 지도"
-                    className="krc-rise2 relative z-10 mt-4 h-40 w-64 rounded-lg border-2 border-white/80 object-cover shadow-lg"
-                    style={{ animationDelay: "0.2s" }}
+              <div key={`location-${idx}`} className="relative flex h-full w-full flex-col overflow-hidden bg-[#002A80] text-white">
+                {cur.mapSrc ? (
+                  <>
+                    {/* 지도 전체 배경 */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={cur.mapSrc}
+                      alt="검측 위치 지도"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/15" />
+                  </>
+                ) : (
+                  <div
+                    className="krc-grid2 krc-zoom pointer-events-none absolute inset-0 opacity-[0.12]"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+                      backgroundSize: "28px 28px",
+                    }}
                   />
                 )}
-                {cur.address && (
-                  <div className="krc-rise2 relative z-10 mt-4 max-w-xl text-xl font-semibold text-white" style={{ animationDelay: "0.3s" }}>
-                    {cur.address}
-                  </div>
-                )}
-                <div className="krc-rise2 relative z-10 mt-2 text-sm text-white/70" style={{ animationDelay: "0.45s" }}>
-                  좌표 {cur.lat.toFixed(6)}, {cur.lng.toFixed(6)}
+                <span className="pointer-events-none absolute left-3 top-3 z-10 h-5 w-5 border-l-2 border-t-2 border-[#FE5000]" />
+                <span className="pointer-events-none absolute bottom-3 right-3 z-10 h-5 w-5 border-b-2 border-r-2 border-[#FE5000]" />
+                {/* 상단 타이틀 */}
+                <div className="krc-rise2 relative z-10 flex items-center gap-2 px-6 pt-6">
+                  <span className="text-3xl">📍</span>
+                  <span className="krc-stroke text-2xl font-extrabold drop-shadow-lg">검측 위치</span>
                 </div>
-                {cur.content && (
-                  <div className="krc-rise2 relative z-10 mt-4 text-lg font-semibold text-white" style={{ animationDelay: "0.6s" }}>
-                    검측내용: {cur.content}
+                <div className="flex-1" />
+                {/* 하단 반투명 검정 정보 박스 */}
+                <div className="krc-rise2 relative z-10 m-4 rounded-xl bg-black/65 p-5 text-left backdrop-blur-sm" style={{ animationDelay: "0.2s" }}>
+                  {cur.address && (
+                    <div className="text-xl font-bold text-white">{cur.address}</div>
+                  )}
+                  <div className="mt-1 text-sm text-white/70">
+                    좌표 {cur.lat.toFixed(6)}, {cur.lng.toFixed(6)}
                   </div>
-                )}
-                {cur.part && (
-                  <div className="krc-rise2 relative z-10 mt-1 text-base text-white/90" style={{ animationDelay: "0.72s" }}>
-                    검측부위: {cur.part}
-                  </div>
-                )}
+                  {cur.content && (
+                    <div className="mt-3 text-base font-semibold text-white">
+                      <span className="text-[#FFB68A]">검측내용</span> · {cur.content}
+                    </div>
+                  )}
+                  {cur.part && (
+                    <div className="mt-1 text-base text-white/90">
+                      <span className="text-[#FFB68A]">검측부위</span> · {cur.part}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

@@ -29,8 +29,6 @@ export function KakaoMapPicker({
   const markerObj = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
-  const [vwUrl, setVwUrl] = useState<string>("");
-  const [vwMsg, setVwMsg] = useState<string>("");
 
   const captureVworld = useCallback(async (): Promise<string | null> => {
     const key = process.env.NEXT_PUBLIC_VWORLD_API_KEY;
@@ -84,13 +82,6 @@ export function KakaoMapPicker({
     }
   }, []);
 
-  async function testVworld() {
-    setVwMsg("VWorld 지도 생성 중...");
-    setVwUrl("");
-    const url = await captureVworld();
-    if (url) { setVwUrl(url); setVwMsg("✅ VWorld 캡처 성공!"); onCapture?.(url); }
-    else setVwMsg("❌ VWorld 캡처 실패 (키/위치 확인)");
-  }
 
   // 좌표가 정해지면 자동 캡처하여 부모에 전달
   useEffect(() => {
@@ -99,8 +90,6 @@ export function KakaoMapPicker({
     const t = setTimeout(async () => {
       const url = await captureVworld();
       if (!cancelled && url) {
-        setVwUrl(url);
-        setVwMsg("✅ 지도 자동 캡처됨");
         onCapture?.(url);
       }
     }, 600);
@@ -243,22 +232,6 @@ export function KakaoMapPicker({
           ? `선택 좌표: ${value.lat.toFixed(6)}, ${value.lng?.toFixed(6)}`
           : "지도를 클릭하거나 주소를 검색해 위치를 지정하세요."}
       </p>
-      {value.lat != null && (
-        <div className="space-y-2 rounded-lg border border-dashed border-emerald-300 bg-emerald-50 p-2">
-          <button
-            type="button"
-            onClick={testVworld}
-            className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-emerald-700"
-          >
-            🗺️ VWorld 지도 캡처 테스트
-          </button>
-          {vwMsg && <p className="text-xs font-semibold">{vwMsg}</p>}
-          {vwUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={vwUrl} alt="VWorld 지도" className="w-full rounded border border-neutral-300" />
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 export type ExportSlide =
   | { kind: "title" }
-  | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null }
+  | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null; mapSrc: string | null }
   | { kind: "section"; label: string; text: string | null }
   | { kind: "image"; src: string; caption: string }
   | { kind: "video"; src: string; caption: string };
@@ -182,41 +182,72 @@ export function VideoExporter({
     ctx.fillText(`검측일자 ${date}`, W - 44, 22);
   }
 
-  function drawLocation(ctx: CanvasRenderingContext2D, address: string, lat: number, lng: number, content: string | null, part: string | null) {
-    drawBackground(ctx, "#002A80");
-    ctx.textAlign = "center";
+  function drawLocation(ctx: CanvasRenderingContext2D, address: string, lat: number, lng: number, content: string | null, part: string | null, mapImg: HTMLImageElement | null) {
+    // 지도 전체 배경 (cover 방식)
+    if (mapImg) {
+      const iw = mapImg.naturalWidth || mapImg.width;
+      const ih = mapImg.naturalHeight || mapImg.height;
+      const scale = Math.max(W / iw, H / ih);
+      const dw = iw * scale, dh = ih * scale;
+      const dx = (W - dw) / 2, dy = (H - dh) / 2;
+      try { ctx.drawImage(mapImg, dx, dy, dw, dh); } catch { drawBackground(ctx, "#002A80"); }
+      ctx.fillStyle = "rgba(0,0,0,0.15)";
+      ctx.fillRect(0, 0, W, H);
+    } else {
+      drawBackground(ctx, "#002A80");
+    }
+    ctx.strokeStyle = ORANGE;
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(24, 60); ctx.lineTo(24, 24); ctx.lineTo(60, 24); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W - 24, H - 60); ctx.lineTo(W - 24, H - 24); ctx.lineTo(W - 60, H - 24); ctx.stroke();
+    ctx.textAlign = "left";
     ctx.fillStyle = "#fff";
     ctx.font = "bold 40px sans-serif";
-    ctx.fillText("[ 검측 위치 ]", W / 2, 220);
-    ctx.fillStyle = ORANGE;
-    ctx.fillRect(W / 2 - 60, 250, 120, 6);
+    ctx.fillText("📍 검측 위치", 44, 76);
+    const boxH = 300;
+    const boxY = H - boxH - 40;
+    const boxX = 40, boxW = W - 80;
+    ctx.fillStyle = "rgba(0,0,0,0.65)";
+    if (typeof ctx.roundRect === "function") {
+      ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 18); ctx.fill();
+    } else {
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+    }
+    ctx.textAlign = "left";
+    let ty = boxY + 60;
+    const tx = boxX + 36;
     if (address) {
       ctx.fillStyle = "#fff";
       ctx.font = "bold 34px sans-serif";
-      const lines = wrapText(ctx, address, W - 200).slice(0, 3);
-      let y = 340;
-      lines.forEach((ln) => {
-        ctx.fillText(ln, W / 2, y);
-        y += 46;
-      });
+      const lines = wrapText(ctx, address, boxW - 72).slice(0, 2);
+      lines.forEach((ln) => { ctx.fillText(ln, tx, ty); ty += 44; });
     }
     ctx.fillStyle = "rgba(255,255,255,0.7)";
     ctx.font = "22px sans-serif";
-    let yy = address ? 500 : 360;
-    ctx.fillText(`좌표  ${lat.toFixed(6)},  ${lng.toFixed(6)}`, W / 2, yy);
+    ty += 4;
+    ctx.fillText(`좌표  ${lat.toFixed(6)},  ${lng.toFixed(6)}`, tx, ty);
     if (content) {
-      yy += 56;
+      ty += 50;
+      ctx.fillStyle = "#FFB68A";
+      ctx.font = "bold 26px sans-serif";
+      ctx.fillText("검측내용", tx, ty);
       ctx.fillStyle = "#fff";
-      ctx.font = "bold 28px sans-serif";
-      const clines = wrapText(ctx, "검측내용: " + content, W - 200).slice(0, 2);
-      clines.forEach((ln) => { ctx.fillText(ln, W / 2, yy); yy += 38; });
+      ctx.font = "26px sans-serif";
+      const clines = wrapText(ctx, content, boxW - 220).slice(0, 2);
+      let cy = ty;
+      clines.forEach((ln) => { ctx.fillText(ln, tx + 150, cy); cy += 34; });
+      ty = Math.max(ty, cy - 34);
     }
     if (part) {
-      yy += 12;
-      ctx.fillStyle = "rgba(255,255,255,0.92)";
-      ctx.font = "24px sans-serif";
-      ctx.fillText("검측부위: " + part, W / 2, yy);
+      ty += 44;
+      ctx.fillStyle = "#FFB68A";
+      ctx.font = "bold 26px sans-serif";
+      ctx.fillText("검측부위", tx, ty);
+      ctx.fillStyle = "#fff";
+      ctx.font = "26px sans-serif";
+      ctx.fillText(part, tx + 150, ty);
     }
+    ctx.textAlign = "center";
   }
 
   function drawSection(ctx: CanvasRenderingContext2D, label: string, text: string | null) {
@@ -297,6 +328,7 @@ export function VideoExporter({
         const s = slides[i];
         if (s.kind === "image") media[i] = await loadImage(s.src);
         else if (s.kind === "video") media[i] = await loadVideo(s.src);
+        else if (s.kind === "location" && s.mapSrc) media[i] = await loadImage(s.mapSrc).catch(() => null);
         else media[i] = null;
         setProgress(Math.round(((i + 1) / slides.length) * 15));
       }
@@ -398,7 +430,7 @@ export function VideoExporter({
           for (let fr = 0; fr < frames; fr++) {
             if (cancelRef.current) break;
             if (s.kind === "title") drawTitle(ctx);
-            else if (s.kind === "location") drawLocation(ctx, s.address, s.lat, s.lng, s.content, s.part);
+            else if (s.kind === "location") drawLocation(ctx, s.address, s.lat, s.lng, s.content, s.part, media[i] as HTMLImageElement | null);
             else if (s.kind === "section") drawSection(ctx, s.label, s.text);
             else {
               const m = media[i] as HTMLImageElement | null;
