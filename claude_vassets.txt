@@ -1,0 +1,31 @@
+
+
+===== video page assets 쿼리 =====
+
+
+===== Asset type =====
+type Asset = {
+  id: string;
+
+===== photo 필터 =====
+   .forEach((p, i) => {
+        const r = recMap.get(p.id);
+        const list = byPhase.get(p.id) || [];
+        const photos = list.filter((a) => a.assetType === "photo");
+        const videos = list.filter((a) => a.assetType === "video");
+        if (list.length > 0 
+
+===== video 필터 =====
+t photos = list.filter((a) => a.assetType === "photo");
+        const videos = list.filter((a) => a.assetType === "video");
+        if (list.length > 0 || (r && r.textDescription)) {
+          out.push({ kind: "section",
+
+===== image slide push =====
+ | { kind: "title" }
+  | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null }
+  | { kind: "section"; label: string; text: string | null }
+  | { kind: "image"; src: string; caption: string }
+  | { kind: "video"; src: string; caption: string };
+
+const TITLE_MS = 420

@@ -1,0 +1,58 @@
+
+
+===== ExportSlide location =====
+'\n  | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null }'
+
+===== drawLocation 함수 =====
+function drawLocation(ctx: CanvasRenderingContext2D, address: string, lat: number, lng: number, content: string | null, part: string | null) {
+    drawBackground(ctx, "#002A80");
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 40px sans-serif";
+    ctx.fillText("[ 검측 위치 ]", W / 2, 220);
+    ctx.fillStyle = ORANGE;
+    ctx.fillRect(W / 2 - 60, 250, 120, 6);
+    if (address) {
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 34px sans-serif";
+      const lines = wrapText(ctx, address, W - 200).slice(0, 3);
+      let y = 340;
+      lines.forEach((ln) => {
+        ctx.fillText(ln, W / 2, y);
+        y += 46;
+      });
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.font = "22px sans-serif";
+    let yy = address ? 500 : 360;
+    ctx.fillText(`좌표  ${lat.toFixed(6)},  ${lng.toFixed(6)}`, W / 2, yy);
+    if (content) {
+      yy += 56;
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 28px sans-serif";
+      const clines = wrapText(ctx, "검측내용: " + content, W - 200).slice(0, 2);
+      clines.forEach((ln) => { ctx.fillText(ln, W / 2, yy); yy += 38; });
+    }
+    if (part) {
+      yy += 12;
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      ctx.font = "24px sans-serif";
+      ctx.fillText("검측부위: " + part, W / 2, yy);
+    }
+  }
+
+===== media 로딩 =====
+ slides.length; i++) {
+        const s = slides[i];
+        if (s.kind === "image") media[i] = await loadImage(s.src);
+        else if (s.kind === "video") media[i] = await loadVideo(s.src);
+        else media[i] = null;
+        setProgress(Math.round(((i + 1) / slides.length) * 15));
+      }
+
+      const stream = canvas.captureStream(FPS);
+
+      let audioC
+
+===== drawLocation 호출 =====
+'  ctx.fillText(`검측일자 ${date}`, W - 44, 22);\n  }\n\n  function drawLocation(ctx: CanvasRenderingContext2D, address: string, lat: number, lng: number, con'

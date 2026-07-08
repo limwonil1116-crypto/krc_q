@@ -28,7 +28,7 @@ type Meta = {
 
 type Slide =
   | { kind: "title" }
-  | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null }
+  | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null; mapSrc: string | null }
   | { kind: "section"; label: string; text: string | null }
   | { kind: "image"; src: string; caption: string }
   | { kind: "video"; src: string; caption: string };
@@ -158,6 +158,7 @@ export function VideoComposer({
         ? `NO.${locRec.inspectionPartToMain ?? 0}+${String(locRec.inspectionPartToSub ?? 0).padStart(2, "0")}`
         : "";
       const _part = _pf && _pt ? `${_pf} ~ ${_pt}` : (_pf || _pt || "");
+      const _mapAsset = assets.find((a) => a.inspectionDate === date && a.assetType === "map");
       out.push({
         kind: "location",
         address: locRec.locationAddress || "",
@@ -165,6 +166,7 @@ export function VideoComposer({
         lng: locRec.longitude,
         content: locRec.inspectionContent || null,
         part: _part || null,
+        mapSrc: _mapAsset ? `/api/assets/${_mapAsset.id}/raw` : null,
       });
     }
     [...phases]
@@ -329,6 +331,15 @@ export function VideoComposer({
                 <div className="krc-pop relative z-10 text-6xl">📍</div>
                 <div className="krc-stroke krc-pop relative z-10 mt-2 text-3xl font-extrabold">검측 위치</div>
                 <div className="krc-grow2 relative z-10 mt-3 h-1 w-24 rounded-full bg-[#FE5000]" />
+                {cur.mapSrc && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={cur.mapSrc}
+                    alt="검측 위치 지도"
+                    className="krc-rise2 relative z-10 mt-4 h-40 w-64 rounded-lg border-2 border-white/80 object-cover shadow-lg"
+                    style={{ animationDelay: "0.2s" }}
+                  />
+                )}
                 {cur.address && (
                   <div className="krc-rise2 relative z-10 mt-4 max-w-xl text-xl font-semibold text-white" style={{ animationDelay: "0.3s" }}>
                     {cur.address}
