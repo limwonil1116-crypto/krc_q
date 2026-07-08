@@ -17,9 +17,11 @@ type Value = { lat: number | null; lng: number | null; address: string };
 export function KakaoMapPicker({
   value,
   onChange,
+  onCapture,
 }: {
   value: Value;
   onChange: (v: { lat: number; lng: number; address: string }) => void;
+  onCapture?: (dataUrl: string) => void;
 }) {
   const KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
   const mapRef = useRef<HTMLDivElement>(null);
@@ -30,17 +32,16 @@ export function KakaoMapPicker({
   const [vwUrl, setVwUrl] = useState<string>("");
   const [vwMsg, setVwMsg] = useState<string>("");
 
-  async function testVworld() {
-    setVwMsg("VWorld 지도 생성 중...");
-    setVwUrl("");
+  const captureVworld = useCallback(async (): Promise<string | null> => {
     const key = process.env.NEXT_PUBLIC_VWORLD_API_KEY;
-    if (!key) { setVwMsg("❌ NEXT_PUBLIC_VWORLD_API_KEY 없음"); return; }
-    if (value.lat == null || value.lng == null) { setVwMsg("먼저 위치를 선택하세요"); return; }
+    if (!key) return null;
+    const v = valueRef.current;
+    if (v.lat == null || v.lng == null) return null;
     try {
       const z = 16, GRID = 3, TILE = 256;
       const n = Math.pow(2, z);
-      const cx = ((value.lng + 180) / 360) * n;
-      const latRad = (value.lat * Math.PI) / 180;
+      const cx = ((v.lng + 180) / 360) * n;
+      const latRad = (v.lat * Math.PI) / 180;
       const cy = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
       const ctX = Math.floor(cx), ctY = Math.floor(cy);
       const half = Math.floor(GRID / 2);
@@ -48,7 +49,7 @@ export function KakaoMapPicker({
       canvas.width = TILE * GRID;
       canvas.height = TILE * GRID;
       const ctx = canvas.getContext("2d");
-      if (!ctx) { setVwMsg("❌ canvas 없음"); return; }
+      if (!ctx) return null;
 
       const loadTile = (dx: number, dy: number) =>
         new Promise<void>((resolve) => {
@@ -67,7 +68,6 @@ export function KakaoMapPicker({
         for (let dx = -half; dx <= half; dx++) jobs.push(loadTile(dx, dy));
       await Promise.all(jobs);
 
-      // 중앙 마커
       const mx = (cx - ctX + half) * TILE;
       const my = (cy - ctY + half) * TILE;
       ctx.beginPath();
@@ -78,14 +78,34 @@ export function KakaoMapPicker({
       ctx.strokeStyle = "#fff";
       ctx.stroke();
 
-      // toDataURL 이 CORS 오염되면 여기서 예외 발생
-      const dataUrl = canvas.toDataURL("image/png");
-      setVwUrl(dataUrl);
-      setVwMsg("✅ VWorld 캡처 성공!");
-    } catch (e) {
-      setVwMsg("❌ VWorld 캡처 실패: " + (e instanceof Error ? e.message : "알수없음"));
+      return canvas.toDataURL("image/png");
+    } catch {
+      return null;
     }
+  }, []);
+
+  async function testVworld() {
+    setVwMsg("VWorld 지도 생성 중...");
+    setVwUrl("");
+    const url = await captureVworld();
+    if (url) { setVwUrl(url); setVwMsg("✅ VWorld 캡처 성공!"); onCapture?.(url); }
+    else setVwMsg("❌ VWorld 캡처 실패 (키/위치 확인)");
   }
+
+  // 좌표가 정해지면 자동 캡처하여 부모에 전달
+  useEffect(() => {
+    if (value.lat == null || value.lng == null) return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const url = await captureVworld();
+      if (!cancelled && url) {
+        setVwUrl(url);
+        setVwMsg("✅ 지도 자동 캡처됨");
+        onCapture?.(url);
+      }
+    }, 600);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [value.lat, value.lng, captureVworld, onCapture]);
   const valueRef = useRef(value);
   valueRef.current = value;
 

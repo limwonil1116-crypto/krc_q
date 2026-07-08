@@ -37,7 +37,8 @@ export async function POST(req: Request) {
     const subTypeId = String(fd.get("subTypeId") || "");
     const phaseTemplateId = String(fd.get("phaseTemplateId") || "");
     const inspectionDate = String(fd.get("inspectionDate") || "") || todayStr();
-    const assetType = String(fd.get("assetType") || "photo") === "video" ? "video" : "photo";
+    const _at = String(fd.get("assetType") || "photo");
+    const assetType = _at === "video" ? "video" : _at === "map" ? "map" : "photo";
     const file = fd.get("file");
     if (!siteStructureId || !subTypeId || !phaseTemplateId || !(file instanceof File)) {
       return NextResponse.json({ error: "파일/구조물/세부항목/단계 정보가 필요합니다." }, { status: 400 });

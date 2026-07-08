@@ -173,7 +173,7 @@ export const constructionRecords = pgTable("construction_records", {
 export const recordAssets = pgTable("record_assets", {
   id: uuid("id").primaryKey().defaultRandom(),
   recordId: uuid("record_id").notNull().references(() => constructionRecords.id, { onDelete: "cascade" }),
-  assetType: text("asset_type").$type<"photo" | "video" | "audio" | "document">().notNull(),
+  assetType: text("asset_type").$type<"photo" | "video" | "audio" | "document" | "map">().notNull(),
   fileName: varchar("file_name", { length: 255 }).notNull(),
   fileUrl: text("file_url").notNull(),
   thumbnailUrl: text("thumbnail_url"),

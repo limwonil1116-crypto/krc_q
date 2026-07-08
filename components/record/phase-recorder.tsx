@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Label } from "@/components/ui/label";
@@ -315,6 +315,30 @@ export function PhaseRecorder({
   function goStep(idx: number) {
     setStep(Math.min(Math.max(idx, 0), phases.length - 1));
     resetTransient();
+  }
+
+  // 검측 위치 지도(VWorld 캡처)를 map 타입으로 백그라운드 업로드
+  const lastMapRef = useRef<string>("");
+  async function uploadMapImage(dataUrl: string) {
+    if (!dataUrl || dataUrl === lastMapRef.current) return;
+    lastMapRef.current = dataUrl;
+    const f1 = phases[0];
+    if (!f1) return;
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], "location-map.png", { type: "image/png" });
+      const fd = new FormData();
+      fd.append("siteStructureId", siteStructureId);
+      fd.append("subTypeId", subTypeId);
+      fd.append("phaseTemplateId", f1.id);
+      fd.append("inspectionDate", selectedDate);
+      fd.append("assetType", "map");
+      fd.append("file", file);
+      await fetch("/api/records/assets", { method: "POST", body: fd });
+      router.refresh();
+    } catch {
+      // 조용히 무시 (지도는 보조 자료)
+    }
   }
 
   function openEdit(p: Phase) {
@@ -797,6 +821,7 @@ export function PhaseRecorder({
                           <KakaoMapPicker
                             value={{ lat: form.lat, lng: form.lng, address: form.address }}
                             onChange={(v) => setForm((f) => ({ ...f, lat: v.lat, lng: v.lng, address: v.address }))}
+                            onCapture={(dataUrl) => uploadMapImage(dataUrl)}
                           />
                           <div className="mt-3 space-y-1">
                             <Label>검측 위치 (주소)</Label>

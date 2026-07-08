@@ -1,0 +1,63 @@
+
+
+===== assets POST =====
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.user?.role;
+    if (!session?.user?.id || (role !== "contractor" && role !== "client" && role !== "admin")) {
+      return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+    }
+    const userId = session.user.id;
+
+    const fd = await req.formData();
+    const siteStructureId = String(fd.get("siteStructureId") || "");
+    const subTypeId = String(fd.get("subTypeId") || "");
+    const phaseTemplateId = String(fd.get("phaseTemplateId") || "");
+    const inspectionDate = String(fd.get("inspectionDate") || "") || todayStr();
+    const assetType = String(fd.get("assetType") || "photo") === "video" ? "video" : "photo";
+    const file = fd.get("file");
+    if (!siteStructureId || !subTypeId || !phaseTemplateId || !(file instanceof File)) {
+      return NextResponse.json({ error: "파일/구조물/세부항목/단계 정보가 필요합니다." }, { status: 400 });
+    }
+
+    const ssRows = await db.select().from(siteStructures).where(eq(siteStructures.id, siteStructureId)).limit(1);
+    const ss = ssRows[0];
+    if (!ss) return NextResponse.json({ error: "구조물을 찾을 수 없습니다." }, { status: 404 });
+    if (!(await ownsSite(userId, ss.siteId, role))) {
+      return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+    }
+
+    const existing = await db
+      .select({ id: constructionRecords.id })
+      .from(constructionRecords)
+      .where(
+        and(
+          eq(constructionRecords.siteStructureId, siteStructureId),
+          eq(constructionRecords.subTypeId, subTypeId),
+          eq(constructionRecords.phaseTemplateId, phaseTemplateId),
+          eq(constructionRecords.inspectionDate, inspectionDate)
+        )
+      )
+      .limit(1);
+    let recordId: string;
+    if (existing[0]) {
+      recordId = existing[0].id;
+    } else {
+      const [r] = await db
+        .insert(constructionRecords)
+        .values({
+          siteId: ss.siteId,
+          siteStructureId,
+          subType
+
+===== assetType 처리 =====
+ || "");
+    const inspectionDate = String(fd.get("inspectionDate") || "") || todayStr();
+    const assetType = String(fd.get("assetType") || "photo") === "video" ? "video" : "photo";
+    const file = fd.get("file");
+    if (!siteStructureId || !subTypeId || !phaseTemplateId || !(file instanceof File)) {
+      return NextResponse.json({ error: "파일/구조물/세부항목/단계 정보가 필요합니다." }, { status: 400 });
+    }
+
+    const ssRows = await db.select().from(siteStructures).where(eq(siteStructures.id, siteStructur

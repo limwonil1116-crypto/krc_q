@@ -1,0 +1,8 @@
+'  }\n  function goStep(idx: number) {\n    setStep(Math.min(Math.max(idx, 0), phases.length - 1));\n    resetTransient();\n  }'
+
+-----
+  }
+  function goStep(idx: number) {
+    setStep(Math.min(Math.max(idx, 0), phases.length - 1));
+    resetTransient();
+  }

@@ -1,0 +1,2 @@
+'  assetType: text("asset_type").$type<"photo" | "video" | "audio" | "document">().notNull(),'
+[asset_type 근처] 'ionRecords.id, { onDelete: "cascade" }),\n  assetType: text("asset_type").$type<"photo" | "video" | "audio" | "document">().notNull(),\n  fileName: varchar("file_name", { length: 255'
