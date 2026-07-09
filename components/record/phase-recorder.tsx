@@ -206,7 +206,7 @@ export function PhaseRecorder({
   records: Rec[];
   assets: Asset[];
   videoHref: string;
-  inspectionHref: string;
+  inspectionHref?: string;
 }) {
   const router = useRouter();
 
@@ -525,12 +525,14 @@ export function PhaseRecorder({
           <h1 className="text-xl font-bold text-[#0033A0]">{structureName}</h1>
           <p className="text-sm text-neutral-500">{typeName} · 세부항목별 검측 기록</p>
         </div>
-        <Link
-          href={inspectionHref}
-          className="whitespace-nowrap rounded-md bg-[#002A80] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#001d5c]"
-        >
-          📋 검측 요청서
-        </Link>
+        {inspectionHref && (
+          <Link
+            href={inspectionHref}
+            className="whitespace-nowrap rounded-md bg-[#002A80] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#001d5c]"
+          >
+            📋 검측 요청서
+          </Link>
+        )}
         <Link
           href={videoHref}
           className="whitespace-nowrap rounded-md bg-[#FE5000] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#E04800]"
