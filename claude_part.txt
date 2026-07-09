@@ -1,0 +1,46 @@
+--- siteParticipants ---
+
+export const siteParticipants = pgTable("site_participants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  participantRole: text("participant_role")
+    .$type<"contractor_manager" | "supervisor" | "client_viewer" | "client_manager">()
+    .notNull(),
+  receiveEmail: boolean("receive_email").notNull().default(true),
+  receivePush: boolean("receive_push").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+--- constructionSites ---
+
+export const constructionSites = pgTable("construction_sites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientOrgId: uuid("client_org_id"),
+  contractorOrgId: uuid("contractor_org_id"),
+  siteCode: varchar("site_code", { length: 100 }),
+  districtName: varchar("district_name", { length: 150 }).notNull(),
+  projectName: varchar("project_name", { length: 200 }).notNull(),
+  executor: varchar("executor", { length: 50 }),
+  workType: varchar("work_type", { length: 100 }),
+  workTypes: text("work_types"),
+  siteManagerName: varchar("site_manager_name", { length: 80 }),
+  siteManagerPhone: varchar("site_manager_phone", { length: 30 }),
+  siteManagerEmail: varchar("site_manager_email", { length: 255 }),
+  contractorLogoDriveId: text("contractor_logo_drive_id"),
+  contractorLogoName: varchar("contractor_logo_name", { length: 255 }),
+  contractorCompany: varchar("contractor_company", { length: 150 }),
+  address: text("address").notNull(),
+  lat: numeric("lat", { precision: 10, scale: 7 }),
+  lng: numeric("lng", { precision: 10, scale: 7 }),
+  startedOn: date("started_on"),
+  endedOn: date("ended_on"),
+  supervisorName: varchar("supervisor_name", { length: 80 }),
+  supervisorPhone: varchar("supervisor_phone", { length: 30 }),
+  supervisorEmail: varchar("supervisor_email", { length: 255 }),
+  status: text("status").$type<"draft" | "active" | "completed" | "archived">().notNull().default("draft"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
