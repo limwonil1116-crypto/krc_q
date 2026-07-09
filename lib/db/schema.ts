@@ -223,3 +223,64 @@ export const guideEntries = pgTable("guide_entries", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ===== 검측 요청/결과 (별지 제4호) =====
+export const inspectionRequests = pgTable("inspection_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
+  siteStructureId: uuid("site_structure_id").notNull().references(() => siteStructures.id, { onDelete: "cascade" }),
+  subTypeId: uuid("sub_type_id"),
+  inspectionDate: date("inspection_date"),
+  requestNo: varchar("request_no", { length: 50 }),
+  locationWork: text("location_work"),
+  inspectionPart: text("inspection_part"),
+  requiredAt: timestamp("required_at", { withTimezone: true }),
+  inspectionMatter: text("inspection_matter"),
+  isRecheck: boolean("is_recheck").notNull().default(false),
+  // 시공사측
+  contractorAgentName: varchar("contractor_agent_name", { length: 80 }),
+  contractorCheckerName: varchar("contractor_checker_name", { length: 80 }),
+  contractorSignedAt: timestamp("contractor_signed_at", { withTimezone: true }),
+  // 감독측
+  supervisorId: uuid("supervisor_id").references(() => users.id),
+  inspectionResult: text("inspection_result"),
+  instruction: text("instruction"),
+  supervisorSignature: text("supervisor_signature"),
+  supervisorSignedAt: timestamp("supervisor_signed_at", { withTimezone: true }),
+  status: text("status").$type<"draft" | "submitted" | "under_review" | "revision_requested" | "approved">().notNull().default("draft"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ===== 체크리스트 헤더 (별지 제5호) =====
+export const checklists = pgTable("checklists", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  inspectionRequestId: uuid("inspection_request_id").notNull().references(() => inspectionRequests.id, { onDelete: "cascade" }),
+  facilityName: text("facility_name"),
+  locationPart: text("location_part"),
+  workName: text("work_name"),
+  quantity: text("quantity"),
+  stage: text("stage"),
+  aiGenerated: boolean("ai_generated").notNull().default(false),
+  aiSource: text("ai_source"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ===== 체크리스트 항목 =====
+export const checklistItems = pgTable("checklist_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  checklistId: uuid("checklist_id").notNull().references(() => checklists.id, { onDelete: "cascade" }),
+  itemNo: integer("item_no").notNull(),
+  checkItem: text("check_item").notNull(),
+  standard: text("standard"),
+  // 시공사 1차
+  contractorResult: text("contractor_result"),
+  contractorNote: text("contractor_note"),
+  // 감독 2차
+  supervisorResult: text("supervisor_result"),
+  supervisorNote: text("supervisor_note"),
+  sortOrder: integer("sort_order").notNull().default(0),
+});

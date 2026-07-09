@@ -1,0 +1,25 @@
+import {
+} from "drizzle-orm/pg-core";
+} from "drizzle-orm/pg-core";
+
+===== 파일 마지막 800자 =====
+e_provider").$type<"google_drive" | "supabase" | "vercel_blob">().notNull().default("google_drive"),
+  storageFileId: text("storage_file_id"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+
+export const guideEntries = pgTable("guide_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subTypeId: uuid("sub_type_id").notNull().references(() => structureTypes.id, { onDelete: "cascade" }),
+  phaseCode: varchar("phase_code", { length: 50 }).notNull(),
+  guideText: text("guide_text"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+
+===== 전체 길이 =====
+12140

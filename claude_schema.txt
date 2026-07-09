@@ -1,72 +1,84 @@
+TABLE organizations  ->  "organizations"
+TABLE users  ->  "users"
+TABLE organizationMembers  ->  "organization_members"
+TABLE structureTypes  ->  "structure_types"
+TABLE phaseTemplates  ->  "phase_templates"
+TABLE constructionSites  ->  "construction_sites"
+TABLE siteParticipants  ->  "site_participants"
+TABLE siteStructures  ->  "site_structures"
+TABLE constructionRecords  ->  "construction_records"
+TABLE recordAssets  ->  "record_assets"
+TABLE guideAssets  ->  "guide_assets"
+TABLE guideEntries  ->  "guide_entries"
 
+===== 주요 테이블 상세 =====
 
-========== FILE: lib/db/schema.ts ==========
-import {
-  pgTable,
-  uuid,
-  varchar,
-  text,
-  timestamp,
-  numeric,
-  date,
-  boolean,
-  integer,
-  bigint,
-} from "drizzle-orm/pg-core";
-
-export const organizations = pgTable("organizations", {
+--- constructionRecords ---
+export const constructionRecords = pgTable("construction_records", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: varchar("name", { length: 150 }).notNull(),
-  type: text("type").$type<"contractor" | "client_agency" | "admin_org">().notNull(),
-  businessNumber: varchar("business_number", { length: 30 }),
-  representativeName: varchar("representative_name", { length: 80 }),
-  phone: varchar("phone", { length: 30 }),
-  email: varchar("email", { length: 255 }),
-  address: text("address"),
-  headquarters: varchar("headquarters", { length: 50 }),
-  branch: varchar("branch", { length: 50 }),
-  status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
-  approvedAt: timestamp("approved_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
+  siteStructureId: uuid("site_structure_id").notNull().references(() => siteStructures.id, { onDelete: "cascade" }),
+  phaseTemplateId: uuid("phase_template_id").notNull().references(() => phaseTemplates.id),
+  inspectionDate: date("inspection_date"),
+  subTypeId: uuid("sub_type_id"),
+  inspectionContent: text("inspection_content"),
+  inspectionPartFromMain: integer("inspection_part_from_main"),
+  inspectionPartFromSub: integer("inspection_part_from_sub"),
+  inspectionPartToMain: integer("inspection_part_to_main"),
+  inspectionPartToSub: integer("inspection_part_to_sub"),
+  title: varchar("title", { length: 200 }),
+  textDescription: text("text_description"),
+  voiceMemoText: text("voice_memo_text"),
+  latitude: doublePrecision("latitude"),
+  longitude: doublePrecision("longitude"),
+  locationAddress: text("location_address"),
+  notApplicable: boolean("not_applicable").notNull().default(false),
+  notApplicableReason: text("not_applicable_reason"),
+  status: text("status").$type<"draft" | "ready" | "submitted" | "revision_requested" | "approved">().notNull().default("draft"),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }),
+  createdBy: uuid("created_
 
-export const users = pgTable("users", {
+--- recordAssets ---
+export const recordAssets = pgTable("record_assets", {
   id: uuid("id").primaryKey().defaultRandom(),
-  email: varchar("email", { length: 255 }).unique(),
-  passwordHash: text("password_hash"),
-  kakaoId: varchar("kakao_id", { length: 64 }),
-  name: varchar("name", { length: 80 }).notNull(),
-  phone: varchar("phone", { length: 30 }),
-  branch: varchar("branch", { length: 50 }),
-  role: text("role").$type<"contractor" | "supervisor" | "client" | "admin">().notNull(),
-  status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
-  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const organizationMembers = pgTable("organization_members", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  memberRole: text("member_role").$type<"owner" | "manager" | "viewer" | "staff">().notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const structureTypes = pgTable("structure_types", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  name: varchar("name", { length: 100 }).notNull(),
-  description: text("description"),
-  parentId: uuid("parent_id"),
-  isRequiredCheck: boolean("is_required_check").notNull().default(true),
-  isActive: boolean("is_active").notNull().default(true),
+  recordId: uuid("record_id").notNull().references(() => constructionRecords.id, { onDelete: "cascade" }),
+  assetType: text("asset_type").$type<"photo" | "video" | "audio" | "document" | "map">().notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileUrl: text("file_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+  fileSizeBytes: bigint("file_size_bytes", { mode: "number" }).notNull(),
+  durationSeconds: numeric("duration_seconds", { precision: 10, scale: 2 }),
+  width: integer("width"),
+  height: integer("height"),
+  capturedAt: timestamp("captured_at", { withTimezone: true }),
+  gpsLat: numeric("gps_lat", { precision: 10, scale: 7 }),
+  gpsLng: numeric("gps_lng", { precision: 10, scale: 7 }),
+  caption: text("caption"),
   sortOrder: integer("sort_order").notNull().default(0),
+  uploadStatus: text("upload_status").$type<"uploading" | "uploaded" | "failed" | "deleted">().notNull().default("uploading"),
+  checksum: varchar("checksum", { length: 128 }),
+  storageProvider: text("storage_provider").$type<"google_drive" | "supabase" | "vercel_blob">().notNull().default("google_drive"),
+  storageFileId: text("storage_file_id"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_
+
+--- siteStructures ---
+export const siteStructures = pgTable("site_structures", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
+  structureTypeId: uuid("structure_type_id").notNull().references(() => structureTypes.id),
+  name: varchar("name", { length: 150 }).notNull(),
+  locationDescription: text("location_description"),
+  hasStructure: boolean("has_structure").notNull().default(true),
+  notApplicableReason: text("not_applicable_reason"),
+  status: text("status").$type<"active" | "not_applicable" | "completed" | "archived">().notNull().default("active"),
+  createdBy: uuid("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+--- phaseTemplates ---
 export const phaseTemplates = pgTable("phase_templates", {
   id: uuid("id").primaryKey().defaultRandom(),
   structureTypeId: uuid("structure_type_id").notNull().references(() => structureTypes.id, { onDelete: "cascade" }),
@@ -86,1105 +98,46 @@ export const phaseTemplates = pgTable("phase_templates", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const constructionSites = pgTable("construction_sites", {
+--- users ---
+export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  clientOrgId: uuid("client_org_id"),
-  contractorOrgId: uuid("contractor_org_id"),
-  siteCode: varchar("site_code", { length: 100 }),
-  districtName: varchar("district_name", { length: 150 }).notNull(),
-  projectName: varchar("project_name", { length: 200 }).notNull(),
-  executor: varchar("executor", { length: 50 }),
-  workType: varchar("work_type", { length: 100 }),
-  workTypes: text("work_types"),
-  siteManagerName: varchar("site_manager_name", { length: 80 }),
-  siteManagerPhone: varchar("site_manager_phone", { length: 30 }),
-  siteManagerEmail: varchar("site_manager_email", { length: 255 }),
-  contractorLogoDriveId: text("contractor_logo_drive_id"),
-  contractorLogoName: varchar("contractor_logo_name", { length: 255 }),
-  contractorCompany: varchar("contractor_company", { length: 150 }),
-  address: text("address").notNull(),
-  lat: numeric("lat", { precision: 10, scale: 7 }),
-  lng: numeric("lng", { precision: 10, scale: 7 }),
-  startedOn: date("started_on"),
-  endedOn: date("ended_on"),
-  supervisorName: varchar("supervisor_name", { length: 80 }),
-  supervisorPhone: varchar("supervisor_phone", { length: 30 }),
-  supervisorEmail: varchar("supervisor_email", { length: 255 }),
-  status: text("status").$type<"draft" | "active" | "completed" | "archived">().notNull().default("draft"),
-  createdBy: uuid("created_by"),
+  email: varchar("email", { length: 255 }).unique(),
+  passwordHash: text("password_hash"),
+  kakaoId: varchar("kakao_id", { length: 64 }),
+  name: varchar("name", { length: 80 }).notNull(),
+  phone: varchar("phone", { length: 30 }),
+  branch: varchar("branch", { length: 50 }),
+  role: text("role").$type<"contractor" | "supervisor" | "client" | "admin">().notNull(),
+  status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
-export const siteParticipants = pgTable("site_participants", {
+--- organizations ---
+export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
-  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  participantRole: text("participant_role")
-    .$type<"contractor_manager" | "supervisor" | "client_viewer" | "client_manager">()
-    .notNull(),
-  receiveEmail: boolean("receive_email").notNull().default(true),
-  receivePush: boolean("receive_push").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const siteStructures = pgTable("site_structures", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
-  structureTypeId: uuid("structure_type_id").notNull().references(() => structureTypes.id),
   name: varchar("name", { length: 150 }).notNull(),
-  locationDescription: text("location_description"),
-  hasStructure: boolean("has_structure").notNull().default(true),
-  notApplicableReason: text("not_applicable_reason"),
-  status: text("status").$type<"active" | "not_applicable" | "completed" | "archived">().notNull().default("active"),
-  createdBy: uuid("created_by"),
+  type: text("type").$type<"contractor" | "client_agency" | "admin_org">().notNull(),
+  businessNumber: varchar("business_number", { length: 30 }),
+  representativeName: varchar("representative_name", { length: 80 }),
+  phone: varchar("phone", { length: 30 }),
+  email: varchar("email", { length: 255 }),
+  address: text("address"),
+  headquarters: varchar("headquarters", { length: 50 }),
+  branch: varchar("branch", { length: 50 }),
+  status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const constructionRecords = pgTable("construction_records", {
+--- guideEntries ---
+export const guideEntries = pgTable("guide_entries", {
   id: uuid("id").primaryKey().defaultRandom(),
-  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
-  siteStructureId: uuid("site_structure_id").notNull().references(() => siteStructures.id, { onDelete: "cascade" }),
-  phaseTemplateId: uuid("phase_template_id").notNull().references(() => phaseTemplates.id),
-  inspectionDate: date("inspection_date"),
-  subTypeId: uuid("sub_type_id"),
-  inspectionContent: text("inspection_content"),
-  inspectionPartFromMain: integer("inspection_part_from_main"),
-  inspectionPartFromSub: integer("inspection_part_from_sub"),
-  inspectionPartToMain: integer("inspection_part_to_main"),
-  inspectionPartToSub: integer("inspection_part_to_sub"),
-  title: varchar("title", { length: 200 }),
-  textDescription: text("text_description"),
-  voiceMemoText: text("voice_memo_text"),
-  notApplicable: boolean("not_applicable").notNull().default(false),
-  notApplicableReason: text("not_applicable_reason"),
-  status: text("status").$type<"draft" | "ready" | "submitted" | "revision_requested" | "approved">().notNull().default("draft"),
-  recordedAt: timestamp("recorded_at", { withTimezone: true }),
-  createdBy: uuid("created_by"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  subTypeId: uuid("sub_type_id").notNull().references(() => structureTypes.id, { onDelete: "cascade" }),
+  phaseCode: varchar("phase_code", { length: 50 }).notNull(),
+  guideText: text("guide_text"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  deletedAt: timestamp("deleted_at", { withTimezone: true }),
-});
-
-export const recordAssets = pgTable("record_assets", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  recordId: uuid("record_id").notNull().references(() => constructionRecords.id, { onDelete: "cascade" }),
-  assetType: text("asset_type").$type<"photo" | "video" | "audio" | "document">().notNull(),
-  fileName: varchar("file_name", { length: 255 }).notNull(),
-  fileUrl: text("file_url").notNull(),
-  thumbnailUrl: text("thumbnail_url"),
-  mimeType: varchar("mime_type", { length: 100 }).notNull(),
-  fileSizeBytes: bigint("file_size_bytes", { mode: "number" }).notNull(),
-  durationSeconds: numeric("duration_seconds", { precision: 10, scale: 2 }),
-  width: integer("width"),
-  height: integer("height"),
-  capturedAt: timestamp("captured_at", { withTimezone: true }),
-  gpsLat: numeric("gps_lat", { precision: 10, scale: 7 }),
-  gpsLng: numeric("gps_lng", { precision: 10, scale: 7 }),
-  caption: text("caption"),
-  sortOrder: integer("sort_order").notNull().default(0),
-  uploadStatus: text("upload_status").$type<"uploading" | "uploaded" | "failed" | "deleted">().notNull().default("uploading"),
-  checksum: varchar("checksum", { length: 128 }),
-  storageProvider: text("storage_provider").$type<"google_drive" | "supabase" | "vercel_blob">().notNull().default("google_drive"),
-  storageFileId: text("storage_file_id"),
-  createdBy: uuid("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
-
-
-========== FILE: lib/drive.ts ==========
-import { google } from "googleapis";
-import { Readable } from "node:stream";
-
-function driveClient() {
-  const oauth2 = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
-  );
-  oauth2.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
-  return google.drive({ version: "v3", auth: oauth2 });
-}
-
-type Drive = ReturnType<typeof driveClient>;
-
-function sanitize(name: string) {
-  return (name || "untitled").replace(/['\\]/g, " ").replace(/\s+/g, " ").trim().slice(0, 120) || "untitled";
-}
-
-async function ensureFolder(drive: Drive, name: string, parentId: string): Promise<string> {
-  const safe = sanitize(name);
-  const q = [
-    "mimeType='application/vnd.google-apps.folder'",
-    "trashed=false",
-    `name='${safe.replace(/'/g, "\\'")}'`,
-    `'${parentId}' in parents`,
-  ].join(" and ");
-  const list = await drive.files.list({ q, fields: "files(id,name)", pageSize: 1 });
-  const found = list.data.files?.[0];
-  if (found?.id) return found.id;
-  const created = await drive.files.create({
-    requestBody: {
-      name: safe,
-      mimeType: "application/vnd.google-apps.folder",
-      parents: [parentId],
-    },
-    fields: "id",
-  });
-  return created.data.id as string;
-}
-
-export async function ensureFolderPath(names: string[]): Promise<string | undefined> {
-  const root = process.env.GOOGLE_DRIVE_FOLDER_ID;
-  if (!root) return undefined;
-  const drive = driveClient();
-  let parent = root;
-  for (const n of names) {
-    if (!n) continue;
-    parent = await ensureFolder(drive, n, parent);
-  }
-  return parent;
-}
-
-export async function uploadToDrive(params: {
-  name: string;
-  mimeType: string;
-  buffer: Buffer;
-  folderPath?: string[];
-}) {
-  const drive = driveClient();
-  let folder: string | undefined = process.env.GOOGLE_DRIVE_FOLDER_ID;
-  if (params.folderPath && params.folderPath.length > 0) {
-    const target = await ensureFolderPath(params.folderPath);
-    if (target) folder = target;
-  }
-  const res = await drive.files.create({
-    requestBody: { name: params.name, parents: folder ? [folder] : undefined },
-    media: { mimeType: params.mimeType, body: Readable.from(params.buffer) },
-    fields: "id, name, webViewLink",
-  });
-  return { id: res.data.id as string, webViewLink: (res.data.webViewLink as string) || "" };
-}
-
-export async function deleteFromDrive(fileId: string) {
-  const drive = driveClient();
-  await drive.files.delete({ fileId });
-}
-
-export async function getDriveStream(fileId: string): Promise<NodeJS.ReadableStream> {
-  const drive = driveClient();
-  const res = await drive.files.get({ fileId, alt: "media" }, { responseType: "stream" });
-  return res.data as unknown as NodeJS.ReadableStream;
-}
-
-
-========== FILE: components/site/site-form.tsx ==========
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { StepSection } from "@/components/kit/step-section";
-import { BottomBar } from "@/components/kit/bottom-bar";
-import { ActionButton } from "@/components/kit/buttons";
-import { KakaoMapPicker } from "@/components/kit/kakao-map-picker";
-
-const PROJECT_TYPES = [
-  "다목적용수", "체계재편", "논범용화", "배수개선", "경지정리", "대행위탁사업",
-  "방조제개보수", "수리시설개보수", "수질개선", "지역개발", "기타",
-];
-const EXECUTORS: { value: string; label: string }[] = [
-  { value: "본부내근", label: "충남본부 내근" },
-  { value: "천안", label: "천안지사" },
-  { value: "공주", label: "공주지사" },
-  { value: "보령", label: "보령지사" },
-  { value: "아산", label: "아산지사" },
-  { value: "서산태안", label: "서산태안지사" },
-  { value: "논산", label: "논산지사" },
-  { value: "세종대전금산", label: "세종대전금산지사" },
-  { value: "부여", label: "부여지사" },
-  { value: "서천", label: "서천지사" },
-  { value: "청양", label: "청양지사" },
-  { value: "홍성", label: "홍성지사" },
-  { value: "예산", label: "예산지사" },
-  { value: "당진", label: "당진지사" },
-];
-const WORK_TYPES = ["철근콘크리트", "토목", "건축", "조경", "기타"];
-
-type InitialSite = {
-  clientOrgId?: string | null;
-  districtName?: string;
-  projectName?: string;
-  executor?: string | null;
-  workType?: string | null;
-  workTypes?: string | null;
-  supervisorName?: string | null;
-  supervisorPhone?: string | null;
-  supervisorEmail?: string | null;
-  siteManagerName?: string | null;
-  siteManagerPhone?: string | null;
-  siteManagerEmail?: string | null;
-  address?: string;
-  lat?: number | null;
-  lng?: number | null;
-  startedOn?: string | null;
-  endedOn?: string | null;
-  contractorLogoName?: string | null;
-  contractorCompany?: string | null;
-};
-
-type Form = {
-  clientOrgId: string;
-  districtName: string;
-  project: string;
-  projectEtc: string;
-  executor: string;
-  workTypes: string[];
-  supervisorName: string;
-  supervisorPhone: string;
-  supervisorEmail: string;
-  contractorCompany: string;
-  siteManagerName: string;
-  siteManagerPhone: string;
-  siteManagerEmail: string;
-  address: string;
-  lat: number | null;
-  lng: number | null;
-  startedOn: string;
-  endedOn: string;
-};
-
-function buildInitial(initial?: InitialSite): Form {
-  const pn = initial?.projectName ?? "";
-  const isPreset = PROJECT_TYPES.includes(pn) && pn !== "기타";
-  // 공종: workTypes(콤마) 우선, 없으면 기존 단일 workType
-  let wt: string[] = [];
-  if (initial?.workTypes) {
-    wt = initial.workTypes.split(",").map((s) => s.trim()).filter(Boolean);
-  } else if (initial?.workType) {
-    wt = initial.workType.split(/[,/]/).map((s) => s.trim()).filter(Boolean);
-  }
-  return {
-    clientOrgId: initial?.clientOrgId ?? "",
-    districtName: initial?.districtName ?? "",
-    project: isPreset ? pn : pn ? "기타" : "",
-    projectEtc: isPreset ? "" : pn,
-    executor: initial?.executor ?? "",
-    workTypes: wt,
-    supervisorName: initial?.supervisorName ?? "",
-    supervisorPhone: initial?.supervisorPhone ?? "",
-    supervisorEmail: initial?.supervisorEmail ?? "",
-    contractorCompany: initial?.contractorCompany ?? "",
-    siteManagerName: initial?.siteManagerName ?? "",
-    siteManagerPhone: initial?.siteManagerPhone ?? "",
-    siteManagerEmail: initial?.siteManagerEmail ?? "",
-    address: initial?.address ?? "",
-    lat: initial?.lat ?? null,
-    lng: initial?.lng ?? null,
-    startedOn: initial?.startedOn ?? "",
-    endedOn: initial?.endedOn ?? "",
-  };
-}
-
-export function SiteForm({
-  clientOrgs,
-  mode = "contractor",
-  siteId,
-  initial,
-}: {
-  clientOrgs: { id: string; name: string }[];
-  mode?: "contractor" | "client";
-  siteId?: string;
-  initial?: InitialSite;
-}) {
-  const router = useRouter();
-  const isEdit = !!siteId;
-  const listPath = mode === "client" ? "/client/sites" : "/contractor/sites";
-  const [f, setF] = useState<Form>(buildInitial(initial));
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [logoName, setLogoName] = useState<string>(initial?.contractorLogoName ?? "");
-  const [logoVer, setLogoVer] = useState(0);
-  const [logoBusy, setLogoBusy] = useState(false);
-
-  async function uploadLogo(file: File) {
-    if (!siteId) return;
-    setLogoBusy(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(`/api/sites/${siteId}/logo`, { method: "POST", body: fd });
-      let data: { ok?: boolean; error?: string; name?: string } = {};
-      try {
-        data = await res.json();
-      } catch {
-        // ignore
-      }
-      if (!res.ok || !data.ok) {
-        alert(data.error || "로고 업로드 실패");
-        return;
-      }
-      setLogoName(data.name || file.name);
-      setLogoVer((v) => v + 1);
-    } catch (e) {
-      alert("로고 업로드 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
-    } finally {
-      setLogoBusy(false);
-    }
-  }
-
-  async function deleteLogo() {
-    if (!siteId || !confirm("시공사 로고를 삭제할까요?")) return;
-    setLogoBusy(true);
-    try {
-      const res = await fetch(`/api/sites/${siteId}/logo`, { method: "DELETE" });
-      let data: { ok?: boolean; error?: string } = {};
-      try {
-        data = await res.json();
-      } catch {
-        // ignore
-      }
-      if (!res.ok || !data.ok) {
-        alert(data.error || "로고 삭제 실패");
-        return;
-      }
-      setLogoName("");
-      setLogoVer((v) => v + 1);
-    } catch (e) {
-      alert("로고 삭제 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
-    } finally {
-      setLogoBusy(false);
-    }
-  }
-
-  const onText =
-    (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      setF((p) => ({ ...p, [k]: e.target.value } as Form));
-
-  function toggleWork(w: string) {
-    setF((p) => ({
-      ...p,
-      workTypes: p.workTypes.includes(w) ? p.workTypes.filter((x) => x !== w) : [...p.workTypes, w],
-    }));
-  }
-
-  async function submit() {
-    setError("");
-    const projectName = f.project === "기타" ? f.projectEtc.trim() : f.project;
-    if (!f.districtName || !projectName || !f.address) {
-      setError("지구명, 사업, 현장 주소는 필수입니다.");
-      return;
-    }
-    if (!f.project) {
-      setError("사업을 선택해 주세요.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const payload = {
-        clientOrgId: f.clientOrgId,
-        districtName: f.districtName,
-        projectName,
-        executor: f.executor,
-        workType: f.workTypes.join(", "),
-        workTypes: f.workTypes.join(","),
-        supervisorName: f.supervisorName,
-        supervisorPhone: f.supervisorPhone,
-        supervisorEmail: f.supervisorEmail,
-        contractorCompany: f.contractorCompany,
-        siteManagerName: f.siteManagerName,
-        siteManagerPhone: f.siteManagerPhone,
-        siteManagerEmail: f.siteManagerEmail,
-        address: f.address,
-        lat: f.lat,
-        lng: f.lng,
-        startedOn: f.startedOn,
-        endedOn: f.endedOn,
-      };
-      const res = await fetch(isEdit ? `/api/sites/${siteId}` : "/api/sites", {
-        method: isEdit ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      let data: { ok?: boolean; error?: string } = {};
-      try {
-        data = await res.json();
-      } catch {
-        // 빈 응답 방어
-      }
-      if (!res.ok || !data.ok) {
-        setError(data.error || ("서버 오류 (" + res.status + ")"));
-        return;
-      }
-      router.push(listPath);
-      router.refresh();
-    } catch (err) {
-      setError("요청 실패: " + (err instanceof Error ? err.message : "네트워크 오류"));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const selectCls =
-    "h-12 w-full rounded-md border border-neutral-300 bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
-
-  return (
-    <div className="space-y-4 pb-4">
-      <h1 className="text-xl font-bold text-[#0033A0]">{isEdit ? "현장 수정" : "현장 등록"}</h1>
-
-      <StepSection step="STEP 01" title="사업 정보">
-        <div className="space-y-3">
-          {mode === "contractor" && (
-            <div className="space-y-1">
-              <Label>발주청</Label>
-              <select className={selectCls} value={f.clientOrgId} onChange={onText("clientOrgId")}>
-                <option value="">선택하세요</option>
-                {clientOrgs.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="space-y-1">
-            <Label>지구명 *</Label>
-            <Input value={f.districtName} onChange={onText("districtName")} />
-          </div>
-          <div className="space-y-1">
-            <Label>사업 *</Label>
-            <select className={selectCls} value={f.project} onChange={onText("project")}>
-              <option value="">선택하세요</option>
-              {PROJECT_TYPES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
-          {f.project === "기타" && (
-            <div className="space-y-1">
-              <Label>사업명 직접 입력 *</Label>
-              <Input value={f.projectEtc} onChange={onText("projectEtc")} placeholder="사업명을 입력하세요" />
-            </div>
-          )}
-          <div className="space-y-1">
-            <Label>사업시행자</Label>
-            <select className={selectCls} value={f.executor} onChange={onText("executor")}>
-              <option value="">선택하세요</option>
-              {EXECUTORS.map((x) => (
-                <option key={x.value} value={x.value}>
-                  {x.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1">
-            <Label>공종 분류 (중복 선택 가능)</Label>
-            <div className="flex flex-wrap gap-2">
-              {WORK_TYPES.map((w) => {
-                const on = f.workTypes.includes(w);
-                return (
-                  <button
-                    key={w}
-                    type="button"
-                    onClick={() => toggleWork(w)}
-                    className={
-                      "rounded-full px-4 py-2 text-base font-semibold transition " +
-                      (on ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
-                    }
-                  >
-                    {on ? "✓ " : ""}
-                    {w}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </StepSection>
-
-      <StepSection step="STEP 02" title="공감소장 정보" desc="제출 알림이 이 이메일로 발송됩니다.">
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>공감소장 이름</Label>
-            <Input value={f.supervisorName} onChange={onText("supervisorName")} />
-          </div>
-          <div className="space-y-1">
-            <Label>핸드폰</Label>
-            <Input value={f.supervisorPhone} onChange={onText("supervisorPhone")} />
-          </div>
-          <div className="space-y-1">
-            <Label>이메일</Label>
-            <Input type="email" value={f.supervisorEmail} onChange={onText("supervisorEmail")} />
-          </div>
-        </div>
-      </StepSection>
-
-      <StepSection step="STEP 03" title="현장소장 정보">
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>시공사 (회사명)</Label>
-            <Input
-              value={f.contractorCompany}
-              onChange={onText("contractorCompany")}
-              placeholder="예: 00건설(주)"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>현장소장 이름</Label>
-            <Input value={f.siteManagerName} onChange={onText("siteManagerName")} />
-          </div>
-          <div className="space-y-1">
-            <Label>핸드폰</Label>
-            <Input value={f.siteManagerPhone} onChange={onText("siteManagerPhone")} />
-          </div>
-          <div className="space-y-1">
-            <Label>이메일</Label>
-            <Input type="email" value={f.siteManagerEmail} onChange={onText("siteManagerEmail")} />
-          </div>
-        </div>
-      </StepSection>
-
-      {isEdit && (
-        <StepSection step="로고" title="시공사 로고" desc="영상 첫 화면 하단에 농어촌공사 로고와 함께 표시됩니다. (4MB 이하 이미지)">
-          <div className="flex items-center gap-4">
-            <div className="flex h-20 w-32 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white">
-              {logoName ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/api/sites/${siteId}/logo/raw?v=${logoVer}`}
-                  alt="시공사 로고"
-                  className="max-h-full max-w-full object-contain"
-                />
-              ) : (
-                <span className="text-xs text-neutral-400">로고 없음</span>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-[#0033A0] hover:bg-neutral-50">
-                {logoBusy ? "처리 중..." : logoName ? "로고 변경" : "로고 업로드"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={logoBusy}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) uploadLogo(file);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-              {logoName && (
-                <button
-                  type="button"
-                  onClick={deleteLogo}
-                  disabled={logoBusy}
-                  className="ml-2 rounded-md border border-neutral-300 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-neutral-50"
-                >
-                  삭제
-                </button>
-              )}
-              {logoName && <p className="text-xs text-neutral-500">{logoName}</p>}
-            </div>
-          </div>
-        </StepSection>
-      )}
-
-      <StepSection step="STEP 04" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
-        <KakaoMapPicker
-          value={{ lat: f.lat, lng: f.lng, address: f.address }}
-          onChange={(v) => setF((p) => ({ ...p, lat: v.lat, lng: v.lng, address: v.address }))}
-        />
-        <div className="mt-3 space-y-1">
-          <Label>현장 주소 *</Label>
-          <Input value={f.address} onChange={onText("address")} />
-        </div>
-      </StepSection>
-
-      <StepSection step="STEP 05" title="공사 기간">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label>시작일</Label>
-            <Input type="date" value={f.startedOn} onChange={onText("startedOn")} />
-          </div>
-          <div className="space-y-1">
-            <Label>종료일</Label>
-            <Input type="date" value={f.endedOn} onChange={onText("endedOn")} />
-          </div>
-        </div>
-      </StepSection>
-
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <BottomBar>
-        <Button type="button" variant="outline" className="flex-1" onClick={() => router.push(listPath)}>
-          취소
-        </Button>
-        <ActionButton className="flex-1" onClick={submit} disabled={loading}>
-          {loading ? "저장 중..." : isEdit ? "수정 저장" : "저장"}
-        </ActionButton>
-      </BottomBar>
-    </div>
-  );
-}
-
-
-========== FILE: components\site\site-form.tsx ==========
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { StepSection } from "@/components/kit/step-section";
-import { BottomBar } from "@/components/kit/bottom-bar";
-import { ActionButton } from "@/components/kit/buttons";
-import { KakaoMapPicker } from "@/components/kit/kakao-map-picker";
-
-const PROJECT_TYPES = [
-  "다목적용수", "체계재편", "논범용화", "배수개선", "경지정리", "대행위탁사업",
-  "방조제개보수", "수리시설개보수", "수질개선", "지역개발", "기타",
-];
-const EXECUTORS: { value: string; label: string }[] = [
-  { value: "본부내근", label: "충남본부 내근" },
-  { value: "천안", label: "천안지사" },
-  { value: "공주", label: "공주지사" },
-  { value: "보령", label: "보령지사" },
-  { value: "아산", label: "아산지사" },
-  { value: "서산태안", label: "서산태안지사" },
-  { value: "논산", label: "논산지사" },
-  { value: "세종대전금산", label: "세종대전금산지사" },
-  { value: "부여", label: "부여지사" },
-  { value: "서천", label: "서천지사" },
-  { value: "청양", label: "청양지사" },
-  { value: "홍성", label: "홍성지사" },
-  { value: "예산", label: "예산지사" },
-  { value: "당진", label: "당진지사" },
-];
-const WORK_TYPES = ["철근콘크리트", "토목", "건축", "조경", "기타"];
-
-type InitialSite = {
-  clientOrgId?: string | null;
-  districtName?: string;
-  projectName?: string;
-  executor?: string | null;
-  workType?: string | null;
-  workTypes?: string | null;
-  supervisorName?: string | null;
-  supervisorPhone?: string | null;
-  supervisorEmail?: string | null;
-  siteManagerName?: string | null;
-  siteManagerPhone?: string | null;
-  siteManagerEmail?: string | null;
-  address?: string;
-  lat?: number | null;
-  lng?: number | null;
-  startedOn?: string | null;
-  endedOn?: string | null;
-  contractorLogoName?: string | null;
-  contractorCompany?: string | null;
-};
-
-type Form = {
-  clientOrgId: string;
-  districtName: string;
-  project: string;
-  projectEtc: string;
-  executor: string;
-  workTypes: string[];
-  supervisorName: string;
-  supervisorPhone: string;
-  supervisorEmail: string;
-  contractorCompany: string;
-  siteManagerName: string;
-  siteManagerPhone: string;
-  siteManagerEmail: string;
-  address: string;
-  lat: number | null;
-  lng: number | null;
-  startedOn: string;
-  endedOn: string;
-};
-
-function buildInitial(initial?: InitialSite): Form {
-  const pn = initial?.projectName ?? "";
-  const isPreset = PROJECT_TYPES.includes(pn) && pn !== "기타";
-  // 공종: workTypes(콤마) 우선, 없으면 기존 단일 workType
-  let wt: string[] = [];
-  if (initial?.workTypes) {
-    wt = initial.workTypes.split(",").map((s) => s.trim()).filter(Boolean);
-  } else if (initial?.workType) {
-    wt = initial.workType.split(/[,/]/).map((s) => s.trim()).filter(Boolean);
-  }
-  return {
-    clientOrgId: initial?.clientOrgId ?? "",
-    districtName: initial?.districtName ?? "",
-    project: isPreset ? pn : pn ? "기타" : "",
-    projectEtc: isPreset ? "" : pn,
-    executor: initial?.executor ?? "",
-    workTypes: wt,
-    supervisorName: initial?.supervisorName ?? "",
-    supervisorPhone: initial?.supervisorPhone ?? "",
-    supervisorEmail: initial?.supervisorEmail ?? "",
-    contractorCompany: initial?.contractorCompany ?? "",
-    siteManagerName: initial?.siteManagerName ?? "",
-    siteManagerPhone: initial?.siteManagerPhone ?? "",
-    siteManagerEmail: initial?.siteManagerEmail ?? "",
-    address: initial?.address ?? "",
-    lat: initial?.lat ?? null,
-    lng: initial?.lng ?? null,
-    startedOn: initial?.startedOn ?? "",
-    endedOn: initial?.endedOn ?? "",
-  };
-}
-
-export function SiteForm({
-  clientOrgs,
-  mode = "contractor",
-  siteId,
-  initial,
-}: {
-  clientOrgs: { id: string; name: string }[];
-  mode?: "contractor" | "client";
-  siteId?: string;
-  initial?: InitialSite;
-}) {
-  const router = useRouter();
-  const isEdit = !!siteId;
-  const listPath = mode === "client" ? "/client/sites" : "/contractor/sites";
-  const [f, setF] = useState<Form>(buildInitial(initial));
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [logoName, setLogoName] = useState<string>(initial?.contractorLogoName ?? "");
-  const [logoVer, setLogoVer] = useState(0);
-  const [logoBusy, setLogoBusy] = useState(false);
-
-  async function uploadLogo(file: File) {
-    if (!siteId) return;
-    setLogoBusy(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(`/api/sites/${siteId}/logo`, { method: "POST", body: fd });
-      let data: { ok?: boolean; error?: string; name?: string } = {};
-      try {
-        data = await res.json();
-      } catch {
-        // ignore
-      }
-      if (!res.ok || !data.ok) {
-        alert(data.error || "로고 업로드 실패");
-        return;
-      }
-      setLogoName(data.name || file.name);
-      setLogoVer((v) => v + 1);
-    } catch (e) {
-      alert("로고 업로드 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
-    } finally {
-      setLogoBusy(false);
-    }
-  }
-
-  async function deleteLogo() {
-    if (!siteId || !confirm("시공사 로고를 삭제할까요?")) return;
-    setLogoBusy(true);
-    try {
-      const res = await fetch(`/api/sites/${siteId}/logo`, { method: "DELETE" });
-      let data: { ok?: boolean; error?: string } = {};
-      try {
-        data = await res.json();
-      } catch {
-        // ignore
-      }
-      if (!res.ok || !data.ok) {
-        alert(data.error || "로고 삭제 실패");
-        return;
-      }
-      setLogoName("");
-      setLogoVer((v) => v + 1);
-    } catch (e) {
-      alert("로고 삭제 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
-    } finally {
-      setLogoBusy(false);
-    }
-  }
-
-  const onText =
-    (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      setF((p) => ({ ...p, [k]: e.target.value } as Form));
-
-  function toggleWork(w: string) {
-    setF((p) => ({
-      ...p,
-      workTypes: p.workTypes.includes(w) ? p.workTypes.filter((x) => x !== w) : [...p.workTypes, w],
-    }));
-  }
-
-  async function submit() {
-    setError("");
-    const projectName = f.project === "기타" ? f.projectEtc.trim() : f.project;
-    if (!f.districtName || !projectName || !f.address) {
-      setError("지구명, 사업, 현장 주소는 필수입니다.");
-      return;
-    }
-    if (!f.project) {
-      setError("사업을 선택해 주세요.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const payload = {
-        clientOrgId: f.clientOrgId,
-        districtName: f.districtName,
-        projectName,
-        executor: f.executor,
-        workType: f.workTypes.join(", "),
-        workTypes: f.workTypes.join(","),
-        supervisorName: f.supervisorName,
-        supervisorPhone: f.supervisorPhone,
-        supervisorEmail: f.supervisorEmail,
-        contractorCompany: f.contractorCompany,
-        siteManagerName: f.siteManagerName,
-        siteManagerPhone: f.siteManagerPhone,
-        siteManagerEmail: f.siteManagerEmail,
-        address: f.address,
-        lat: f.lat,
-        lng: f.lng,
-        startedOn: f.startedOn,
-        endedOn: f.endedOn,
-      };
-      const res = await fetch(isEdit ? `/api/sites/${siteId}` : "/api/sites", {
-        method: isEdit ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      let data: { ok?: boolean; error?: string } = {};
-      try {
-        data = await res.json();
-      } catch {
-        // 빈 응답 방어
-      }
-      if (!res.ok || !data.ok) {
-        setError(data.error || ("서버 오류 (" + res.status + ")"));
-        return;
-      }
-      router.push(listPath);
-      router.refresh();
-    } catch (err) {
-      setError("요청 실패: " + (err instanceof Error ? err.message : "네트워크 오류"));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const selectCls =
-    "h-12 w-full rounded-md border border-neutral-300 bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-[#0033A0]/30";
-
-  return (
-    <div className="space-y-4 pb-4">
-      <h1 className="text-xl font-bold text-[#0033A0]">{isEdit ? "현장 수정" : "현장 등록"}</h1>
-
-      <StepSection step="STEP 01" title="사업 정보">
-        <div className="space-y-3">
-          {mode === "contractor" && (
-            <div className="space-y-1">
-              <Label>발주청</Label>
-              <select className={selectCls} value={f.clientOrgId} onChange={onText("clientOrgId")}>
-                <option value="">선택하세요</option>
-                {clientOrgs.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="space-y-1">
-            <Label>지구명 *</Label>
-            <Input value={f.districtName} onChange={onText("districtName")} />
-          </div>
-          <div className="space-y-1">
-            <Label>사업 *</Label>
-            <select className={selectCls} value={f.project} onChange={onText("project")}>
-              <option value="">선택하세요</option>
-              {PROJECT_TYPES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
-          {f.project === "기타" && (
-            <div className="space-y-1">
-              <Label>사업명 직접 입력 *</Label>
-              <Input value={f.projectEtc} onChange={onText("projectEtc")} placeholder="사업명을 입력하세요" />
-            </div>
-          )}
-          <div className="space-y-1">
-            <Label>사업시행자</Label>
-            <select className={selectCls} value={f.executor} onChange={onText("executor")}>
-              <option value="">선택하세요</option>
-              {EXECUTORS.map((x) => (
-                <option key={x.value} value={x.value}>
-                  {x.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1">
-            <Label>공종 분류 (중복 선택 가능)</Label>
-            <div className="flex flex-wrap gap-2">
-              {WORK_TYPES.map((w) => {
-                const on = f.workTypes.includes(w);
-                return (
-                  <button
-                    key={w}
-                    type="button"
-                    onClick={() => toggleWork(w)}
-                    className={
-                      "rounded-full px-4 py-2 text-base font-semibold transition " +
-                      (on ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
-                    }
-                  >
-                    {on ? "✓ " : ""}
-                    {w}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </StepSection>
-
-      <StepSection step="STEP 02" title="공감소장 정보" desc="제출 알림이 이 이메일로 발송됩니다.">
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>공감소장 이름</Label>
-            <Input value={f.supervisorName} onChange={onText("supervisorName")} />
-          </div>
-          <div className="space-y-1">
-            <Label>핸드폰</Label>
-            <Input value={f.supervisorPhone} onChange={onText("supervisorPhone")} />
-          </div>
-          <div className="space-y-1">
-            <Label>이메일</Label>
-            <Input type="email" value={f.supervisorEmail} onChange={onText("supervisorEmail")} />
-          </div>
-        </div>
-      </StepSection>
-
-      <StepSection step="STEP 03" title="현장소장 정보">
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>시공사 (회사명)</Label>
-            <Input
-              value={f.contractorCompany}
-              onChange={onText("contractorCompany")}
-              placeholder="예: 00건설(주)"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>현장소장 이름</Label>
-            <Input value={f.siteManagerName} onChange={onText("siteManagerName")} />
-          </div>
-          <div className="space-y-1">
-            <Label>핸드폰</Label>
-            <Input value={f.siteManagerPhone} onChange={onText("siteManagerPhone")} />
-          </div>
-          <div className="space-y-1">
-            <Label>이메일</Label>
-            <Input type="email" value={f.siteManagerEmail} onChange={onText("siteManagerEmail")} />
-          </div>
-        </div>
-      </StepSection>
-
-      {isEdit && (
-        <StepSection step="로고" title="시공사 로고" desc="영상 첫 화면 하단에 농어촌공사 로고와 함께 표시됩니다. (4MB 이하 이미지)">
-          <div className="flex items-center gap-4">
-            <div className="flex h-20 w-32 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white">
-              {logoName ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/api/sites/${siteId}/logo/raw?v=${logoVer}`}
-                  alt="시공사 로고"
-                  className="max-h-full max-w-full object-contain"
-                />
-              ) : (
-                <span className="text-xs text-neutral-400">로고 없음</span>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-[#0033A0] hover:bg-neutral-50">
-                {logoBusy ? "처리 중..." : logoName ? "로고 변경" : "로고 업로드"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={logoBusy}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) uploadLogo(file);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-              {logoName && (
-                <button
-                  type="button"
-                  onClick={deleteLogo}
-                  disabled={logoBusy}
-                  className="ml-2 rounded-md border border-neutral-300 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-neutral-50"
-                >
-                  삭제
-                </button>
-              )}
-              {logoName && <p className="text-xs text-neutral-500">{logoName}</p>}
-            </div>
-          </div>
-        </StepSection>
-      )}
-
-      <StepSection step="STEP 04" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
-        <KakaoMapPicker
-          value={{ lat: f.lat, lng: f.lng, address: f.address }}
-          onChange={(v) => setF((p) => ({ ...p, lat: v.lat, lng: v.lng, address: v.address }))}
-        />
-        <div className="mt-3 space-y-1">
-          <Label>현장 주소 *</Label>
-          <Input value={f.address} onChange={onText("address")} />
-        </div>
-      </StepSection>
-
-      <StepSection step="STEP 05" title="공사 기간">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label>시작일</Label>
-            <Input type="date" value={f.startedOn} onChange={onText("startedOn")} />
-          </div>
-          <div className="space-y-1">
-            <Label>종료일</Label>
-            <Input type="date" value={f.endedOn} onChange={onText("endedOn")} />
-          </div>
-        </div>
-      </StepSection>
-
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <BottomBar>
-        <Button type="button" variant="outline" className="flex-1" onClick={() => router.push(listPath)}>
-          취소
-        </Button>
-        <ActionButton className="flex-1" onClick={submit} disabled={loading}>
-          {loading ? "저장 중..." : isEdit ? "수정 저장" : "저장"}
-        </ActionButton>
-      </BottomBar>
-    </div>
-  );
-}
