@@ -93,6 +93,63 @@ export function InspectionForm({
   });
   const [busy, setBusy] = useState(false);
 
+  // 체크리스트 항목 (시공자 1차 체크)
+  type ClItem = { checkItem: string; standard: string; contractorResult: string; contractorNote: string };
+  const [items, setItems] = useState<ClItem[]>([]);
+  const [aiBusy, setAiBusy] = useState(false);
+
+  const subTypeName = useMemo(
+    () => subTypes.find((s) => s.id === subTypeId)?.name || "",
+    [subTypes, subTypeId]
+  );
+
+  async function generateChecklist() {
+    const work = form.inspectionMatter || subTypeName || typeName;
+    if (!work) {
+      alert("검측 사항 또는 세부공종을 먼저 입력/선택하세요.");
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const res = await fetch("/api/ai/checklist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workName: work,
+          subTypeName,
+          subTypeId: subTypeId || "",
+          context: form.inspectionPart ? `검측부위: ${form.inspectionPart}` : "",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.error || "체크리스트 생성 실패");
+        return;
+      }
+      const gen: ClItem[] = (data.items || []).map((x: { check_item: string; standard: string }) => ({
+        checkItem: x.check_item,
+        standard: x.standard || "",
+        contractorResult: "",
+        contractorNote: "",
+      }));
+      setItems(gen);
+    } catch {
+      alert("체크리스트 생성 중 오류가 발생했습니다.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  function setItem(idx: number, patch: Partial<ClItem>) {
+    setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  }
+  function addItem() {
+    setItems((arr) => [...arr, { checkItem: "", standard: "", contractorResult: "", contractorNote: "" }]);
+  }
+  function removeItem(idx: number) {
+    setItems((arr) => arr.filter((_, i) => i !== idx));
+  }
+
   // 선택 날짜의 검측기록에서 위치·부위·내용 자동 연계
   const dayRec = useMemo(
     () => records.find((r) => r.inspectionDate === selectedDate && (!subTypeId || r.subTypeId === subTypeId)),
@@ -137,6 +194,23 @@ export function InspectionForm({
           contractorAgentName: form.contractorAgentName,
           contractorCheckerName: form.contractorCheckerName,
           supervisorId: form.supervisorId || null,
+          checklists: [
+            {
+              facilityName: structureName,
+              locationPart: form.inspectionPart,
+              workName: subTypeName || typeName,
+              quantity: "",
+              stage: "",
+              aiGenerated: items.length > 0,
+              items: items.map((it, i) => ({
+                itemNo: i + 1,
+                checkItem: it.checkItem,
+                standard: it.standard,
+                contractorResult: it.contractorResult,
+                contractorNote: it.contractorNote,
+              })),
+            },
+          ],
         }),
       });
       const data = await res.json();
@@ -280,9 +354,93 @@ export function InspectionForm({
           )}
         </div>
 
-        {/* AI 체크리스트 자리 (3-3 에서 채움) */}
-        <div className="rounded-md border border-dashed border-neutral-300 p-3 text-center text-sm text-neutral-400">
-          체크리스트 (다음 단계에서 추가)
+        {/* 체크리스트 (별지 제5호) */}
+        <div className="rounded-lg border border-neutral-200 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-bold text-[#002A80]">검측 체크리스트</span>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={generateChecklist}
+                disabled={aiBusy}
+                className="rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {aiBusy ? "생성 중..." : "🤖 AI 생성"}
+              </button>
+              <button
+                type="button"
+                onClick={addItem}
+                className="rounded-md border border-neutral-300 px-2.5 py-1 text-xs font-semibold text-neutral-600"
+              >
+                + 항목
+              </button>
+            </div>
+          </div>
+
+          {items.length === 0 ? (
+            <p className="py-4 text-center text-xs text-neutral-400">
+              AI 생성 또는 + 항목으로 검측 항목을 추가하세요.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {items.map((it, idx) => (
+                <div key={idx} className="rounded-md border border-neutral-200 bg-neutral-50 p-2">
+                  <div className="flex items-start gap-2">
+                    <span className="mt-1.5 text-xs font-bold text-neutral-400">{idx + 1}</span>
+                    <div className="flex-1 space-y-1.5">
+                      <textarea
+                        className="w-full resize-none rounded border border-neutral-300 px-2 py-1 text-sm"
+                        rows={2}
+                        value={it.checkItem}
+                        placeholder="검측 항목"
+                        onChange={(e) => setItem(idx, { checkItem: e.target.value })}
+                      />
+                      <input
+                        className="w-full rounded border border-neutral-200 px-2 py-1 text-xs text-neutral-600"
+                        value={it.standard}
+                        placeholder="검사기준 (시방/도면)"
+                        onChange={(e) => setItem(idx, { standard: e.target.value })}
+                      />
+                      <div className="flex items-center gap-1.5">
+                        {(["합격", "불합격", "해당없음"] as const).map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => setItem(idx, { contractorResult: it.contractorResult === r ? "" : r })}
+                            className={
+                              "rounded px-2 py-0.5 text-xs font-semibold " +
+                              (it.contractorResult === r
+                                ? r === "불합격"
+                                  ? "bg-red-600 text-white"
+                                  : r === "합격"
+                                  ? "bg-[#002A80] text-white"
+                                  : "bg-neutral-500 text-white"
+                                : "border border-neutral-300 text-neutral-500")
+                            }
+                          >
+                            {r}
+                          </button>
+                        ))}
+                        <input
+                          className="ml-1 flex-1 rounded border border-neutral-200 px-2 py-0.5 text-xs"
+                          value={it.contractorNote}
+                          placeholder="조치사항"
+                          onChange={(e) => setItem(idx, { contractorNote: e.target.value })}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeItem(idx)}
+                          className="rounded px-1.5 py-0.5 text-xs text-red-400 hover:text-red-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2">
