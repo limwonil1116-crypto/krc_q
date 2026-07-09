@@ -61,6 +61,9 @@ export async function POST(req: Request) {
       notApplicable,
       notApplicableReason: notApplicable ? (b.notApplicableReason ?? "").trim() || null : null,
       status: notApplicable ? ("ready" as const) : ("draft" as const),
+      latitude: typeof b.latitude === "number" ? b.latitude : null,
+      longitude: typeof b.longitude === "number" ? b.longitude : null,
+      locationAddress: (b.locationAddress ?? "").trim() || null,
       recordedAt: new Date(),
     };
 

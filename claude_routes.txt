@@ -1,0 +1,26 @@
+=== app/contractor 트리 ===
+app\contractor\layout.tsx
+app\contractor\page.tsx
+app\contractor\sites\page.tsx
+app\contractor\sites\new\page.tsx
+app\contractor\sites\[id]\page.tsx
+app\contractor\sites\[id]\structures\page.tsx
+app\contractor\sites\[id]\structures\[structureId]\page.tsx
+app\contractor\sites\[id]\structures\[structureId]\video\page.tsx
+
+=== 구조물상세 video 링크 근처 ===
+ecords.siteStructureId, structureId), eq(recordAssets.uploadStatus, "uploaded")));
+
+  return (
+    <PhaseRecorder
+      siteStructureId={ss.id}
+      structureName={ss.name}
+      typeName={ss.typeName}
+      subTypes={subTypes}
+      phases={phases}
+      records={recs}
+      assets={assets}
+      videoHref={`/contractor/sites/${id}/structures/${structureId}/video`}
+    />
+  );
+}
