@@ -108,6 +108,7 @@ export default async function StructurePhasesPage({
       records={recs}
       assets={assets}
       videoHref={`/contractor/sites/${id}/structures/${structureId}/video`}
+      inspectionHref={`/contractor/sites/${id}/structures/${structureId}/inspection`}
     />
   );
 }

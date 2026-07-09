@@ -1,0 +1,13 @@
+
+
+===== videoHref Link =====
+'<Link\n          href={videoHref}\n          className="whitespace-nowrap rounded-md bg-[#FE5000] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#E04800]"\n        >\n          ▶ 영상 미리보기\n        </Link>'
+
+===== videoHref prop 선언 근처 =====
+'reId,\n  structureName,\n  typeName,\n  subTypes,\n  phases,\n  records,\n  assets,\n  videoHref,\n}: {\n  siteStructureId: string;\n  structureName: '
+
+===== props destructure =====
+'full bg-green-500" /> 제출완료\n        </span>\n      </div>\n    </div>\n  );\n}\n\nexport function PhaseRecorder({\n  siteStructureId,\n  structureName,\n  typeName,\n  subTypes,\n  phases,\n  records,\n  assets,\n  videoHref,\n}: {\n  siteStructureId: strin'
+
+===== props type =====
+' typeName: string;\n  subTypes: SubType[];\n  phases: Phase[];\n  records: Rec[];\n  assets: Asset[];\n  videoHref: string;\n}) {\n  const router = useRouter();\n\n  con'
