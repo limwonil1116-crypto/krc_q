@@ -10,6 +10,7 @@ import {
   checklistItems,
   constructionRecords,
   recordAssets,
+  users,
 } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
 
@@ -82,9 +83,34 @@ export async function GET(req: Request) {
         ? assetRows.filter((a) => a.inspectionDate === ir.inspectionDate)
         : assetRows;
 
+      // 메타 (프로젝트/구조물/감독원명)
+      const metaRows = await db
+        .select({
+          projectName: constructionSites.projectName,
+          contractorCompany: constructionSites.contractorCompany,
+          structureName: siteStructures.name,
+        })
+        .from(inspectionRequests)
+        .innerJoin(siteStructures, eq(inspectionRequests.siteStructureId, siteStructures.id))
+        .innerJoin(constructionSites, eq(inspectionRequests.siteId, constructionSites.id))
+        .where(eq(inspectionRequests.id, id))
+        .limit(1);
+      const m = metaRows[0];
+      let supervisorName = "";
+      if (ir.supervisorId) {
+        const u = await db.select({ name: users.name }).from(users).where(eq(users.id, ir.supervisorId)).limit(1);
+        supervisorName = u[0]?.name || "";
+      }
+
       return NextResponse.json({
         ok: true,
         request: ir,
+        meta: {
+          projectName: m?.projectName || "",
+          structureName: m?.structureName || "",
+          contractorCompany: m?.contractorCompany || null,
+          supervisorName,
+        },
         checklists: checklistsWithItems,
         assets: assets.map((a) => ({
           id: a.id,

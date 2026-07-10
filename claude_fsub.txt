@@ -1,0 +1,13 @@
+
+
+===== import 첫줄들 =====
+'"use client";\n\nimport { useMemo, useState } from "react";\nimport Link from "next/link";\nimport { useRouter } from "next/navigation";\n'
+
+===== submit 분기 =====
+'if (submit) {\n      if (!form.supervisorId) {\n        alert("제출하려면 공사감독원을 지정하세요.");\n        return;\n      }\n      if (items.length === 0) {\n        alert("체크리스트 항목을 먼저 작성하세요.");\n        return;\n      }\n      if (!confirm("제출하면 지정한 공사감독원에게 검측 요청이 전달됩니다. 제출할까요?")) return;\n    }\n    '
+
+===== 제출버튼 =====
+'[#002A80] disabled:opacity-50"\n          >\n            {busy ? "저장 중..." : "임시 저장"}\n          </button>\n          <button\n            type="button"\n            onClick={() => saveDraft(true)}\n            disabled={busy || !selectedDate}\n            className="flex-1 rounded-md bg-[#002A80] px-4 py-2.5 text-sm font-semibold text-white disa'
+
+===== busy state =====
+'const [busy, setBusy] = useState(false);'

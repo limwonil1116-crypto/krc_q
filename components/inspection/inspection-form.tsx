@@ -92,6 +92,24 @@ export function InspectionForm({
     isRecheck: false,
   });
   const [busy, setBusy] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
+
+  // 제출 전 검증 -> 통과하면 책임고지 모달 열기
+  function tryOpenConsent() {
+    if (!selectedDate) {
+      alert("검측일자를 선택하세요.");
+      return;
+    }
+    if (!form.supervisorId) {
+      alert("제출하려면 공사감독원을 지정하세요.");
+      return;
+    }
+    if (items.length === 0) {
+      alert("체크리스트 항목을 먼저 작성하세요.");
+      return;
+    }
+    setShowConsent(true);
+  }
 
   // 체크리스트 항목 (시공자 1차 체크)
   type ClItem = { checkItem: string; standard: string; contractorResult: string; contractorNote: string };
@@ -186,8 +204,8 @@ export function InspectionForm({
         alert("체크리스트 항목을 먼저 작성하세요.");
         return;
       }
-      if (!confirm("제출하면 지정한 공사감독원에게 검측 요청이 전달됩니다. 제출할까요?")) return;
     }
+    setShowConsent(false);
     setBusy(true);
     try {
       const res = await fetch("/api/inspections", {
@@ -466,13 +484,49 @@ export function InspectionForm({
           </button>
           <button
             type="button"
-            onClick={() => saveDraft(true)}
+            onClick={tryOpenConsent}
             disabled={busy || !selectedDate}
             className="flex-1 rounded-md bg-[#002A80] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
             제출
           </button>
         </div>
+
+      {showConsent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowConsent(false)}>
+          <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-center text-base font-bold text-[#002A80]">[ 검측 자료 제출 전 필수 확인 ]</h3>
+            <p className="mt-3 text-sm leading-relaxed text-neutral-700">
+              시공사가 등록하는 본 검측 자료(영상·사진·체크리스트)는 향후 시설물의 품질 보증 및 책임 시공을 증명하는 객관적 데이터베이스로 보관됩니다.
+            </p>
+            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-neutral-700">
+              <li>자료 내/외의 모든 부실시공 및 시방서 미준수에 대한 책임</li>
+              <li>현장 오인 유도, 자료 조작 및 은폐로 인한 문제 발생 시 책임</li>
+              <li>자료에 담기지 않은 사각지대의 구조적 결함에 대한 책임</li>
+            </ol>
+            <p className="mt-3 rounded-md bg-neutral-50 p-2.5 text-xs leading-relaxed text-neutral-600">
+              본 자료의 제출로 발생하는 시설물의 품질·안전 및 법적 책임은 전적으로 시공사에 있으며, 발주청은 사후 검증 및 원인 규명을 위한 데이터 보관 역할만을 수행합니다.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowConsent(false)}
+                className="flex-1 rounded-md border border-neutral-300 px-4 py-2.5 text-sm font-semibold text-neutral-600"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => saveDraft(true)}
+                disabled={busy}
+                className="flex-1 rounded-md bg-[#002A80] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {busy ? "제출 중..." : "확인했으며, 동의 후 제출합니다"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
