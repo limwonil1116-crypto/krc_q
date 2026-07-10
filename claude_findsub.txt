@@ -1,0 +1,5 @@
+[components\record\phase-recorder.tsx] if (action === "submit" && !confirm("이 검측일자 기록을 제출할까요? 제출 후에도 '제출 취소'로 다시 수정할 수 있습니다.")) {
+
+[form] showConsent 존재: True
+[form] tryOpenConsent 존재: True
+[form] 제출버튼 근처: 'onClick={tryOpenConsent}\n            disabled={busy || !selectedDate}\n            className="flex-1 rounded-md bg-[#002A80] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"\n          >\n            제출\n          </b'

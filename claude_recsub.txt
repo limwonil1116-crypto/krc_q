@@ -1,0 +1,13 @@
+
+
+===== submit 함수 앞부분 =====
+'async function submitInspection(action: "submit" | "cancel") {\n    if (action === "submit" && !confirm("이 검측일자 기록을 제출할까요? 제출 후에도 \'제출 취소\'로 다시 수정할 수 있습니다.")) {\n      return;\n    }\n    setSubmitting(true);\n    try {\n      const res = await fetch("/api/records/submit", {\n        method: "POST",\n        headers: { "Content-Type": "application/json" },\n        body: JSON.str'
+
+===== confirm 줄 =====
+'if (action === "submit" && !confirm("이 검측일자 기록을 제출할까요? 제출 후에도 \'제출 취소\'로 다시 수정할 수 있습니다.")) {'
+
+===== imports =====
+'"use client";\n\nimport { useEffect, useMemo, useRef, useState } from "react";\nimport { useRouter } from "next/navigation";\nimport Link from "next/link";\nimport { Label } from "@/components/ui/label";\nimport { ActionButton } from "@/components/kit/buttons";\nimport { Button } from "@/components/ui/button";'
+
+===== 첫 useState 부근 =====
+'"use client";\n\nimport { useEffect, useMemo, useRef, useState } from "react";\nimport { useRouter } from "next/navigation";\nimport Lin'

@@ -219,6 +219,7 @@ export function PhaseRecorder({
   const [busy, setBusy] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [consentOpen, setConsentOpen] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     textDescription: "",
@@ -266,9 +267,7 @@ export function PhaseRecorder({
   const hasCurrent = recMap.size > 0 || assetMap.size > 0;
 
   async function submitInspection(action: "submit" | "cancel") {
-    if (action === "submit" && !confirm("이 검측일자 기록을 제출할까요? 제출 후에도 '제출 취소'로 다시 수정할 수 있습니다.")) {
-      return;
-    }
+    if (action === "submit") setConsentOpen(false);
     setSubmitting(true);
     try {
       const res = await fetch("/api/records/submit", {
@@ -917,13 +916,48 @@ export function PhaseRecorder({
                   </Button>
                 </div>
               ) : (
-                <ActionButton className="w-full" onClick={() => submitInspection("submit")} disabled={submitting}>
+                <ActionButton className="w-full" onClick={() => setConsentOpen(true)} disabled={submitting}>
                   {submitting ? "제출 중..." : `이 검측일자(${selectedDate}) 제출`}
                 </ActionButton>
               )}
             </div>
           )}
         </>
+      )}
+      {consentOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setConsentOpen(false)}>
+          <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-center text-base font-bold text-[#002A80]">[ 검측 자료 등록 전 필수 확인 ]</h3>
+            <p className="mt-3 text-sm leading-relaxed text-neutral-700">
+              시공사가 등록하는 본 영상·사진은 향후 시설물의 품질 보증 및 책임 시공을 증명하는 객관적 데이터베이스로 보관됩니다.
+            </p>
+            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-neutral-700">
+              <li>영상 내/외의 모든 부실시공 및 시방서 미준수에 대한 책임</li>
+              <li>현장 오인 유도, 영상 조작 및 은폐로 인한 문제 발생 시 책임</li>
+              <li>영상에 담기지 않은 사각지대의 구조적 결함에 대한 책임</li>
+            </ol>
+            <p className="mt-3 rounded-md bg-neutral-50 p-2.5 text-xs leading-relaxed text-neutral-600">
+              본 영상의 등록으로 발생하는 시설물의 품질·안전 및 법적 책임은 전적으로 시공사에 있으며, 발주청은 사후 검증 및 원인 규명을 위한 데이터 보관 역할만을 수행합니다.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConsentOpen(false)}
+                className="flex-1 rounded-md border border-neutral-300 px-4 py-2.5 text-sm font-semibold text-neutral-600"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => submitInspection("submit")}
+                disabled={submitting}
+                className="flex-1 rounded-md bg-[#002A80] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {submitting ? "제출 중..." : "확인했으며, 동의 후 제출합니다"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

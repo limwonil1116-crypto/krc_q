@@ -1,0 +1,7 @@
+
+
+===== submit 호출부 =====
+'ne" onClick={() => submitInspection("cancel")} disabled={submitting}>\n                    {submitting ? "처리 중..." : "제출 취소"}\n                  </Button>\n                </div>\n              ) : (\n                <ActionButton className="w-full" onClick={() => submitInspection("submit")} disabled={su'
+
+===== submitting state =====
+'const [submitting, setSubmitting] = useState(false);'
