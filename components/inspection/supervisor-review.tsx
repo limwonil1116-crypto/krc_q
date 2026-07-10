@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { SignaturePad } from "@/components/inspection/signature-pad";
+import { InspectionPdfButton } from "@/components/inspection/inspection-pdf-button";
 
 type Item = {
   id: string;
@@ -64,12 +66,21 @@ export function SupervisorReview({
   const [result, setResult] = useState(request.inspectionResult || "");
   const [instruction, setInstruction] = useState(request.instruction || "");
   const [busy, setBusy] = useState(false);
+  const [signature, setSignature] = useState<string | null>(null);
 
   function setReview(id: string, patch: Partial<{ result: string; note: string }>) {
     setReviews((r) => ({ ...r, [id]: { ...r[id], ...patch } }));
   }
 
-  async function save(action: "save" | "revision") {
+  async function save(action: "save" | "revision" | "approve") {
+    if (action === "approve") {
+      if (!signature) {
+        alert("승인하려면 서명이 필요합니다.");
+        return;
+      }
+      if (!confirm("검측 결과를 승인 처리할까요?")) return;
+    }
+    if (action === "revision" && !confirm("재검측을 요청할까요?")) return;
     setBusy(true);
     try {
       const itemReviews = Object.entries(reviews).map(([id, v]) => ({
@@ -86,6 +97,8 @@ export function SupervisorReview({
           instruction,
           itemReviews,
           requestRevision: action === "revision",
+          approve: action === "approve",
+          supervisorSignature: signature || undefined,
         }),
       });
       const data = await res.json();
@@ -93,8 +106,9 @@ export function SupervisorReview({
         alert(data.error || "저장 실패");
         return;
       }
-      alert(action === "revision" ? "재검측을 요청했습니다." : "검토 내용을 저장했습니다.");
+      alert(action === "approve" ? "승인되었습니다." : action === "revision" ? "재검측을 요청했습니다." : "검토 내용을 저장했습니다.");
       router.refresh();
+      if (action !== "save") router.push(backHref);
     } catch {
       alert("저장 중 오류가 발생했습니다.");
     } finally {
@@ -225,9 +239,15 @@ export function SupervisorReview({
         </div>
       </div>
 
-      {/* 서명·승인 자리 (4-4 에서 채움) */}
-      <div className="rounded-md border border-dashed border-neutral-300 p-3 text-center text-sm text-neutral-400">
-        서명 및 승인 (다음 단계에서 추가)
+      {/* 공사감독원 서명 */}
+      <div className={cardCls}>
+        <p className="mb-2 text-sm font-bold text-neutral-700">공사감독원 서명</p>
+        <SignaturePad value={signature} onChange={setSignature} label="" disabled={readOnly} />
+      </div>
+
+      {/* PDF 다운로드 (작성 중에도 가능) */}
+      <div className="flex justify-center">
+        <InspectionPdfButton requestId={request.id} />
       </div>
 
       {!readOnly && (
@@ -244,9 +264,17 @@ export function SupervisorReview({
             type="button"
             onClick={() => save("revision")}
             disabled={busy}
-            className="flex-1 rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="flex-1 rounded-md border border-red-500 px-4 py-2.5 text-sm font-semibold text-red-600 disabled:opacity-50"
           >
             재검측 요청
+          </button>
+          <button
+            type="button"
+            onClick={() => save("approve")}
+            disabled={busy}
+            className="flex-1 rounded-md bg-[#0033A0] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            승인
           </button>
         </div>
       )}

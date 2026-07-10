@@ -1,0 +1,25 @@
+components/inspection/signature-pad.tsx: 있음
+components/inspection/inspection-pdf-button.tsx: 있음
+components/inspection/inspection-pdf-doc.tsx: 있음
+
+=== review API 상태/서명 로직 ===
+const approve = b.approve === true;
+    const requestRevision = b.requestRevision === true;
+    let status = ir.status as string;
+    const extra: Record<string, unknown> = {};
+    if (approve) {
+      status = "approved";
+      extra.supervisorSignature = (b.supervisorSignature ?? "").trim() || ir.supervisorSignature || null;
+      extra.supervisorSignedAt = new Date();
+    } else if (requestRevision) {
+      status = "revision_requested";
+    } else {
+      // 단순 검토 저장 -> under_review
+      status = ir.status === "submitted" ? "under_review" : ir.status;
+    }
+
+    await db
+      .update(inspectionRequests)
+      .set({
+        inspectionResult: (b.inspectionResult ?? "").trim() || null,
+ 
