@@ -1,0 +1,9 @@
+=== PDF/이미지 관련 deps ===
+html-to-image: ^1.11.13
+
+jspdf 설치: False
+html-to-image: True
+
+=== public 폰트 파일 ===
+
+=== 프로젝트 내 폰트 파일(any) ===

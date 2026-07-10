@@ -1,0 +1,37 @@
+=== imports (첫 15줄) ===
+import { NextResponse } from "next/server";
+import { and, eq, desc } from "drizzle-orm";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import {
+  constructionSites,
+  siteStructures,
+  inspectionRequests,
+  checklists,
+  checklistItems,
+} from "@/lib/db/schema";
+import { getMyOrgId } from "@/lib/org";
+
+export const runtime = "nodejs";
+
+
+=== GET id 상세 ===
+if (id) {
+      const reqRows = await db.select().from(inspectionRequests).where(eq(inspectionRequests.id, id)).limit(1);
+      const ir = reqRows[0];
+      if (!ir) return NextResponse.json({ error: "요청서를 찾을 수 없습니다." }, { status: 404 });
+      const cls = await db.select().from(checklists).where(eq(checklists.inspectionRequestId, id)).orderBy(checklists.sortOrder);
+      // 각 체크리스트의 항목 조회
+      const checklistsWithItems = [];
+      for (const cl of cls) {
+        const its = await db
+          .select()
+          .from(checklistItems)
+          .where(eq(checklistItems.checklistId, cl.id))
+          .orderBy(checklistItems.sortOrder);
+        checklistsWithItems.push({ ...cl, items: its });
+      }
+      return NextResponse.json({ ok: true, request: ir, checklists: checklistsWithItems });
+    }
+
+    

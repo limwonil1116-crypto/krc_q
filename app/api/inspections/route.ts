@@ -8,6 +8,8 @@ import {
   inspectionRequests,
   checklists,
   checklistItems,
+  constructionRecords,
+  recordAssets,
 } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
 
@@ -55,7 +57,44 @@ export async function GET(req: Request) {
           .orderBy(checklistItems.sortOrder);
         checklistsWithItems.push({ ...cl, items: its });
       }
-      return NextResponse.json({ ok: true, request: ir, checklists: checklistsWithItems });
+
+      // 연계 자료: 같은 구조물+날짜의 사진/영상/도면/지도
+      const assetRows = await db
+        .select({
+          id: recordAssets.id,
+          assetType: recordAssets.assetType,
+          fileName: recordAssets.fileName,
+          mimeType: recordAssets.mimeType,
+          caption: recordAssets.caption,
+          inspectionDate: constructionRecords.inspectionDate,
+        })
+        .from(recordAssets)
+        .innerJoin(constructionRecords, eq(recordAssets.recordId, constructionRecords.id))
+        .where(
+          and(
+            eq(constructionRecords.siteStructureId, ir.siteStructureId),
+            eq(recordAssets.uploadStatus, "uploaded")
+          )
+        )
+        .orderBy(recordAssets.sortOrder);
+
+      const assets = ir.inspectionDate
+        ? assetRows.filter((a) => a.inspectionDate === ir.inspectionDate)
+        : assetRows;
+
+      return NextResponse.json({
+        ok: true,
+        request: ir,
+        checklists: checklistsWithItems,
+        assets: assets.map((a) => ({
+          id: a.id,
+          assetType: a.assetType,
+          fileName: a.fileName,
+          mimeType: a.mimeType,
+          caption: a.caption,
+          url: `/api/assets/${a.id}/raw`,
+        })),
+      });
     }
 
     if (structureId) {
