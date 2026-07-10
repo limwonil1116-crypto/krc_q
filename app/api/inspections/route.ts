@@ -111,19 +111,36 @@ export async function POST(req: Request) {
       supervisorId: (b.supervisorId ?? "").trim() || null,
     };
 
+    // 제출 여부: submit=true 이면 감독원 지정 필수
+    const doSubmit = b.submit === true;
+    if (doSubmit && !reqValues.supervisorId) {
+      return NextResponse.json({ error: "제출하려면 공사감독원을 지정해야 합니다." }, { status: 400 });
+    }
+
     // 기존 요청서 (id 있으면 업데이트)
     const existingId = (b.id ?? "").trim();
     let requestId: string;
     if (existingId) {
       await db
         .update(inspectionRequests)
-        .set({ ...reqValues, updatedAt: new Date() })
+        .set({
+          ...reqValues,
+          ...(doSubmit ? { status: "submitted" as const, contractorSignedAt: new Date() } : {}),
+          updatedAt: new Date(),
+        })
         .where(eq(inspectionRequests.id, existingId));
       requestId = existingId;
     } else {
       const [row] = await db
         .insert(inspectionRequests)
-        .values({ siteId: ss.siteId, siteStructureId, ...reqValues, status: "draft", createdBy: userId })
+        .values({
+          siteId: ss.siteId,
+          siteStructureId,
+          ...reqValues,
+          status: doSubmit ? ("submitted" as const) : ("draft" as const),
+          ...(doSubmit ? { contractorSignedAt: new Date() } : {}),
+          createdBy: userId,
+        })
         .returning();
       requestId = row.id;
     }

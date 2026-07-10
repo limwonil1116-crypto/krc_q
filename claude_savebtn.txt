@@ -1,0 +1,65 @@
+
+
+===== saveDraft 함수 =====
+async function saveDraft() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/inspections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteStructureId,
+          subTypeId: subTypeId || null,
+          inspectionDate: selectedDate,
+          requestNo: form.requestNo,
+          locationWork: form.locationWork,
+          inspectionPart: form.inspectionPart,
+          inspectionMatter: form.inspectionMatter,
+          isRecheck: form.isRecheck,
+          contractorAgentName: form.contractorAgentName,
+          contractorCheckerName: form.contractorCheckerName,
+          supervisorId: form.supervisorId || null,
+          checklists: [
+            {
+              facilityName: structureName,
+              locationPart: form.inspectionPart,
+              workName: subTypeName || typeName,
+              quantity: "",
+              stage: "",
+              aiGenerated: items.length > 0,
+              items: items.map((it, i) => ({
+                itemNo: i + 1,
+                checkItem: it.checkItem,
+                standard: it.standard,
+                contractorResult: it.contractorResult,
+                contractorNote: it.contractorNote,
+              })),
+            },
+          ],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "저장 실패");
+        return;
+      }
+      alert("임시 저장되었습니다.");
+      router.refresh();
+    } catch {
+      alert("저장 중 오류가 발생했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+===== 저장버튼 div =====
+<div className="flex gap-2">
+          <button
+            type="button"
+            onClick={saveDraft}
+            disabled={busy || !selectedDate}
+            className="flex-1 rounded-md bg-[#002A80] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {busy ? "저장 중..." : "임시 저장"}
+          </button>
+        </div>

@@ -176,7 +176,18 @@ export function InspectionForm({
     };
   }, [assets, selectedDate]);
 
-  async function saveDraft() {
+  async function saveDraft(submit = false) {
+    if (submit) {
+      if (!form.supervisorId) {
+        alert("제출하려면 공사감독원을 지정하세요.");
+        return;
+      }
+      if (items.length === 0) {
+        alert("체크리스트 항목을 먼저 작성하세요.");
+        return;
+      }
+      if (!confirm("제출하면 지정한 공사감독원에게 검측 요청이 전달됩니다. 제출할까요?")) return;
+    }
     setBusy(true);
     try {
       const res = await fetch("/api/inspections", {
@@ -184,6 +195,7 @@ export function InspectionForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           siteStructureId,
+          submit,
           subTypeId: subTypeId || null,
           inspectionDate: selectedDate,
           requestNo: form.requestNo,
@@ -218,7 +230,7 @@ export function InspectionForm({
         alert(data.error || "저장 실패");
         return;
       }
-      alert("임시 저장되었습니다.");
+      alert(submit ? "제출되었습니다." : "임시 저장되었습니다.");
       router.refresh();
     } catch {
       alert("저장 중 오류가 발생했습니다.");
@@ -446,11 +458,19 @@ export function InspectionForm({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={saveDraft}
+            onClick={() => saveDraft(false)}
+            disabled={busy || !selectedDate}
+            className="flex-1 rounded-md border border-[#002A80] px-4 py-2.5 text-sm font-semibold text-[#002A80] disabled:opacity-50"
+          >
+            {busy ? "저장 중..." : "임시 저장"}
+          </button>
+          <button
+            type="button"
+            onClick={() => saveDraft(true)}
             disabled={busy || !selectedDate}
             className="flex-1 rounded-md bg-[#002A80] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {busy ? "저장 중..." : "임시 저장"}
+            제출
           </button>
         </div>
       </div>

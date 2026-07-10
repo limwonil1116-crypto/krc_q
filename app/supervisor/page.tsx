@@ -12,6 +12,13 @@ export default function Page() {
         <StatCard value={0} label="영상 완료" />
         <StatCard value={0} label="보완 요청" />
       </div>
+      <a
+        href="/supervisor/inspections"
+        className="block rounded-2xl border border-[#0033A0] bg-[#0033A0] p-5 text-center text-white hover:bg-[#00287d]"
+      >
+        <div className="text-lg font-bold">📋 검측 요청 관리</div>
+        <div className="mt-1 text-sm text-white/80">배정된 검측 요청 확인 및 결과 통보</div>
+      </a>
       <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
         담당 현장에 제출된 기록이 여기에 표시됩니다.
       </div>

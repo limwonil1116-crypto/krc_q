@@ -1,0 +1,32 @@
+
+
+===== reqValues =====
+const reqValues = {
+      subTypeId: (b.subTypeId ?? "").trim() || null,
+      inspectionDate,
+      requestNo: (b.requestNo ?? "").trim() || null,
+      locationWork: (b.locationWork ?? "").trim() || null,
+      inspectionPart: (b.inspectionPart ?? "").trim() || null,
+      requiredAt: b.requiredAt ? new Date(b.requiredAt) : null,
+      inspectionMatter: (b.inspectionMatter ?? "").trim() || null,
+      isRecheck: !!b.isRecheck,
+      contractorAgentName: (b.contractorAgentName ?? "").trim() || null,
+      contractorCheckerName: (b.contractorCheckerName ?? "").trim() || null,
+      supervisorId: (b.supervisorId ?? "").trim() || null,
+    };
+
+===== insert/update 블록 =====
+existingId = (b.id ?? "").trim();
+    let requestId: string;
+    if (existingId) {
+      await db
+        .update(inspectionRequests)
+        .set({ ...reqValues, updatedAt: new Date() })
+        .where(eq(inspectionRequests.id, existingId));
+      requestId = existingId;
+    } else {
+      const [row] = await db
+        .insert(inspectionRequests)
+        .values({ siteId: ss.siteId, siteStructureId, ...reqValues, status: "draft", createdBy: userId })
+        .returning();
+      requestId = row.id;

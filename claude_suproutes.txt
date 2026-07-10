@@ -1,0 +1,70 @@
+=== app 최상위 ===
+DIR (auth)
+DIR admin
+DIR api
+DIR client
+DIR contractor
+DIR mypage
+DIR onboarding
+DIR supervisor
+
+=== app/supervisor 트리 ===
+app\supervisor\layout.tsx
+app\supervisor\page.tsx
+
+=== app/client 트리 ===
+app\client\layout.tsx
+app\client\page.tsx
+app\client\sites\page.tsx
+app\client\sites\new\page.tsx
+app\client\sites\[id]\page.tsx
+app\client\sites\[id]\structures\page.tsx
+app\client\sites\[id]\structures\[structureId]\page.tsx
+app\client\sites\[id]\structures\[structureId]\video\page.tsx
+
+=== supervisor/page.tsx (앞 1200자) ===
+import { StatCard } from "@/components/kit/stat-card";
+
+export default function Page() {
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-xl font-bold text-[#0033A0]">담당 현장 현황</h1>
+        <p className="text-sm text-neutral-500">신규 제출과 생성 영상을 확인하세요.</p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <StatCard value={0} label="신규 제출" accent />
+        <StatCard value={0} label="영상 완료" />
+        <StatCard value={0} label="보완 요청" />
+      </div>
+      <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
+        담당 현장에 제출된 기록이 여기에 표시됩니다.
+      </div>
+    </div>
+  );
+}
+
+
+=== supervisor/layout.tsx (앞 1200자) ===
+import { redirect } from "next/navigation";
+import { auth, signOut } from "@/auth";
+import Link from "next/link";
+import { BottomNav } from "@/components/kit/bottom-nav";
+import { AdminModeSwitcher } from "@/components/kit/admin-mode-switcher";
+
+export default async function RoleLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  if (session.user.role !== "supervisor" && session.user.role !== "admin") redirect("/");
+
+  return (
+    <div className="min-h-screen bg-neutral-50">
+      <header className="flex items-center justify-between border-b border-white/10 bg-[#0033A0] px-4 py-3 text-white">
+        <div className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/krc-logo-white.png" alt="한국농어촌공사" className="h-5 w-auto sm:h-6" />
+          <span className="hidden text-sm text-white/80 sm:inline">· 공감소장</span>
+        </div>
+        <div className="flex items-center gap-3 text-sm">
+          {session.user.role === "admin" && <AdminModeSwitcher current="supervisor" />}
+          <Link href="/mypage" className="rounded bg-white/15 px-3 py-1 
