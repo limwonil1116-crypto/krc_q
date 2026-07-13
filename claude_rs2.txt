@@ -1,0 +1,12 @@
+save approve 처리: True
+approve body 전달: True
+signature state: True
+SignaturePad import/사용: True
+supervisorSignature body: True
+PDF 버튼: True
+승인 버튼 UI: True
+서명 placeholder(미완성): False
+
+save 시그니처: 'async function save(action: "save" | "revision" | "approve") {'
+
+액션버튼 영역: ' rounded-md border border-[#0033A0] px-4 py-2.5 text-sm font-semibold text-[#0033A0] disabled:opacity-50"\n          >\n            {busy ? "저장 중..." : "검토 저장"}\n          </button>\n          <button\n            type="button"\n            onClick={() => save("revision")}\n            disabled={busy}\n            className="flex-1 rounded-md border border-red-500 px-4 py-2.5 text-sm font-semibold text-red-600 disabled:opacity-50"\n          >\n            재검측 요청\n          </button>\n          <button\n            type="button"\n        '

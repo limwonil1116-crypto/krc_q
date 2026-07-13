@@ -52,6 +52,13 @@ export default async function Page() {
           <ActionButton>+ 현장 등록</ActionButton>
         </Link>
       </div>
+      <Link
+        href="/client/inspections"
+        className="block rounded-2xl border border-[#0033A0] bg-[#0033A0] p-4 text-center text-white hover:bg-[#00287d]"
+      >
+        <div className="text-base font-bold">📋 검측관리</div>
+        <div className="mt-0.5 text-xs text-white/80">검측 요청 확인 · 검측 결과 통보 및 서명</div>
+      </Link>
       <SitesTable sites={sites} basePath="/client/sites" />
     </div>
   );

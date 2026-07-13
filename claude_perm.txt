@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   kakaoId: varchar("kakao_id", { length: 64 }),
   name: varchar("name", { length: 80 }).notNull(),
   phone: varchar("phone", { length: 30 }),
+  branch: varchar("branch", { length: 50 }),
   role: text("role").$type<"contractor" | "supervisor" | "client" | "admin">().notNull(),
   status: text("status").$type<"pending" | "active" | "suspended" | "deleted">().notNull().default("pending"),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
@@ -209,11 +210,15 @@ const providers = [
       const email = credentials?.email as string | undefined;
       const password = credentials?.password as string | undefined;
       if (!email || !password) return null;
+      const _t0 = Date.now();
       const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const _t1 = Date.now();
       const u = rows[0];
       if (!u || !u.passwordHash) return null;
       if (u.status !== "active") return null;
       const ok = await bcrypt.compare(password, u.passwordHash);
+      const _t2 = Date.now();
+      console.log("[auth:timing] db=" + (_t1 - _t0) + "ms bcrypt=" + (_t2 - _t1) + "ms");
       if (!ok) return null;
       return { id: u.id, email: u.email ?? undefined, name: u.name, role: u.role };
     },
@@ -278,6 +283,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { constructionSites } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
+import { getMyBranch, isHeadOffice } from "@/lib/perm";
 import { ActionButton } from "@/components/kit/buttons";
 import { SitesTable } from "@/components/site/sites-table";
 
@@ -287,13 +293,22 @@ export default async function Page() {
   const session = await auth();
   const userId = session?.user?.id;
   const orgId = userId ? await getMyOrgId(userId) : null;
-  const raw = orgId
-    ? await db
-        .select()
-        .from(constructionSites)
-        .where(eq(constructionSites.clientOrgId, orgId))
-        .orderBy(desc(constructionSites.createdAt))
-    : [];
+  const branch = userId ? await getMyBranch(userId) : null;
+  const headOffice = isHeadOffice(branch);
+  // 본부내근: 전체 / 특정 지사: executor === 지사 / 지사정보 없으면 기존 org 기준
+  const whereCond = headOffice
+    ? undefined
+    : branch
+    ? eq(constructionSites.executor, branch)
+    : orgId
+    ? eq(constructionSites.clientOrgId, orgId)
+    : undefined;
+  const raw =
+    headOffice || whereCond
+      ? await (whereCond
+          ? db.select().from(constructionSites).where(whereCond).orderBy(desc(constructionSites.createdAt))
+          : db.select().from(constructionSites).orderBy(desc(constructionSites.createdAt)))
+      : [];
   const sites = raw.map((s) => ({
     id: s.id,
     districtName: s.districtName,
@@ -329,6 +344,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { constructionSites } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
+import { getMyBranch, isHeadOffice } from "@/lib/perm";
 import { ActionButton } from "@/components/kit/buttons";
 import { SitesTable } from "@/components/site/sites-table";
 
@@ -338,13 +354,22 @@ export default async function Page() {
   const session = await auth();
   const userId = session?.user?.id;
   const orgId = userId ? await getMyOrgId(userId) : null;
-  const raw = orgId
-    ? await db
-        .select()
-        .from(constructionSites)
-        .where(eq(constructionSites.clientOrgId, orgId))
-        .orderBy(desc(constructionSites.createdAt))
-    : [];
+  const branch = userId ? await getMyBranch(userId) : null;
+  const headOffice = isHeadOffice(branch);
+  // 본부내근: 전체 / 특정 지사: executor === 지사 / 지사정보 없으면 기존 org 기준
+  const whereCond = headOffice
+    ? undefined
+    : branch
+    ? eq(constructionSites.executor, branch)
+    : orgId
+    ? eq(constructionSites.clientOrgId, orgId)
+    : undefined;
+  const raw =
+    headOffice || whereCond
+      ? await (whereCond
+          ? db.select().from(constructionSites).where(whereCond).orderBy(desc(constructionSites.createdAt))
+          : db.select().from(constructionSites).orderBy(desc(constructionSites.createdAt)))
+      : [];
   const sites = raw.map((s) => ({
     id: s.id,
     districtName: s.districtName,

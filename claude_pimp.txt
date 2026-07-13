@@ -1,0 +1,5 @@
+import { getMyBranch, isHeadOffice } from "@/lib/perm";
+const branch = userId ? await getMyBranch(userId) : null;
+const headOffice = isHeadOffice(branch);
+[lib/perm.ts] exports: ['getMyBranch', 'isHeadOffice', 'canAccessSiteByBranch']
+[lib/branches.ts] exports: ['isHeadOffice', 'canAccessSiteByBranch']
