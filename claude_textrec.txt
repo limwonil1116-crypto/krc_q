@@ -1,0 +1,10 @@
+state: const [guideOpen, setGuideOpen] = useState(false)
+state: const [consentOpen, setConsentOpen] = useState(false)
+
+[텍스트] 근처: 'haseId: string; file: File } | null>(null);\n  const [step, setStep] = useState(0); // 현재 단계 탭 인덱스\n  const [editing, setEditing] = useState(false); // 텍스트 기록 작성 모드\n  const [guideOpen, setGuideOpen] = useState(false);\n  const [busy, setBusy] = useState<string | null>(null'
+
+[기록 작성] 근처: 'Id: string; file: File } | null>(null);\n  const [step, setStep] = useState(0); // 현재 단계 탭 인덱스\n  const [editing, setEditing] = useState(false); // 텍스트 기록 작성 모드\n  const [guideOpen, setGuideOpen] = useState(false);\n  const [busy, setBusy] = useState<string | null>(null);\n '
+
+[텍스트 기록] 근처: 'haseId: string; file: File } | null>(null);\n  const [step, setStep] = useState(0); // 현재 단계 탭 인덱스\n  const [editing, setEditing] = useState(false); // 텍스트 기록 작성 모드\n  const [guideOpen, setGuideOpen] = useState(false);\n  const [busy, setBusy] = useState<string | null>(null'
+
+[textDescription] 근처: '= { id: string; name: string; guideText?: string | null };\ntype Rec = {\n  id: string;\n  phaseTemplateId: string;\n  subTypeId: string | null;\n  inspectionDate: string | null;\n  title: string | null;\n  textDescription: string | null;\n  inspectionContent: string | null;\n  inspectionPartFromMain: number | null;\n  inspectionPartFromSub: number | null;\n '

@@ -214,7 +214,7 @@ export function PhaseRecorder({
   const [selectedDate, setSelectedDate] = useState<string>(todayStr());
   const [editTarget, setEditTarget] = useState<{ phaseId: string; file: File } | null>(null);
   const [step, setStep] = useState(0); // 현재 단계 탭 인덱스
-  const [editing, setEditing] = useState(false); // 텍스트 기록 작성 모드
+  const [editing, setEditing] = useState(true); // 텍스트 기록 작성 모드 (기본 열림)
   const [guideOpen, setGuideOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

@@ -1,0 +1,2 @@
+L: const [editing, setEditing] = useState(false); // 텍스트 기록 작성 모드
+L: {editing ? (
