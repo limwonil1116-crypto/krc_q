@@ -1,0 +1,28 @@
+=== 검측 요청서 버튼 주변 ===
+' <h1 className="text-xl font-bold text-[#0033A0]">{structureName}</h1>\n          <p className="text-sm text-neutral-500">{typeName} · 세부항목별 검측 기록</p>\n        </div>\n        {inspectionHref && (\n          <Link\n            href={inspectionHref}\n            className="whitespace-nowrap rounded-md bg-[#002A80] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#001d5c]"\n          >\n            📋 검측 요청서\n          </Link>\n        )}\n        <Link\n          href={videoHref}\n          className="whitespace-nowrap rounded-md bg-[#FE5000] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#E048'
+
+=== inspectionHref ===
+'StructureId,\n  structureName,\n  typeName,\n  subTypes,\n  phases,\n  records,\n  assets,\n  videoHref,\n  inspectionHref,\n}: {\n  siteStructureId: string;\n  structureName: string;\n  typeName: string;\n  subTypes: SubType[];\n  phases: Phase[];\n  records: Rec['
+
+=== PhaseRecorder props ===
+export function PhaseRecorder({
+  siteStructureId,
+  structureName,
+  typeName,
+  subTypes,
+  phases,
+  records,
+  assets,
+  videoHref,
+  inspectionHref,
+}: {
+  siteStructureId: string;
+  structureName: string;
+  typeName: string;
+  subTypes: SubType[];
+  phases: Phase[];
+  records: Rec[];
+  assets: Asset[];
+  videoHref: string;
+  inspectionHref?: string;
+}) {

@@ -1,0 +1,49 @@
+initialReqId: 'Types,\n  supervisors,\n  records,\n  assets,\n  existingRequests,\n  initialDate,\n  initialReqId,\n  backHref,\n}: {\n  siteId: string;\n  siteStructureId: string;\n  st'
+initialReqId: '];\n  assets: AssetRow[];\n  existingRequests: ReqRow[];\n  initialDate: string;\n  initialReqId: string;\n  backHref: string;\n}) {\n  const router = useRouter();\n\n  '
+state: const [subTypeId, setSubTypeId] = useState("");
+
+=== saveDraft 함수 ===
+async function saveDraft(submit = false) {
+    if (submit) {
+      if (!form.supervisorId) {
+        alert("제출하려면 공사감독원을 지정하세요.");
+        return;
+      }
+      if (items.length === 0) {
+        alert("체크리스트 항목을 먼저 작성하세요.");
+        return;
+      }
+    }
+    setShowConsent(false);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/inspections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteStructureId,
+          submit,
+          subTypeId: subTypeId || null,
+          inspectionDate: selectedDate,
+          requestNo: form.requestNo,
+          locationWork: form.locationWork,
+          inspectionPart: form.inspectionPart,
+          inspectionMatter: form.inspectionMatter,
+          isRecheck: form.isRecheck,
+          contractorAgentName: form.contractorAgentName,
+          contractorCheckerName: form.contractorCheckerName,
+          supervisorId: form.supervisorId || null,
+          checklists: [
+            {
+              facilityName: structureName,
+              locationPart: form.inspectionPart,
+              workName: subTypeName || typeName,
+              quantity: "",
+              stage: "",
+              aiGenerated: items.length > 0,
+              items: items.map((it, i) => ({
+                itemNo: i + 1,
+                checkItem: it.checkItem,
+                standard: it.standard,
+                contractorResult: it.contractorResult,
+                contractorNo

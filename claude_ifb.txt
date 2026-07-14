@@ -1,0 +1,22 @@
+=== imports (첫 15줄) ===
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+type SubType = { id: string; name: string };
+type Supervisor = { id: string; name: string; branch: string | null };
+type Rec = {
+  phaseTemplateId: string;
+  subTypeId: string | null;
+  inspectionDate: string | null;
+  inspectionContent: string | null;
+  inspectionPartFromMain: number | null;
+  inspectionPartFromSub: number | null;
+
+=== 제출 버튼 영역 ===
+'ed={busy || !selectedDate}\n            className="flex-1 rounded-md border border-[#002A80] px-4 py-2.5 text-sm font-semibold text-[#002A80] disabled:opacity-50"\n          >\n            {busy ? "저장 중..." : "임시 저장"}\n          </button>\n          <button\n            type="button"\n            onClick={tryOpenConsent}\n            disabled={busy || !selectedDate}\n            className="flex-1 rounded-md bg-[#002A80] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"\n          >\n       '
+
+=== 모달/컴포넌트 끝 근처 ===
+'xt-white disabled:opacity-50"\n          >\n            제출\n          </button>\n        </div>\n\n      {showConsent && (\n        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowConsent(false)}>\n          <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5" onClick={(e) => e.stopPropagation()}>\n            <h3 className="text-center text-base font-bold text-[#002A80]">[ 검측 자료 제출 전 필수 확인 ]</h3>\n            <p '

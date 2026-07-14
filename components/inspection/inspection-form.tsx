@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { InspectionPdfButton } from "@/components/inspection/inspection-pdf-button";
 
 type SubType = { id: string; name: string };
 type Supervisor = { id: string; name: string; branch: string | null };
@@ -491,6 +492,12 @@ export function InspectionForm({
             제출
           </button>
         </div>
+
+      {initialReqId && (
+        <div className="mt-3 flex justify-center">
+          <InspectionPdfButton requestId={initialReqId} label="📄 검측 서류 PDF (사진·영상 증빙 포함)" />
+        </div>
+      )}
 
       {showConsent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowConsent(false)}>
