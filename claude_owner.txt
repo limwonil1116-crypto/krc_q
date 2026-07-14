@@ -1,0 +1,119 @@
+=== ownsSite/권한헬퍼 검색 ===
+[app\api\assets\[assetId]\route.ts]
+async function ownsSite(userId: string, siteId: string) {
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
+  const site = rows[0];
+  if (!site) return false;
+  const _sess = await auth();
+  const _role = _sess?.user?.role;
+  if (_role === "client" || _role === "admin") return true;
+  const orgId = await getMyOrgId(userId);
+  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+}
+[app\api\inspections\route.ts]
+async function ownsSite(userId: string, siteId: string) {
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
+  const site = rows[0];
+  if (!site) return false;
+  const _sess = await auth();
+  const _role = _sess?.user?.role;
+  if (_role === "client" || _role === "admin") return true;
+  const orgId = await getMyOrgId(userId);
+  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+}
+[app\api\records\route.ts]
+async function ownsSite(userId: string, siteId: string) {
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
+  const site = rows[0];
+  if (!site) return false;
+  const _sess = await auth();
+  const _role = _sess?.user?.role;
+  if (_role === "client" || _role === "admin") return true;
+  const orgId = await getMyOrgId(userId);
+  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+}
+[app\api\records\assets\route.ts]
+async function ownsSite(userId: string, siteId: string, role?: string) {
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
+  const site = rows[0];
+  if (!site) return false;
+  // 발주처(농어촌공사) 및 관리자는 모든 현장 접근 가능
+  if (role === "client" || role === "admin") return true;
+  const orgId = await getMyOrgId(userId);
+  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+}
+[app\api\records\reset\route.ts]
+async function ownsSite(userId: string, siteId: string) {
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
+  const site = rows[0];
+  if (!site) return false;
+  const _sess = await auth();
+  const _role = _sess?.user?.role;
+  if (_role === "client" || _role === "admin") return true;
+  const orgId = await getMyOrgId(userId);
+  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+}
+[app\api\records\submit\route.ts]
+async function ownsSite(userId: string, siteId: string) {
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
+  const site = rows[0];
+  if (!site) return false;
+  const _sess = await auth();
+  const _role = _sess?.user?.role;
+  if (_role === "client" || _role === "admin") return true;
+  const orgId = await getMyOrgId(userId);
+  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+}
+[app\api\records\video\route.ts]
+async function ownsSite(userId: string, siteId: string) {
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
+  const site = rows[0];
+  if (!site) return { ok: false as const, site: null };
+  const orgId = await getMyOrgId(userId);
+  const owns = site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+  return { ok: owns, site };
+}
+[app\api\sites\[id]\download\route.ts]
+async function ownsSite(userId: string, siteId: string) {
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
+  const site = rows[0];
+  if (!site) return false;
+  const orgId = await getMyOrgId(userId);
+  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+}
+[app\api\sites\[id]\logo\route.ts]
+async function ownsSite(userId: string, siteId: string) {
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
+  const site = rows[0];
+  if (!site) return { ok: false as const };
+  const orgId = await getMyOrgId(userId);
+  const owns =
+    site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+  return { ok: owns, site };
+}
+[app\api\structures\[structureId]\download\route.ts]
+async function ownsSite(userId: string, siteId: string) {
+  const rows = await db.select().from(constructionSites).where(eq(constructionSites.id, siteId)).limit(1);
+  const site = rows[0];
+  if (!site) return false;
+  const orgId = await getMyOrgId(userId);
+  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+}
+
+=== app/api/sites/route.ts (contractorOrgId 세팅) ===
+/주소는 필수입니다." }, { status: 400 });
+    }
+
+    const [site] = await db
+      .insert(constructionSites)
+      .values({
+        clientOrgId: role === "client" ? orgId : (b.clientOrgId || null),
+        contractorOrgId: role === "contractor" ? orgId : null,
+        siteCode: (b.siteCode ?? "").trim() || null,
+        districtName,
+        projectName,
+
+=== siteParticipants 사용처 ===
+app\api\sites\route.ts
+app\contractor\sites\[id]\structures\[structureId]\inspection\page.tsx
+lib\db\schema.ts

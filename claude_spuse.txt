@@ -1,0 +1,45 @@
+
+
+===== imports =====
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { constructionSites, siteParticipants } from "@/lib/db/schema";
+import { getMyOrgId } from "@/lib/org";
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.user?.role;
+    if (!session?.user?.id || (role !== "contractor" && role !== "client" && role !== "admin")) {
+      return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+
+===== siteParticipants 사용 =====
+esponse } from "next/server";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { constructionSites, siteParticipants } from "@/lib/db/schema";
+import { getMyOrgId } from "@/lib/org";
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.user?.role;
+    if (!session?.user?.id || (role !== "co
+
+===== siteParticipants 사용 =====
+.trim() || null,
+        status: "active",
+        createdBy: userId,
+      })
+      .returning();
+
+    await db.insert(siteParticipants).values({
+      siteId: site.id,
+      userId,
+      participantRole: role === "client" ? "client_manager" : "contractor_manager",
+    });
+
+    return NextResponse.json({ ok: true, id: site.id });
+  } catch (e) {
+    console.error("[

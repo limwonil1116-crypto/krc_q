@@ -3,9 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { constructionSites, organizations } from "@/lib/db/schema";
-import { getMyOrgId } from "@/lib/org";
 import { SiteForm } from "@/components/site/site-form";
-import { ParticipantManager } from "@/components/site/participant-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -22,15 +20,6 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
     .select({ id: organizations.id, name: organizations.name })
     .from(organizations)
     .where(eq(organizations.type, "client_agency"));
-
-  // 참여자 초대/내보내기 권한 (현장 생성자 또는 소속 조직, client/admin)
-  const myRole = session.user.role;
-  const myOrgId = session.user.id ? await getMyOrgId(session.user.id) : null;
-  const canManage =
-    myRole === "client" ||
-    myRole === "admin" ||
-    site.createdBy === session.user.id ||
-    (!!myOrgId && (site.contractorOrgId === myOrgId || site.clientOrgId === myOrgId));
 
   const initial = {
     clientOrgId: site.clientOrgId ?? "",
@@ -54,10 +43,5 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
     contractorLogoName: site.contractorLogoName ?? "",
   };
 
-  return (
-    <div>
-      <SiteForm clientOrgs={clientOrgs} mode="contractor" siteId={site.id} initial={initial} />
-      <ParticipantManager siteId={site.id} canManage={canManage} />
-    </div>
-  );
+  return <SiteForm clientOrgs={clientOrgs} mode="contractor" siteId={site.id} initial={initial} />;
 }
