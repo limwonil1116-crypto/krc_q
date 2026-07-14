@@ -365,6 +365,27 @@ export function PhaseRecorder({
     setEditing(true);
   }
 
+  // 단계/날짜/세부항목이 바뀌면 저장된 기록을 자동으로 form 에 불러오기
+  useEffect(() => {
+    const cur = phases[step];
+    if (!cur) return;
+    const rec = recMap.get(cur.id);
+    setForm({
+      lat: rec?.latitude ?? null,
+      lng: rec?.longitude ?? null,
+      address: rec?.locationAddress ?? "",
+      textDescription: rec?.textDescription ?? "",
+      inspectionContent: rec?.inspectionContent ?? "",
+      partFromMain: rec?.inspectionPartFromMain != null ? String(rec.inspectionPartFromMain) : "",
+      partFromSub: rec?.inspectionPartFromSub != null ? String(rec.inspectionPartFromSub) : "",
+      partToMain: rec?.inspectionPartToMain != null ? String(rec.inspectionPartToMain) : "",
+      partToSub: rec?.inspectionPartToSub != null ? String(rec.inspectionPartToSub) : "",
+      notApplicable: rec?.notApplicable ?? false,
+      notApplicableReason: rec?.notApplicableReason ?? "",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, selectedDate, subTypeId, records]);
+
   async function saveText(p: Phase, i: number) {
     setError("");
     setLoading(true);

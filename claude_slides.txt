@@ -1,0 +1,130 @@
+
+===== Slide 타입 (L28~42) =====
+28: 
+29: type Slide =
+30:   | { kind: "title" }
+31:   | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null; mapSrc: string | null }
+32:   | { kind: "section"; label: string; text: string | null }
+33:   | { kind: "image"; src: string; caption: string }
+34:   | { kind: "video"; src: string; caption: string };
+35: 
+36: const TITLE_MS = 4200;
+37: const LOCATION_MS = 3400;
+38: const SECTION_MS = 2600;
+39: const IMAGE_MS = 3200;
+40: 
+41: export function VideoComposer({
+42:   meta,
+
+===== 슬라이드 구성 로직 (L137~190) =====
+137:   const slides = useMemo<Slide[]>(() => {
+138:     if (!date) return [];
+139:     const recMap = new Map(records.filter((r) => r.inspectionDate === date).map((r) => [r.phaseTemplateId, r]));
+140:     const byPhase = new Map<string, Asset[]>();
+141:     assets
+142:       .filter((a) => a.inspectionDate === date)
+143:       .forEach((a) => {
+144:         const arr = byPhase.get(a.phaseTemplateId) || [];
+145:         arr.push(a);
+146:         byPhase.set(a.phaseTemplateId, arr);
+147:       });
+148:     const out: Slide[] = [{ kind: "title" }];
+149:     // 검측 위치(F1에 저장된 위도/경도/주소)가 있으면 위치 슬라이드 추가
+150:     const locRec = records.find(
+151:       (r) => r.inspectionDate === date && typeof r.latitude === "number" && typeof r.longitude === "number"
+152:     );
+153:     if (locRec && typeof locRec.latitude === "number" && typeof locRec.longitude === "number") {
+154:       const _pf = locRec.inspectionPartFromMain != null || locRec.inspectionPartFromSub != null
+155:         ? `NO.${locRec.inspectionPartFromMain ?? 0}+${String(locRec.inspectionPartFromSub ?? 0).padStart(2, "0")}`
+156:         : "";
+157:       const _pt = locRec.inspectionPartToMain != null || locRec.inspectionPartToSub != null
+158:         ? `NO.${locRec.inspectionPartToMain ?? 0}+${String(locRec.inspectionPartToSub ?? 0).padStart(2, "0")}`
+159:         : "";
+160:       const _part = _pf && _pt ? `${_pf} ~ ${_pt}` : (_pf || _pt || "");
+161:       const _mapAsset = assets.find((a) => a.inspectionDate === date && a.assetType === "map");
+162:       out.push({
+163:         kind: "location",
+164:         address: locRec.locationAddress || "",
+165:         lat: locRec.latitude,
+166:         lng: locRec.longitude,
+167:         content: locRec.inspectionContent || null,
+168:         part: _part || null,
+169:         mapSrc: _mapAsset ? `/api/assets/${_mapAsset.id}/raw` : null,
+170:       });
+171:     }
+172:     [...phases]
+173:       .sort((a, b) => a.sortOrder - b.sortOrder)
+174:       .forEach((p, i) => {
+175:         const r = recMap.get(p.id);
+176:         const list = byPhase.get(p.id) || [];
+177:         const photos = list.filter((a) => a.assetType === "photo");
+178:         const videos = list.filter((a) => a.assetType === "video");
+179:         if (list.length > 0 || (r && r.textDescription)) {
+180:           out.push({ kind: "section", label: `${i + 1}. ${p.name}`, text: r?.textDescription ?? null });
+181:         }
+182:         photos.forEach((a) => out.push({ kind: "image", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+183:         videos.forEach((a) => out.push({ kind: "video", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+184:       });
+185:     return out;
+186:   }, [date, phases, records, assets]);
+187: 
+188:   useEffect(() => {
+189:     setIdx(0);
+190:     setPlaying(false);
+
+===== location 슬라이드 렌더 (L318~372) =====
+318:             {cur?.kind === "location" && (
+319:               <div key={`location-${idx}`} className="relative flex h-full w-full flex-col overflow-hidden bg-[#002A80] text-white">
+320:                 {cur.mapSrc ? (
+321:                   <>
+322:                     {/* 지도 전체 배경 */}
+323:                     {/* eslint-disable-next-line @next/next/no-img-element */}
+324:                     <img
+325:                       src={cur.mapSrc}
+326:                       alt="검측 위치 지도"
+327:                       className="absolute inset-0 h-full w-full object-cover"
+328:                     />
+329:                     <div className="absolute inset-0 bg-black/15" />
+330:                   </>
+331:                 ) : (
+332:                   <div
+333:                     className="krc-grid2 krc-zoom pointer-events-none absolute inset-0 opacity-[0.12]"
+334:                     style={{
+335:                       backgroundImage:
+336:                         "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+337:                       backgroundSize: "28px 28px",
+338:                     }}
+339:                   />
+340:                 )}
+341:                 <span className="pointer-events-none absolute left-3 top-3 z-10 h-5 w-5 border-l-2 border-t-2 border-[#FE5000]" />
+342:                 <span className="pointer-events-none absolute bottom-3 right-3 z-10 h-5 w-5 border-b-2 border-r-2 border-[#FE5000]" />
+343:                 {/* 상단 타이틀 */}
+344:                 <div className="krc-rise2 relative z-10 flex items-center gap-2 px-6 pt-6">
+345:                   <span className="text-3xl">📍</span>
+346:                   <span className="krc-stroke text-2xl font-extrabold drop-shadow-lg">검측 위치</span>
+347:                 </div>
+348:                 <div className="flex-1" />
+349:                 {/* 하단 반투명 검정 정보 박스 */}
+350:                 <div className="krc-rise2 relative z-10 m-4 rounded-xl bg-black/65 p-5 text-left backdrop-blur-sm" style={{ animationDelay: "0.2s" }}>
+351:                   {cur.address && (
+352:                     <div className="text-xl font-bold text-white">{cur.address}</div>
+353:                   )}
+354:                   <div className="mt-1 text-sm text-white/70">
+355:                     좌표 {cur.lat.toFixed(6)}, {cur.lng.toFixed(6)}
+356:                   </div>
+357:                   {cur.content && (
+358:                     <div className="mt-3 text-base font-semibold text-white">
+359:                       <span className="text-[#FFB68A]">검측내용</span> · {cur.content}
+360:                     </div>
+361:                   )}
+362:                   {cur.part && (
+363:                     <div className="mt-1 text-base text-white/90">
+364:                       <span className="text-[#FFB68A]">검측부위</span> · {cur.part}
+365:                     </div>
+366:                   )}
+367:                 </div>
+368:               </div>
+369:             )}
+370: 
+371:             {cur?.kind === "section" && (
+372:               <div key={`section-${idx}`} className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#002A80] px-8 text-center text-white">

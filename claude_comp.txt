@@ -1,0 +1,65 @@
+총 줄수: 515, 크기: 22462
+L4: import { VideoExporter } from "@/components/record/video-exporter";
+L6: type Phase = { id: string; code: string; name: string; sortOrder: number };
+L7: type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescriptio
+L10: phaseTemplateId: string;
+L12: assetType: string;
+L31: | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | n
+L34: | { kind: "video"; src: string; caption: string };
+L43: phases,
+L53: phases: Phase[];
+L62: const [date, setDate] = useState((initialDate && dates.includes(initialDate) ? initialDate : dates[0]) ||
+L65: const videoRef = useRef<HTMLVideoElement | null>(null);
+L91: if (ctx.state === "suspended") ctx.resume();
+L99: const oscs: OscillatorNode[] = freqs.map((f, i) => {
+L101: o.type = i === 0 ? "sine" : "triangle";
+L104: g.gain.value = i === 0 ? 0.5 : 0.22;
+L137: const slides = useMemo<Slide[]>(() => {
+L139: const recMap = new Map(records.filter((r) => r.inspectionDate === date).map((r) => [r.phaseTemplateId, r]
+L142: .filter((a) => a.inspectionDate === date)
+L144: const arr = byPhase.get(a.phaseTemplateId) || [];
+L146: byPhase.set(a.phaseTemplateId, arr);
+L149: // 검측 위치(F1에 저장된 위도/경도/주소)가 있으면 위치 슬라이드 추가
+L150: const locRec = records.find(
+L151: (r) => r.inspectionDate === date && typeof r.latitude === "number" && typeof r.longitude === "number"
+L153: if (locRec && typeof locRec.latitude === "number" && typeof locRec.longitude === "number") {
+L161: const _mapAsset = assets.find((a) => a.inspectionDate === date && a.assetType === "map");
+L163: kind: "location",
+L164: address: locRec.locationAddress || "",
+L165: lat: locRec.latitude,
+L169: mapSrc: _mapAsset ? `/api/assets/${_mapAsset.id}/raw` : null,
+L172: [...phases]
+L173: .sort((a, b) => a.sortOrder - b.sortOrder)
+L177: const photos = list.filter((a) => a.assetType === "photo");
+L178: const videos = list.filter((a) => a.assetType === "video");
+L179: if (list.length > 0 || (r && r.textDescription)) {
+L182: photos.forEach((a) => out.push({ kind: "image", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+L183: videos.forEach((a) => out.push({ kind: "video", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+L186: }, [date, phases, records, assets]);
+L193: const cur = slides[idx];
+L194: const total = slides.length;
+L198: if (cur.kind === "video") return; // 영상은 종료 시 자동 넘김
+L199: const ms = cur.kind === "title" ? TITLE_MS : cur.kind === "location" ? LOCATION_MS : cur.kind === "sectio
+L211: if (cur?.kind === "video" && playing && videoRef.current) {
+L213: videoRef.current.play().catch(() => {});
+L231: {dates.map((d) => (
+L238: (d === date ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
+L247: {total === 0 ? (
+L253: <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
+L254: {cur?.kind === "title" && (
+L318: {cur?.kind === "location" && (
+L319: <div key={`location-${idx}`} className="relative flex h-full w-full flex-col overflow-hidden bg-[#002A80]
+L320: {cur.mapSrc ? (
+L322: {/* 지도 전체 배경 */}
+L325: src={cur.mapSrc}
+L326: alt="검측 위치 지도"
+L346: <span className="krc-stroke text-2xl font-extrabold drop-shadow-lg">검측 위치</span>
+L371: {cur?.kind === "section" && (
+L390: {cur?.kind === "image" && (
+L404: {cur?.kind === "video" && (
+L406: <video
+L407: ref={videoRef}
+L435: {slides.map((s, i) => (
+L441: aria-label={`슬라이드 ${i + 1}`}
+L493: slides={slides}
+L508: autoSave={!!siteStructureId && (submittedDates.includes(date) || (autosaveOnLoad && date === initialDate)

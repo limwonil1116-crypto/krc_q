@@ -1,0 +1,25 @@
+[phases[step]] 'py-0.5 text-xs text-green-700">기록됨</span>;\n  }\n\n  const p = phases[step];\n  const r = p ? recMap.get(p.id) : undefined;\n  const list = p ? assetMap.get(p.id) || [] : [];\n  const ph'
+[const p =] '-100 px-2 py-0.5 text-xs text-green-700">기록됨</span>;\n  }\n\n  const p = phases[step];\n  const r = p ? recMap.get(p.id) : undefined;\n  const list = p ? assetMap.get(p.id) || [] : [];\n'
+[phases[] 't) return;\n    lastMapRef.current = dataUrl;\n    const f1 = phases[0];\n    if (!f1) return;\n    setMapCapturing(true);\n    try {\n      const blob = await (await fetch(dataUrl)).blo'
+[recMap] 'ate));\n    return set;\n  }, [records, subTypeId]);\n\n  const recMap = new Map<string, Rec>();\n  records\n    .filter((r) => r.subTypeId === subTypeId && (r.inspectionDate || "") === '
+
+=== recMap 정의 ===
+recMap = new Map<string, Rec>();
+  records
+    .filter((r) => r.subTypeId === subTypeId && (r.inspectionDate || "") === selectedDate)
+
+
+=== resetTransient ===
+function resetTransient() {
+    setEditing(true);
+    setGuideOpen(false);
+    setError("");
+  }
+
+state [const [step,]: const [step, setStep] = useState(0);
+
+state [const [selected]: const [selectedDate, setSelectedDate] = useState<string>(todayStr());
+
+state [selectedDate]: selectedDate, setSelectedDate] = useState<string>(todayStr());
+
+state [const [subTypeId]: const [subTypeId, setSubTypeId] = useState<string>(subTypes[0]?.id || "");

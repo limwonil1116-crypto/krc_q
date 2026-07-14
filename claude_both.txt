@@ -1,0 +1,36 @@
+########## PHASE-RECORDER ##########
+=== openEdit 정의 ===
+function openEdit(p: Phase) {
+    const r = recMap.get(p.id);
+    setForm({
+      lat: r?.latitude ?? null,
+      lng: r?.longitude ?? null,
+      address: r?.locationAddress ?? "",
+      textDescription: r?.textDescription ?? "",
+      inspectionContent: r?.inspectionContent ?? "",
+      partFromMain: r?.inspectionPartFromMain != null ? String(r.inspectionPartFromMain) : "",
+      partFromSub: r?.inspectionPartFromSub != null ? String(r.inspectionPartFromSub) : "",
+      partToMain: r?.inspectionPartToMain != null ? String(r.inspectionPartToMain) : "",
+      partToSub: r?.inspectionPartToSub != null ? String(r.inspectionPartToSub) : "",
+      notApplicable: r?.notApplicable ?? false,
+      notApplicableReason: r?.notApplicableReason ?? "",
+    });
+    setError("");
+    setEditing(true);
+  }
+
+=== openEdit 호출부 ===
+function openEdit(p: Phase) {
+<Button type="button" variant="outline" className="flex-1" onClick={() => openEdit(p)}>
+
+=== useEffect 들 ===
+[useEffect 0] useEffect(() => {
+    if (selected) {
+      const d = parseYmd(selected);
+      setVy(d.getFullYear());
+      setVm(d.getMonth());
+    }
+  }, [selected]);
+
+=== '해당없음'~검측내용 사이 (빈줄 의심) ===
+' ? (\n              <div className="mt-3 space-y-3 border-t border-neutral-100 pt-3">\n                <label className="flex items-center gap-2 text-sm">\n                  <input\n                    type="checkbox"\n                    checked={form.notApplicable}\n                    onChange={(e) => setForm((f) => ({ ...f, notApplicable: e.target.checked }))}\n                  />\n                  이 단계는 해당 없음\n                </label>\n                {form.notApplicable ? (\n                  <div className="space-y-1">\n                    <Label>해당없음 사유</Label>\n                    <textarea\n                      className={taCls}\n              '
