@@ -1,0 +1,5 @@
+=== 해당없음 사유 이후 ~ 다음 250자 ===
+'해당없음 사유</Label>\n                    <textarea\n                      className={taCls}\n                      value={form.notApplicableReason}\n                      onChange={(e) => setForm((f) => ({ ...f, notApplicableReason: e.target.value }))}\n                    />\n                  </div>\n                ) : (\n                  <div className="space-y-3">\n                    {step === 0 && (\n                      <>\n                        <div className="space-y-1">\n                         '
+
+=== 블록 시작 직전 300자 ===
+'g-red-600 text-xs text-white"\n                        aria-label="삭제"\n                      >\n                        ×\n                      </button>\n                    </div>\n                  ))}\n                </div>\n              )}\n            </div>\n\n            {editing ? (\n              <div className="mt-3 space-y-3 border-t border-neu'

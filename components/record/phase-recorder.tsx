@@ -795,25 +795,7 @@ export function PhaseRecorder({
             </div>
 
             {editing ? (
-              <div className="mt-3 space-y-3 border-t border-neutral-100 pt-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={form.notApplicable}
-                    onChange={(e) => setForm((f) => ({ ...f, notApplicable: e.target.checked }))}
-                  />
-                  이 단계는 해당 없음
-                </label>
-                {form.notApplicable ? (
-                  <div className="space-y-1">
-                    <Label>해당없음 사유</Label>
-                    <textarea
-                      className={taCls}
-                      value={form.notApplicableReason}
-                      onChange={(e) => setForm((f) => ({ ...f, notApplicableReason: e.target.value }))}
-                    />
-                  </div>
-                ) : (
+              <div className="mt-3 space-y-3 pt-1">
                   <div className="space-y-3">
                     {step === 0 && (
                       <>
@@ -864,7 +846,16 @@ export function PhaseRecorder({
                       </>
                     )}
                     <div className="space-y-1">
-                      {step > 0 && <Label>설명내용</Label>}
+                      {step > 0 && (
+                        <div>
+                          <Label>설명내용</Label>
+                          <p className="mt-0.5 text-xs leading-relaxed text-[#0033A0]">
+                            오늘 검측이 필요한 내용들을 적어주세요
+                            <br />
+                            <span className="text-neutral-500">(예시: 겹이음 00cm, 모래 포설 00cm, 터파기 사면 1:1.2 등)</span>
+                          </p>
+                        </div>
+                      )}
 {step === 0 && (
                         <div className="mb-3 space-y-1">
                           <Label>검측 위치 (지도)</Label>
@@ -911,7 +902,6 @@ export function PhaseRecorder({
                       )}
                     </div>
                   </div>
-                )}
                 {error && <p className="text-sm text-red-600">{error}</p>}
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" className="flex-1" onClick={() => setEditing(false)}>
