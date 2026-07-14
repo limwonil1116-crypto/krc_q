@@ -299,7 +299,7 @@ export function PhaseRecorder({
   }
 
   function resetTransient() {
-    setEditing(false);
+    setEditing(true);
     setGuideOpen(false);
     setError("");
   }
@@ -396,7 +396,7 @@ export function PhaseRecorder({
         setError(data.error || ("서버 오류 (" + res.status + ")"));
         return;
       }
-      setEditing(false);
+      setEditing(true);
       router.refresh();
     } catch (e) {
       setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
@@ -640,40 +640,19 @@ export function PhaseRecorder({
             </div>
 
             <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-              {step <= 2 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>)}
-              {step >= 3 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>)}
-              <button
-                type="button"
-                className="rounded bg-[#EAF0FB] px-1.5 py-0.5 text-[#0033A0]"
-                onClick={() => setGuideOpen((v) => !v)}
-              >
-                촬영 가이드 보기 {guideOpen ? "▲" : "▼"}
-              </button>
+              {step >= 1 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>)}
+              {step >= 1 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>)}
+              {step === 1 && (<span className="rounded bg-[#EAF0FB] px-1.5 py-0.5 font-semibold text-[#0033A0]">설계도면 사진 첨부</span>)}
+              {step === 2 && (<span className="rounded bg-[#EAF0FB] px-1.5 py-0.5 font-semibold text-[#0033A0]">검측 영상 첨부</span>)}
             </div>
 
 
 
-            {guideOpen && (
-              <div className="mt-2 space-y-2">
-                {GUIDE_IMG.has(p.code) && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`/guides/${p.code.toLowerCase()}.jpg`}
-                    alt={`${p.name} 촬영 예시`}
-                    className="w-full rounded-lg border border-neutral-200"
-                  />
-                )}
-                {p.guideText && (
-                  <p className="whitespace-pre-line rounded-lg bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-600">
-                    {p.guideText}
-                  </p>
-                )}
-              </div>
-            )}
+            {/* 촬영 가이드 제거됨 (안내문구는 상단 뱃지로 대체) */}
 
             <div className="mt-3 space-y-2 border-t border-neutral-100 pt-3">
               <div className="flex flex-wrap items-center gap-2">
-                {step <= 2 && (
+                {step >= 1 && (
                 <label className={uploadBtn}>
                   📷 사진 추가
                   <input
@@ -689,7 +668,7 @@ export function PhaseRecorder({
                   />
                 </label>
                 )}
-                {step >= 3 && (
+                {step >= 1 && (
                 <label className={uploadBtn}>
                   🎬 영상 추가
                   <input
@@ -710,7 +689,7 @@ export function PhaseRecorder({
 
               {list.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {step <= 2 && photos.map((a) => (
+                  {step >= 1 && photos.map((a) => (
                     <div key={a.id} className="relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -728,7 +707,7 @@ export function PhaseRecorder({
                       </button>
                     </div>
                   ))}
-                  {step >= 3 && videos.map((a) => (
+                  {step >= 1 && videos.map((a) => (
                     <div key={a.id} className="relative">
                       <a
                         href={`/api/assets/${a.id}/raw`}
@@ -842,6 +821,7 @@ export function PhaseRecorder({
                           </div>
                         </div>
                       )}
+                      {step > 0 && (
                       <AiWriteButton
                         assetIds={photos.map((a) => a.id)}
                         phaseName={p.name}
@@ -853,6 +833,7 @@ export function PhaseRecorder({
                         currentText={form.textDescription}
                         onApply={(t) => setForm((f) => ({ ...f, textDescription: t }))}
                       />
+                      )}
                       <textarea
                         className={taCls}
                         value={form.textDescription}

@@ -1,0 +1,119 @@
+=== resetTransient ===
+function resetTransient() {
+    setEditing(false);
+    setGuideOpen(false);
+    setError("");
+  }
+
+=== L295~405 ===
+295:       alert("처리 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+296:     } finally {
+297:       setSubmitting(false);
+298:     }
+299:   }
+300: 
+301:   function resetTransient() {
+302:     setEditing(false);
+303:     setGuideOpen(false);
+304:     setError("");
+305:   }
+306:   function changeSubType(id: string) {
+307:     setSubTypeId(id);
+308:     setStep(0);
+309:     resetTransient();
+310:   }
+311:   function changeDate(d: string) {
+312:     setSelectedDate(d);
+313:     setStep(0);
+314:     resetTransient();
+315:   }
+316:   function goStep(idx: number) {
+317:     setStep(Math.min(Math.max(idx, 0), phases.length - 1));
+318:     resetTransient();
+319:   }
+320: 
+321:   // 검측 위치 지도(VWorld 캡처)를 map 타입으로 백그라운드 업로드
+322:   const lastMapRef = useRef<string>("");
+323:   async function uploadMapImage(dataUrl: string) {
+324:     if (!dataUrl || dataUrl === lastMapRef.current) return;
+325:     lastMapRef.current = dataUrl;
+326:     const f1 = phases[0];
+327:     if (!f1) return;
+328:     try {
+329:       const blob = await (await fetch(dataUrl)).blob();
+330:       const file = new File([blob], "location-map.png", { type: "image/png" });
+331:       const fd = new FormData();
+332:       fd.append("siteStructureId", siteStructureId);
+333:       fd.append("subTypeId", subTypeId);
+334:       fd.append("phaseTemplateId", f1.id);
+335:       fd.append("inspectionDate", selectedDate);
+336:       fd.append("assetType", "map");
+337:       fd.append("file", file);
+338:       await fetch("/api/records/assets", { method: "POST", body: fd });
+339:       router.refresh();
+340:     } catch {
+341:       // 조용히 무시 (지도는 보조 자료)
+342:     }
+343:   }
+344: 
+345:   function openEdit(p: Phase) {
+346:     const r = recMap.get(p.id);
+347:     setForm({
+348:       lat: r?.latitude ?? null,
+349:       lng: r?.longitude ?? null,
+350:       address: r?.locationAddress ?? "",
+351:       textDescription: r?.textDescription ?? "",
+352:       inspectionContent: r?.inspectionContent ?? "",
+353:       partFromMain: r?.inspectionPartFromMain != null ? String(r.inspectionPartFromMain) : "",
+354:       partFromSub: r?.inspectionPartFromSub != null ? String(r.inspectionPartFromSub) : "",
+355:       partToMain: r?.inspectionPartToMain != null ? String(r.inspectionPartToMain) : "",
+356:       partToSub: r?.inspectionPartToSub != null ? String(r.inspectionPartToSub) : "",
+357:       notApplicable: r?.notApplicable ?? false,
+358:       notApplicableReason: r?.notApplicableReason ?? "",
+359:     });
+360:     setError("");
+361:     setEditing(true);
+362:   }
+363: 
+364:   async function saveText(p: Phase, i: number) {
+365:     setError("");
+366:     setLoading(true);
+367:     try {
+368:       const res = await fetch("/api/records", {
+369:         method: "POST",
+370:         headers: { "Content-Type": "application/json" },
+371:         body: JSON.stringify({
+372:           siteStructureId,
+373:           subTypeId,
+374:           phaseTemplateId: p.id,
+375:           inspectionDate: selectedDate,
+376:           latitude: i === 0 && typeof form.lat === "number" ? form.lat : null,
+377:           longitude: i === 0 && typeof form.lng === "number" ? form.lng : null,
+378:           locationAddress: i === 0 ? (form.address || null) : null,
+379:           textDescription: form.textDescription,
+380:           notApplicable: form.notApplicable,
+381:           notApplicableReason: form.notApplicableReason,
+382:           inspectionContent: i === 0 ? form.inspectionContent : null,
+383:           inspectionPartFromMain: i === 0 && form.partFromMain !== "" ? Number(form.partFromMain) : null,
+384:           inspectionPartFromSub: i === 0 && form.partFromSub !== "" ? Number(form.partFromSub) : null,
+385:           inspectionPartToMain: i === 0 && form.partToMain !== "" ? Number(form.partToMain) : null,
+386:           inspectionPartToSub: i === 0 && form.partToSub !== "" ? Number(form.partToSub) : null,
+387:         }),
+388:       });
+389:       let data: { ok?: boolean; error?: string } = {};
+390:       try {
+391:         data = await res.json();
+392:       } catch {
+393:         // ignore
+394:       }
+395:       if (!res.ok || !data.ok) {
+396:         setError(data.error || ("서버 오류 (" + res.status + ")"));
+397:         return;
+398:       }
+399:       setEditing(false);
+400:       router.refresh();
+401:     } catch (e) {
+402:       setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+403:     } finally {
+404:       setLoading(false);
+405:     }

@@ -1,0 +1,95 @@
+=== phaseTemplates 스키마 ===
+export const phaseTemplates = pgTable("phase_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  structureTypeId: uuid("structure_type_id").notNull().references(() => structureTypes.id, { onDelete: "cascade" }),
+  code: varchar("code", { length: 50 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  guideText: text("guide_text"),
+  sortOrder: integer("sort_order").notNull(),
+  isRequired: boolean("is_required").notNull().default(true),
+  minPhotoCount: integer("min_photo_count").notNull().default(0),
+  minVideoCount: integer("min_video_count").notNull().default(0),
+  audioRequired: boolean("audio_required").notNull().default(false),
+  textRequired: boolean("text_required").notNull().default(false),
+  allowNotApplicable: boolean("allow_not_applicable").notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+=== structureTypes 스키마 ===
+export const structureTypes = pgTable("structure_types", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  guideText: text("guide_text"),
+  parentId: uuid("parent_id"),
+  isRequiredCheck: boolean("is_required_check").notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+=== siteStructures 스키마 ===
+export const siteStructures = pgTable("site_structures", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
+  structureTypeId: uuid("structure_type_id").notNull().references(() => structureTypes.id),
+  name: varchar("name", { length: 150 }).notNull(),
+  locationDescription: text("location_description"),
+  hasStructure: boolean("has_structure").notNull().default(true),
+  notApplicableReason: text("not_applicable_reason"),
+  status: text("status").$type<"active" | "not_applicable" | "completed" | "archived">().notNull().default("active"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+=== phaseTemplates insert/seed 파일 및 F 코드 ===
+[lib\db\schema.ts]
+  name: varchar("name", { length: 150 }).notNull(),
+  name: varchar("name", { length: 80 }).notNull(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  code: varchar("code", { length: 50 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  name: varchar("name", { length: 150 }).notNull(),
+[app\api\admin\guides\route.ts]
+  // F1~F5 단계 정의는 부모(대분류) phaseTemplates 에서 가져온다
+  code: phaseTemplates.code,
+  name: phaseTemplates.name,
+  // (C) 세부항목의 F1~F5 가이드 + 자료
+  .select({ id: structureTypes.id, name: structureTypes.name, parentId: structureTypes.parentId })
+  code: d.code,
+  name: d.name,
+  return NextResponse.json({ ok: true, sub: { id: sub.id, name: sub.name }, phases, assets });
+  .select({ id: structureTypes.id, name: structureTypes.name, sortOrder: structureTypes.sortOrder })
+  // (A-legacy) 대분류 자체의 F1~F5 (대분류 공통 가이드)
+  name: structureTypes.name,
+  code: structureTypes.code,
+  .select({ name: structureTypes.name })
+  const up0 = await uploadToDrive({ name: driveName, mimeType, buffer, folderPath: folderPath0 });
+  .select({ name: structureTypes.name })
+  const up = await uploadToDrive({ name: driveName, mimeType, buffer, folderPath });
+  .select({ name: phaseTemplates.name, structureTypeId: phaseTemplates.structureTypeId })
+  .select({ name: structureTypes.name })
+  const up = await uploadToDrive({ name: driveName, mimeType, buffer, folderPath });
+[app\client\sites\[id]\structures\[structureId]\page.tsx]
+  name: siteStructures.name,
+  .select({ id: structureTypes.id, name: structureTypes.name, guideText: structureTypes.guideText })
+  code: phaseTemplates.code,
+  name: phaseTemplates.name,
+[app\client\sites\[id]\structures\[structureId]\video\page.tsx]
+  name: siteStructures.name,
+  code: phaseTemplates.code,
+  name: phaseTemplates.name,
+[app\contractor\sites\[id]\structures\[structureId]\page.tsx]
+  name: siteStructures.name,
+  .select({ id: structureTypes.id, name: structureTypes.name, guideText: structureTypes.guideText })
+  code: phaseTemplates.code,
+  name: phaseTemplates.name,
+[app\contractor\sites\[id]\structures\[structureId]\video\page.tsx]
+  name: siteStructures.name,
+  code: phaseTemplates.code,
+  name: phaseTemplates.name,

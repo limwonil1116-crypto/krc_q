@@ -1,0 +1,299 @@
+
+========== 가이드+사진버튼 (L640~715) ==========
+640:             </div>
+641: 
+642:             <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+643:               {step <= 2 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>)}
+644:               {step >= 3 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>)}
+645:               <button
+646:                 type="button"
+647:                 className="rounded bg-[#EAF0FB] px-1.5 py-0.5 text-[#0033A0]"
+648:                 onClick={() => setGuideOpen((v) => !v)}
+649:               >
+650:                 촬영 가이드 보기 {guideOpen ? "▲" : "▼"}
+651:               </button>
+652:             </div>
+653: 
+654: 
+655: 
+656:             {guideOpen && (
+657:               <div className="mt-2 space-y-2">
+658:                 {GUIDE_IMG.has(p.code) && (
+659:                   // eslint-disable-next-line @next/next/no-img-element
+660:                   <img
+661:                     src={`/guides/${p.code.toLowerCase()}.jpg`}
+662:                     alt={`${p.name} 촬영 예시`}
+663:                     className="w-full rounded-lg border border-neutral-200"
+664:                   />
+665:                 )}
+666:                 {p.guideText && (
+667:                   <p className="whitespace-pre-line rounded-lg bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-600">
+668:                     {p.guideText}
+669:                   </p>
+670:                 )}
+671:               </div>
+672:             )}
+673: 
+674:             <div className="mt-3 space-y-2 border-t border-neutral-100 pt-3">
+675:               <div className="flex flex-wrap items-center gap-2">
+676:                 {step <= 2 && (
+677:                 <label className={uploadBtn}>
+678:                   📷 사진 추가
+679:                   <input
+680:                     type="file"
+681:                     accept="image/*"
+682:                     className="hidden"
+683:                     disabled={uploading}
+684:                     onChange={(e) => {
+685:                       const f = e.target.files?.[0];
+686:                       if (f) setEditTarget({ phaseId: p.id, file: f });
+687:                       e.target.value = "";
+688:                     }}
+689:                   />
+690:                 </label>
+691:                 )}
+692:                 {step >= 3 && (
+693:                 <label className={uploadBtn}>
+694:                   🎬 영상 추가
+695:                   <input
+696:                     type="file"
+697:                     accept="video/*"
+698:                     className="hidden"
+699:                     disabled={uploading}
+700:                     onChange={(e) => {
+701:                       const f = e.target.files?.[0];
+702:                       if (f) upload(p.id, "video", f);
+703:                       e.target.value = "";
+704:                     }}
+705:                   />
+706:                 </label>
+707:                 )}
+708:                 {uploading && <span className="text-xs text-neutral-500">업로드 중...</span>}
+709:               </div>
+710: 
+711:               {list.length > 0 && (
+712:                 <div className="flex flex-wrap gap-2">
+713:                   {step <= 2 && photos.map((a) => (
+714:                     <div key={a.id} className="relative">
+715:                       {/* eslint-disable-next-line @next/next/no-img-element */}
+
+========== 영상+텍스트편집 (L715~875) ==========
+715:                       {/* eslint-disable-next-line @next/next/no-img-element */}
+716:                       <img
+717:                         src={`/api/assets/${a.id}/raw`}
+718:                         alt={a.fileName}
+719:                         className="h-16 w-16 rounded-md border border-neutral-200 object-cover"
+720:                       />
+721:                       <button
+722:                         type="button"
+723:                         onClick={() => removeAsset(a.id)}
+724:                         className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
+725:                         aria-label="삭제"
+726:                       >
+727:                         ×
+728:                       </button>
+729:                     </div>
+730:                   ))}
+731:                   {step >= 3 && videos.map((a) => (
+732:                     <div key={a.id} className="relative">
+733:                       <a
+734:                         href={`/api/assets/${a.id}/raw`}
+735:                         target="_blank"
+736:                         rel="noreferrer"
+737:                         className="flex h-16 w-16 flex-col items-center justify-center rounded-md border border-neutral-200 bg-neutral-900 text-white"
+738:                       >
+739:                         <span className="text-lg leading-none">▶</span>
+740:                         <span className="mt-0.5 text-[9px]">영상</span>
+741:                       </a>
+742:                       <button
+743:                         type="button"
+744:                         onClick={() => removeAsset(a.id)}
+745:                         className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
+746:                         aria-label="삭제"
+747:                       >
+748:                         ×
+749:                       </button>
+750:                     </div>
+751:                   ))}
+752:                 </div>
+753:               )}
+754:             </div>
+755: 
+756:             {editing ? (
+757:               <div className="mt-3 space-y-3 border-t border-neutral-100 pt-3">
+758:                 <label className="flex items-center gap-2 text-sm">
+759:                   <input
+760:                     type="checkbox"
+761:                     checked={form.notApplicable}
+762:                     onChange={(e) => setForm((f) => ({ ...f, notApplicable: e.target.checked }))}
+763:                   />
+764:                   이 단계는 해당 없음
+765:                 </label>
+766:                 {form.notApplicable ? (
+767:                   <div className="space-y-1">
+768:                     <Label>해당없음 사유</Label>
+769:                     <textarea
+770:                       className={taCls}
+771:                       value={form.notApplicableReason}
+772:                       onChange={(e) => setForm((f) => ({ ...f, notApplicableReason: e.target.value }))}
+773:                     />
+774:                   </div>
+775:                 ) : (
+776:                   <div className="space-y-3">
+777:                     {step === 0 && (
+778:                       <>
+779:                         <div className="space-y-1">
+780:                           <Label>검측내용</Label>
+781:                           <input
+782:                             className={inpCls}
+783:                             value={form.inspectionContent}
+784:                             onChange={(e) => setForm((f) => ({ ...f, inspectionContent: e.target.value }))}
+785:                             placeholder="예: 00공사"
+786:                           />
+787:                         </div>
+788:                         <div className="space-y-1">
+789:                           <Label>검측부위</Label>
+790:                           <div className="flex flex-wrap items-center gap-1 text-base">
+791:                             <span className="font-semibold text-neutral-600">NO.</span>
+792:                             <input
+793:                               className={numCls}
+794:                               inputMode="numeric"
+795:                               value={form.partFromMain}
+796:                               onChange={(e) => setForm((f) => ({ ...f, partFromMain: e.target.value.replace(/[^0-9]/g, "") }))}
+797:                             />
+798:                             <span className="font-semibold">+</span>
+799:                             <input
+800:                               className={numCls}
+801:                               inputMode="numeric"
+802:                               value={form.partFromSub}
+803:                               onChange={(e) => setForm((f) => ({ ...f, partFromSub: e.target.value.replace(/[^0-9]/g, "") }))}
+804:                             />
+805:                             <span className="px-1 font-bold text-neutral-500">~</span>
+806:                             <span className="font-semibold text-neutral-600">NO.</span>
+807:                             <input
+808:                               className={numCls}
+809:                               inputMode="numeric"
+810:                               value={form.partToMain}
+811:                               onChange={(e) => setForm((f) => ({ ...f, partToMain: e.target.value.replace(/[^0-9]/g, "") }))}
+812:                             />
+813:                             <span className="font-semibold">+</span>
+814:                             <input
+815:                               className={numCls}
+816:                               inputMode="numeric"
+817:                               value={form.partToSub}
+818:                               onChange={(e) => setForm((f) => ({ ...f, partToSub: e.target.value.replace(/[^0-9]/g, "") }))}
+819:                             />
+820:                           </div>
+821:                           <p className="text-xs text-neutral-400">예: NO.0+00 ~ NO.0+00 (측점 구간)</p>
+822:                         </div>
+823:                       </>
+824:                     )}
+825:                     <div className="space-y-1">
+826:                       <Label>설명내용</Label>
+827: {step === 0 && (
+828:                         <div className="mb-3 space-y-1">
+829:                           <Label>검측 위치 (지도)</Label>
+830:                           <KakaoMapPicker
+831:                             value={{ lat: form.lat, lng: form.lng, address: form.address }}
+832:                             onChange={(v) => setForm((f) => ({ ...f, lat: v.lat, lng: v.lng, address: v.address }))}
+833:                             onCapture={(dataUrl) => uploadMapImage(dataUrl)}
+834:                           />
+835:                           <div className="mt-3 space-y-1">
+836:                             <Label>검측 위치 (주소)</Label>
+837:                             <Input
+838:                               value={form.address}
+839:                               onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+840:                               placeholder="지도를 클릭하거나 주소를 검색하면 자동 입력됩니다"
+841:                             />
+842:                           </div>
+843:                         </div>
+844:                       )}
+845:                       <AiWriteButton
+846:                         assetIds={photos.map((a) => a.id)}
+847:                         phaseName={p.name}
+848:                         phaseCode={p.code}
+849:                         structureTypeName={typeName}
+850:                         subTypeName={subTypes.find((s) => s.id === subTypeId)?.name || ""}
+851:                         subTypeId={subTypeId}
+852:                         guideText={subTypes.find((s) => s.id === subTypeId)?.guideText || p.guideText || ""}
+853:                         currentText={form.textDescription}
+854:                         onApply={(t) => setForm((f) => ({ ...f, textDescription: t }))}
+855:                       />
+856:                       <textarea
+857:                         className={taCls}
+858:                         value={form.textDescription}
+859:                         onChange={(e) => setForm((f) => ({ ...f, textDescription: e.target.value }))}
+860:                       />
+861:                     </div>
+862:                   </div>
+863:                 )}
+864:                 {error && <p className="text-sm text-red-600">{error}</p>}
+865:                 <div className="flex gap-2">
+866:                   <Button type="button" variant="outline" className="flex-1" onClick={() => setEditing(false)}>
+867:                     취소
+868:                   </Button>
+869:                   <ActionButton className="flex-1" onClick={() => saveText(p, step)} disabled={loading}>
+870:                     {loading ? "저장 중..." : "기록 저장"}
+871:                   </ActionButton>
+872:                 </div>
+873:               </div>
+874:             ) : (
+875:               <div className="mt-3 flex gap-2">
+
+========== 제출영역 (L905~960) ==========
+905:             )}
+906:           </div>
+907: 
+908:           {/* 제출 영역 (마지막 단계 또는 기록 존재 시) */}
+909:           {hasCurrent && (isLast || submittedCurrent) && (
+910:             <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+911:               {submittedCurrent ? (
+912:                 <div className="flex items-center justify-between gap-2">
+913:                   <span className="font-semibold text-green-700">✓ 제출됨 ({selectedDate})</span>
+914:                   <Button type="button" variant="outline" onClick={() => submitInspection("cancel")} disabled={submitting}>
+915:                     {submitting ? "처리 중..." : "제출 취소"}
+916:                   </Button>
+917:                 </div>
+918:               ) : (
+919:                 <ActionButton className="w-full" onClick={() => setConsentOpen(true)} disabled={submitting}>
+920:                   {submitting ? "제출 중..." : `이 검측일자(${selectedDate}) 제출`}
+921:                 </ActionButton>
+922:               )}
+923:             </div>
+924:           )}
+925:         </>
+926:       )}
+927:       {consentOpen && (
+928:         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setConsentOpen(false)}>
+929:           <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+930:             <h3 className="text-center text-base font-bold text-[#002A80]">[ 검측 자료 등록 전 필수 확인 ]</h3>
+931:             <p className="mt-3 text-sm leading-relaxed text-neutral-700">
+932:               시공사가 등록하는 본 영상·사진은 향후 시설물의 품질 보증 및 책임 시공을 증명하는 객관적 데이터베이스로 보관됩니다.
+933:             </p>
+934:             <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-neutral-700">
+935:               <li>영상 내/외의 모든 부실시공 및 시방서 미준수에 대한 책임</li>
+936:               <li>현장 오인 유도, 영상 조작 및 은폐로 인한 문제 발생 시 책임</li>
+937:               <li>영상에 담기지 않은 사각지대의 구조적 결함에 대한 책임</li>
+938:             </ol>
+939:             <p className="mt-3 rounded-md bg-neutral-50 p-2.5 text-xs leading-relaxed text-neutral-600">
+940:               본 영상의 등록으로 발생하는 시설물의 품질·안전 및 법적 책임은 전적으로 시공사에 있으며, 발주청은 사후 검증 및 원인 규명을 위한 데이터 보관 역할만을 수행합니다.
+941:             </p>
+942:             <div className="mt-4 flex gap-2">
+943:               <button
+944:                 type="button"
+945:                 onClick={() => setConsentOpen(false)}
+946:                 className="flex-1 rounded-md border border-neutral-300 px-4 py-2.5 text-sm font-semibold text-neutral-600"
+947:               >
+948:                 취소
+949:               </button>
+950:               <button
+951:                 type="button"
+952:                 onClick={() => submitInspection("submit")}
+953:                 disabled={submitting}
+954:                 className="flex-1 rounded-md bg-[#002A80] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+955:               >
+956:                 {submitting ? "제출 중..." : "확인했으며, 동의 후 제출합니다"}
+957:               </button>
+958:             </div>
+959:           </div>
+960:         </div>

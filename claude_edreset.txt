@@ -1,0 +1,25 @@
+L217: const [editing, setEditing] = useState(true); // 텍스트 기록 작성 모드 (기본 열림)
+L302: setEditing(false);
+L361: setEditing(true);
+L399: setEditing(false);
+L866: <Button type="button" variant="outline" className="flex-1" onClick={() => setEditing(false)}>
+
+=== function goStep ===
+function goStep(idx: number) {
+    setStep(Math.min(Math.max(idx, 0), phases.length - 1));
+    resetTransient();
+  }
+
+=== function changeDate ===
+function changeDate(d: string) {
+    setSelectedDate(d);
+    setStep(0);
+    resetTransient();
+  }
+
+=== function changeSub ===
+function changeSubType(id: string) {
+    setSubTypeId(id);
+    setStep(0);
+    resetTransient();
+  }
