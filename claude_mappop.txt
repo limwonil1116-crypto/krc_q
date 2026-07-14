@@ -1,0 +1,16 @@
+[components\onboarding-form.tsx]
+  L169: {loading ? "가입 처리 중..." : "가입 완료"}
+[components\kit\busy-overlay.tsx]
+  L114: <div className="text-base font-bold text-[#0033A0]">처리 중입니다…</div>
+  L115: <div className="text-xs text-neutral-500">잠시만 기다려 주세요</div>
+[components\record\phase-recorder.tsx]
+  L295: alert("처리 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+  L896: {submitting ? "처리 중..." : "제출 취소"}
+[components\site\site-form.tsx]
+  L387: {logoBusy ? "처리 중..." : logoName ? "로고 변경" : "로고 업로드"}
+[app\api\signup\route.ts]
+  L65: return NextResponse.json({ error: "가입 처리 중 오류가 발생했습니다." }, { status: 500 });
+
+=== kakao-map-picker.tsx (길이 7730) ===
+[onCapture] 'll; address: string };\n\nexport function KakaoMapPicker({\n  value,\n  onChange,\n  onCapture,\n}: {\n  value: Value;\n  onChange: (v: { lat: number; lng: number; address: string }) => vo'
+[캡처] '/input";\nimport { PrimaryButton } from "@/components/kit/buttons";\n// VWorld 지도 캡처 테스트\n\ndeclare global {\n  interface Window {\n    kakao: any;\n  }\n}\n\ntype Value = { lat: number | nu'

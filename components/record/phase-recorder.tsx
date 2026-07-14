@@ -220,6 +220,7 @@ export function PhaseRecorder({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
+  const [mapCapturing, setMapCapturing] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     textDescription: "",
@@ -325,6 +326,7 @@ export function PhaseRecorder({
     lastMapRef.current = dataUrl;
     const f1 = phases[0];
     if (!f1) return;
+    setMapCapturing(true);
     try {
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], "location-map.png", { type: "image/png" });
@@ -339,6 +341,8 @@ export function PhaseRecorder({
       router.refresh();
     } catch {
       // 조용히 무시 (지도는 보조 자료)
+    } finally {
+      setMapCapturing(false);
     }
   }
 
@@ -640,9 +644,9 @@ export function PhaseRecorder({
             </div>
 
             <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-              {step >= 1 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>)}
+              {step === 1 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">사진 {photos.length}</span>)}
               {step >= 1 && (<span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">영상 {videos.length}</span>)}
-              {step === 1 && (<span className="rounded bg-[#EAF0FB] px-1.5 py-0.5 font-semibold text-[#0033A0]">설계도면 사진 첨부</span>)}
+              {step === 1 && (<span className="rounded bg-[#EAF0FB] px-1.5 py-0.5 font-semibold text-[#0033A0]">설계도면 사진 또는 영상 첨부</span>)}
               {step === 2 && (<span className="rounded bg-[#EAF0FB] px-1.5 py-0.5 font-semibold text-[#0033A0]">검측 영상 첨부</span>)}
             </div>
 
@@ -652,7 +656,7 @@ export function PhaseRecorder({
 
             <div className="mt-3 space-y-2 border-t border-neutral-100 pt-3">
               <div className="flex flex-wrap items-center gap-2">
-                {step >= 1 && (
+                {step === 1 && (
                 <label className={uploadBtn}>
                   📷 사진 추가
                   <input
@@ -689,7 +693,7 @@ export function PhaseRecorder({
 
               {list.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {step >= 1 && photos.map((a) => (
+                  {step === 1 && photos.map((a) => (
                     <div key={a.id} className="relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -802,7 +806,7 @@ export function PhaseRecorder({
                       </>
                     )}
                     <div className="space-y-1">
-                      <Label>설명내용</Label>
+                      {step > 0 && <Label>설명내용</Label>}
 {step === 0 && (
                         <div className="mb-3 space-y-1">
                           <Label>검측 위치 (지도)</Label>
@@ -811,6 +815,12 @@ export function PhaseRecorder({
                             onChange={(v) => setForm((f) => ({ ...f, lat: v.lat, lng: v.lng, address: v.address }))}
                             onCapture={(dataUrl) => uploadMapImage(dataUrl)}
                           />
+                          {mapCapturing && (
+                            <div className="mt-2 flex items-center gap-2 rounded-lg bg-[#EAF0FB] px-3 py-2 text-sm text-[#0033A0]">
+                              <span className="motion-safe:animate-pulse">📍</span>
+                              <span className="font-semibold">주소를 추출하여 동영상에 입력중입니다…</span>
+                            </div>
+                          )}
                           <div className="mt-3 space-y-1">
                             <Label>검측 위치 (주소)</Label>
                             <Input
@@ -834,11 +844,13 @@ export function PhaseRecorder({
                         onApply={(t) => setForm((f) => ({ ...f, textDescription: t }))}
                       />
                       )}
+                      {step > 0 && (
                       <textarea
                         className={taCls}
                         value={form.textDescription}
                         onChange={(e) => setForm((f) => ({ ...f, textDescription: e.target.value }))}
                       />
+                      )}
                     </div>
                   </div>
                 )}
