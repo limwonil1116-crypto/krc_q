@@ -1,0 +1,9 @@
+=== video-composer autoSave 전달 ===
+'}\n            siteStructureId={siteStructureId}\n            canSave={!!siteStructureId}\n            autoSave={!!siteStructureId && (submittedDates.includes(date) || (autosaveOnLoad && date === initialDate))}\n          />\n        </div>\n      )}\n    </div>\n  );\n}\n'
+[exporter] autoSave,
+[exporter] autoSave?: boolean;
+[exporter] if (autoSave && canSave && siteStructureId && slides.length > 0 && !autoRan.current) {
+[exporter] }, [autoSave, canSave, siteStructureId, slides.length]);
+
+=== exporter autoSave 트리거 ===
+'ss] = useState(0);\n  const [msg, setMsg] = useState("");\n  const cancelRef = useRef(false);\n  const autoRan = useRef(false);\n\n  useEffect(() => {\n    if (autoSave && canSave && siteStructureId && slides.length > 0 && !autoRan.current) {\n      autoRan.current = true;\n      // 자동: 다운로드 없이 드라이브 저장만\n      exportVideo(true, { download: false, upload: tr'

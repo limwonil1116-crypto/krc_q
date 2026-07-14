@@ -146,10 +146,12 @@ export function VideoComposer({
         byPhase.set(a.phaseTemplateId, arr);
       });
     const out: Slide[] = [{ kind: "title" }];
-    // 검측 위치(F1에 저장된 위도/경도/주소)가 있으면 위치 슬라이드 추가
+
+    // 위치 슬라이드(F1 지도/내용) 미리 구성 -> F1 간지 뒤에 삽입
     const locRec = records.find(
       (r) => r.inspectionDate === date && typeof r.latitude === "number" && typeof r.longitude === "number"
     );
+    let locationSlide: Slide | null = null;
     if (locRec && typeof locRec.latitude === "number" && typeof locRec.longitude === "number") {
       const _pf = locRec.inspectionPartFromMain != null || locRec.inspectionPartFromSub != null
         ? `NO.${locRec.inspectionPartFromMain ?? 0}+${String(locRec.inspectionPartFromSub ?? 0).padStart(2, "0")}`
@@ -159,7 +161,7 @@ export function VideoComposer({
         : "";
       const _part = _pf && _pt ? `${_pf} ~ ${_pt}` : (_pf || _pt || "");
       const _mapAsset = assets.find((a) => a.inspectionDate === date && a.assetType === "map");
-      out.push({
+      locationSlide = {
         kind: "location",
         address: locRec.locationAddress || "",
         lat: locRec.latitude,
@@ -167,21 +169,26 @@ export function VideoComposer({
         content: locRec.inspectionContent || null,
         part: _part || null,
         mapSrc: _mapAsset ? `/api/assets/${_mapAsset.id}/raw` : null,
-      });
+      };
     }
-    [...phases]
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .forEach((p, i) => {
-        const r = recMap.get(p.id);
-        const list = byPhase.get(p.id) || [];
-        const photos = list.filter((a) => a.assetType === "photo");
-        const videos = list.filter((a) => a.assetType === "video");
-        if (list.length > 0 || (r && r.textDescription)) {
-          out.push({ kind: "section", label: `${i + 1}. ${p.name}`, text: r?.textDescription ?? null });
-        }
-        photos.forEach((a) => out.push({ kind: "image", src: `/api/assets/${a.id}/raw`, caption: p.name }));
-        videos.forEach((a) => out.push({ kind: "video", src: `/api/assets/${a.id}/raw`, caption: p.name }));
-      });
+
+    const sortedPhases = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
+    sortedPhases.forEach((p, i) => {
+      const r = recMap.get(p.id);
+      const list = byPhase.get(p.id) || [];
+      const photos = list.filter((a) => a.assetType === "photo");
+      const videos = list.filter((a) => a.assetType === "video");
+      const isFirst = i === 0; // F1(공종종류)
+      // F1 은 자료가 없어도 간지 + 위치 슬라이드를 항상 노출
+      if (isFirst) {
+        out.push({ kind: "section", label: `${i + 1}. ${p.name}`, text: r?.textDescription ?? null });
+        if (locationSlide) out.push(locationSlide); // 공종종류 간지 뒤에 위치
+      } else if (list.length > 0 || (r && r.textDescription)) {
+        out.push({ kind: "section", label: `${i + 1}. ${p.name}`, text: r?.textDescription ?? null });
+      }
+      photos.forEach((a) => out.push({ kind: "image", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+      videos.forEach((a) => out.push({ kind: "video", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+    });
     return out;
   }, [date, phases, records, assets]);
 
@@ -505,7 +512,7 @@ export function VideoComposer({
             fileBase={`KRC_${meta.structureName || "record"}`}
             siteStructureId={siteStructureId}
             canSave={!!siteStructureId}
-            autoSave={!!siteStructureId && (submittedDates.includes(date) || (autosaveOnLoad && date === initialDate))}
+            autoSave={!!siteStructureId && autosaveOnLoad && date === initialDate}
           />
         </div>
       )}

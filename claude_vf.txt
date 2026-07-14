@@ -1,0 +1,68 @@
+=== slides useMemo 전체 ===
+const slides = useMemo<Slide[]>(() => {
+    if (!date) return [];
+    const recMap = new Map(records.filter((r) => r.inspectionDate === date).map((r) => [r.phaseTemplateId, r]));
+    const byPhase = new Map<string, Asset[]>();
+    assets
+      .filter((a) => a.inspectionDate === date)
+      .forEach((a) => {
+        const arr = byPhase.get(a.phaseTemplateId) || [];
+        arr.push(a);
+        byPhase.set(a.phaseTemplateId, arr);
+      });
+    const out: Slide[] = [{ kind: "title" }];
+    // 검측 위치(F1에 저장된 위도/경도/주소)가 있으면 위치 슬라이드 추가
+    const locRec = records.find(
+      (r) => r.inspectionDate === date && typeof r.latitude === "number" && typeof r.longitude === "number"
+    );
+    if (locRec && typeof locRec.latitude === "number" && typeof locRec.longitude === "number") {
+      const _pf = locRec.inspectionPartFromMain != null || locRec.inspectionPartFromSub != null
+        ? `NO.${locRec.inspectionPartFromMain ?? 0}+${String(locRec.inspectionPartFromSub ?? 0).padStart(2, "0")}`
+        : "";
+      const _pt = locRec.inspectionPartToMain != null || locRec.inspectionPartToSub != null
+        ? `NO.${locRec.inspectionPartToMain ?? 0}+${String(locRec.inspectionPartToSub ?? 0).padStart(2, "0")}`
+        : "";
+      const _part = _pf && _pt ? `${_pf} ~ ${_pt}` : (_pf || _pt || "");
+      const _mapAsset = assets.find((a) => a.inspectionDate === date && a.assetType === "map");
+      out.push({
+        kind: "location",
+        address: locRec.locationAddress || "",
+        lat: locRec.latitude,
+        lng: locRec.longitude,
+        content: locRec.inspectionContent || null,
+        part: _part || null,
+        mapSrc: _mapAsset ? `/api/assets/${_mapAsset.id}/raw` : null,
+      });
+    }
+    [...phases]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .forEach((p, i) => {
+        const r = recMap.get(p.id);
+        const list = byPhase.get(p.id) || [];
+        const photos = list.filter((a) => a.assetType === "photo");
+        const videos = list.filter((a) => a.assetType === "video");
+        if (list.length > 0 || (r && r.textDescription)) {
+          out.push({ kind: "section", label: `${i + 1}. ${p.name}`, text: r?.textDescription ?? null });
+        }
+        photos.forEach((a) => out.push({ kind: "image", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+        videos.forEach((a) => out.push({ kind: "video", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+      });
+    return out;
+  }, [date, phases, records, assets]);
+
+=== Slide 타입 ===
+type Slide =
+  | { kind: "title" }
+  | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null; mapSrc: string | null }
+  | { kind: "section"; label: string; text: string | null }
+  | { kind: "image"; src: string; caption: string }
+  | { kind: "video"; src: string; caption: string };
+
+=== autoSave / 자동녹화 ===
+[autoSave] autoSave={!!siteStructureId && (submittedDates.includes(date) || (autosaveOnLoad && date === initialDate))}
+[autosaveOnLoad] autosaveOnLoad = false,
+[autosaveOnLoad] autosaveOnLoad?: boolean;
+[autosaveOnLoad] autoSave={!!siteStructureId && (submittedDates.includes(date) || (autosaveOnLoad && date === initialDate))}
+[submittedDates] submittedDates = [],
+[submittedDates] submittedDates?: string[];
+[submittedDates] autoSave={!!siteStructureId && (submittedDates.includes(date) || (autosaveOnLoad && date === initialDate))}
