@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray, or } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { constructionSites } from "@/lib/db/schema";
+import { constructionSites, siteParticipants } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
 import { ActionButton } from "@/components/kit/buttons";
 import { SitesTable } from "@/components/site/sites-table";
@@ -13,12 +13,25 @@ export default async function Page() {
   const session = await auth();
   const userId = session?.user?.id;
   const orgId = userId ? await getMyOrgId(userId) : null;
-  const raw = orgId
+  // 내가 참여자로 초대된 현장 id
+  const invitedRows = userId
     ? await db
-        .select()
-        .from(constructionSites)
-        .where(eq(constructionSites.contractorOrgId, orgId))
-        .orderBy(desc(constructionSites.createdAt))
+        .select({ siteId: siteParticipants.siteId })
+        .from(siteParticipants)
+        .where(eq(siteParticipants.userId, userId))
+    : [];
+  const invitedIds = invitedRows.map((r) => r.siteId);
+  // 내 조직 현장 OR 초대된 현장
+  const cond =
+    orgId && invitedIds.length > 0
+      ? or(eq(constructionSites.contractorOrgId, orgId), inArray(constructionSites.id, invitedIds))
+      : orgId
+      ? eq(constructionSites.contractorOrgId, orgId)
+      : invitedIds.length > 0
+      ? inArray(constructionSites.id, invitedIds)
+      : null;
+  const raw = cond
+    ? await db.select().from(constructionSites).where(cond).orderBy(desc(constructionSites.createdAt))
     : [];
   const sites = raw.map((s) => ({
     id: s.id,
