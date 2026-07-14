@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { constructionSites, siteStructures, constructionRecords, recordAssets } from "@/lib/db/schema";
+import { constructionSites, siteStructures, constructionRecords, recordAssets, siteParticipants } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
 import { uploadToDrive, deleteFromDrive } from "@/lib/drive";
 
@@ -15,7 +15,15 @@ async function ownsSite(userId: string, siteId: string) {
   const site = rows[0];
   if (!site) return { ok: false as const, site: null };
   const orgId = await getMyOrgId(userId);
-  const owns = site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+  let owns = site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+  if (!owns) {
+    const _part = await db
+      .select({ id: siteParticipants.id })
+      .from(siteParticipants)
+      .where(and(eq(siteParticipants.siteId, siteId), eq(siteParticipants.userId, userId)))
+      .limit(1);
+    owns = !!_part[0];
+  }
   return { ok: owns, site };
 }
 

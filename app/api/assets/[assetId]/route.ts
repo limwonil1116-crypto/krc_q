@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { constructionSites, constructionRecords, recordAssets } from "@/lib/db/schema";
+import { constructionSites, constructionRecords, recordAssets, siteParticipants } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
 import { deleteFromDrive } from "@/lib/drive";
 
@@ -16,7 +16,16 @@ async function ownsSite(userId: string, siteId: string) {
   const _role = _sess?.user?.role;
   if (_role === "client" || _role === "admin") return true;
   const orgId = await getMyOrgId(userId);
-  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+  if (site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId))) {
+    return true;
+  }
+  // 참여자로 초대된 경우 허용
+  const _part = await db
+    .select({ id: siteParticipants.id })
+    .from(siteParticipants)
+    .where(and(eq(siteParticipants.siteId, siteId), eq(siteParticipants.userId, userId)))
+    .limit(1);
+  return !!_part[0];
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ assetId: string }> }) {

@@ -11,6 +11,7 @@ import {
   constructionRecords,
   recordAssets,
   users,
+  siteParticipants,
 } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
 
@@ -29,7 +30,16 @@ async function ownsSite(userId: string, siteId: string) {
   const _role = _sess?.user?.role;
   if (_role === "client" || _role === "admin") return true;
   const orgId = await getMyOrgId(userId);
-  return site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+  if (site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId))) {
+    return true;
+  }
+  // 참여자로 초대된 경우 허용
+  const _part = await db
+    .select({ id: siteParticipants.id })
+    .from(siteParticipants)
+    .where(and(eq(siteParticipants.siteId, siteId), eq(siteParticipants.userId, userId)))
+    .limit(1);
+  return !!_part[0];
 }
 
 // GET: 특정 구조물의 검측 요청 목록 또는 특정 요청 상세
