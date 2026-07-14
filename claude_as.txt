@@ -1,0 +1,61 @@
+=== gen216 useEffect (되돌릴 대상) ===
+'\n\n  // 단계/날짜/세부항목이 바뀌면 저장된 기록을 자동으로 form 에 불러오기\n  useEffect(() => {\n    const cur = phases[step];\n    if (!cur) return;\n    const rec = recMap.get(cur.id);\n    setForm({\n      lat: rec?.latitude ?? null,\n      lng: rec?.longitude ?? null,\n      address: rec?.locationAddress ?? "",\n      textDescription: rec?.textDescription ?? "",\n      inspectionContent: rec?.inspectionContent ?? "",\n      partFromMain: rec?.inspectionPartFromMain != null ? String(rec.inspectionPartFromMain) : "",\n      partFromSub: rec?.inspectionPartFromSub != null ? String(rec.inspectionPartFromSub) : "",\n      partToMain: rec?.inspectionPartToMain != null ? String(rec.inspectionPartToMain) : "",\n      partToSub: rec?.inspectionPartToSub != null ? String(rec.inspectionPartToSub) : "",\n      notApplicable: rec?.notApplicable ?? false,\n      notApplicableReason: rec?.notApplicableReason ?? "",\n    });\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, [step, selectedDate, subTypeId, records]);'
+
+=== saveText 전체 ===
+async function saveText(p: Phase, i: number) {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteStructureId,
+          subTypeId,
+          phaseTemplateId: p.id,
+          inspectionDate: selectedDate,
+          latitude: i === 0 && typeof form.lat === "number" ? form.lat : null,
+          longitude: i === 0 && typeof form.lng === "number" ? form.lng : null,
+          locationAddress: i === 0 ? (form.address || null) : null,
+          textDescription: form.textDescription,
+          notApplicable: form.notApplicable,
+          notApplicableReason: form.notApplicableReason,
+          inspectionContent: i === 0 ? form.inspectionContent : null,
+          inspectionPartFromMain: i === 0 && form.partFromMain !== "" ? Number(form.partFromMain) : null,
+          inspectionPartFromSub: i === 0 && form.partFromSub !== "" ? Number(form.partFromSub) : null,
+          inspectionPartToMain: i === 0 && form.partToMain !== "" ? Number(form.partToMain) : null,
+          inspectionPartToSub: i === 0 && form.partToSub !== "" ? Number(form.partToSub) : null,
+        }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        setError(data.error || ("서버 오류 (" + res.status + ")"));
+        return;
+      }
+      setEditing(true);
+      router.refresh();
+    } catch (e) {
+      setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+=== state ===
+const [step, setStep] = useState(0);
+const [selectedDate, setSelectedDate] = useState<string>(todayStr());
+const [subTypeId, setSubTypeId] = useState<string>(subTypes[0]?.id || "");
+const [form, setForm] = useState({
+    textDescription: "",
+    inspectionContent: "",
+    partFromM
+const [loading, setLoading] = useState(false);
+const [editing, setEditing] = useState(true);
+
+=== react import ===
+import { useEffect, useMemo, useRef, useState } from "react";

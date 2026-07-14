@@ -1,0 +1,309 @@
+=== gen216 자동로드 useEffect ===
+useEffect(() => {
+    if (selected) {
+      const d = parseYmd(selected);
+      setVy(d.getFullYear());
+      setVm(d.getMonth());
+    }
+  }, [selected]);
+
+  const startWeekday = new Date(vy, vm, 1).getDay();
+  const daysInMonth = new Date(vy, vm + 1, 0).getDate();
+  const today = todayStr();
+  const cells: (string | null)[] = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(ymd(new Date(vy, vm, d)));
+
+  function prevMonth() {
+    if (vm === 0) {
+      setVy(vy - 1);
+      setVm(11);
+    } else setVm(vm - 1);
+  }
+  function nextMonth() {
+    if (vm === 11) {
+      setVy(vy + 1);
+      setVm(0);
+    } else setVm(vm + 1);
+  }
+
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <button type="button" onClick={prevMonth} className="rounded-md px-3 py-1 text-lg text-[#0033A0] hover:bg-neutral-100">
+          ◀
+        </button>
+        <div className="font-semibold text-[#0033A0]">
+          {vy}년 {vm + 1}월
+        </div>
+        <button type="button" onClick={nextMonth} className="rounded-md px-3 py-1 text-lg text-[#0033A0] hover:bg-neutral-100">
+          ▶
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+        {WD.map((w, i) => (
+          <div key={w} className={i === 0 ? "text-red-500" : i === 6 ? "text-blue-500" : "text-neutral-400"}>
+            {w}
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {cells.map((c, i) =>
+          c === null ? (
+            <div key={i} />
+          ) : (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelect(c)}
+              className={
+                "flex min-h-[56px] flex-col gap-1 rounded-lg p-1 text-left hover:bg-neutral-100 " +
+                (c === selected ? "ring-2 ring-[#0033A0]" : "")
+              }
+            >
+              <span
+                className={
+                  "flex h-5 w-5 items-center justify-center rounded-full text-[11px] " +
+                  (c === selected
+                    ? "bg-[#0033A0] font-bold text-white"
+                    : c === today
+                    ? "font-bold text-[#0033A0]"
+                    : "text-neutral-700")
+                }
+              >
+                {Number(c.split("-")[2])}
+              </span>
+              {submitted.has(c) ? (
+                <span className="flex items-center gap-1 truncate rounded bg-green-100 px-1 py-0.5 text-[9px] font-semibold text-green-700">
+                  <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-green-500" />
+                  제출완료
+                </span>
+              ) : marked.has(c) ? (
+                <span className="flex items-center gap-1 truncate rounded bg-orange-100 px-1 py-0.5 text-[9px] font-semibold text-orange-700">
+                  <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-orange-500" />
+                  기록중
+                </span>
+              ) : null}
+            </button>
+          )
+        )}
+      </div>
+      <div className="mt-2 flex items-center justify-center gap-3 text-xs text-neutral-500">
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded-full bg-orange-500" /> 기록중
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> 제출완료
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function PhaseRecorder({
+  siteStructureId,
+  structureName,
+  typeName,
+  subTypes,
+  phases,
+  records,
+  assets,
+  videoHref,
+  inspectionHref,
+}: {
+  siteStructureId: string;
+  structureName: string;
+  typeName: string;
+  subTypes: SubType[];
+  phases: Phase[];
+  records: Rec[];
+  assets: Asset[];
+  videoHref: string;
+  inspectionHref?: string;
+}) {
+  const router = useRouter();
+
+  const [subTypeId, setSubTypeId] = useState<string>(subTypes[0]?.id || "");
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr());
+  const [editTarget, setEditTarget] = useState<{ phaseId: string; file: File } | null>(null);
+  const [step, setStep] = useState(0); // 현재 단계 탭 인덱스
+  const [editing, setEditing] = useState(true); // 텍스트 기록 작성 모드 (기본 열림)
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [mapCapturing, setMapCapturing] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    textDescription: "",
+    inspectionContent: "",
+    partFromMain: "",
+    partFromSub: "",
+    partToMain: "",
+    partToSub: "",
+    notApplicable: false,
+    notApplicableReason: "",
+    lat: null as number | null,
+    lng: null as number | null,
+    address: "",
+  });
+
+  const markedDates = useMemo(() => {
+    const set = new Set<string>();
+    records.filter((r) => r.subTypeId === subTypeId).forEach((r) => r.inspectionDate && set.add(r.inspectionDate));
+    assets.filter((a) => a.subTypeId === subTypeId).forEach((a) => a.inspectionDate && set.add(a.inspectionDate));
+    return set;
+  }, [records, assets, subTypeId]);
+
+  const submittedDates = useMemo(() => {
+    const set = new Set<string>();
+    records
+      .filter((r) => r.subTypeId === subTypeId && r.status === "submitted")
+      .forEach((r) => r.inspectionDate && set.add(r.inspectionDate));
+    return set;
+  }, [records, subTypeId]);
+
+  const recMap = new Map<string, Rec>();
+  records
+    .filter((r) => r.subTypeId === subTypeId && (r.inspectionDate || "") === selectedDate)
+    .forEach((r) => recMap.set(r.phaseTemplateId, r));
+  const assetMap = new Map<string, Asset[]>();
+  assets
+    .filter((a) => a.subTypeId === subTypeId && (a.inspectionDate || "") === selectedDate)
+    .forEach((a) => {
+      const arr = assetMap.get(a.phaseTemplateId) || [];
+      arr.push(a);
+      assetMap.set(a.phaseTemplateId, arr);
+    });
+
+  const submittedCurrent = Array.from(recMap.values()).some((r) => r.status === "submitted");
+  const hasCurrent = recMap.size > 0 || assetMap.size > 0;
+
+  async function submitInspection(action: "submit" | "cancel") {
+    if (action === "submit") setConsentOpen(false);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/records/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate, action }),
+      });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        alert(data.error || ("처리 실패 (" + res.status + ")"));
+        return;
+      }
+      if (action === "submit" && videoHref) {
+        // 제출 완료 -> 영상 미리보기로 이동하여 자동 생성·드라이브 저장
+        router.push(`${videoHref}?date=${encodeURIComponent(selectedDate)}&autosave=1`);
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      alert("처리 중 오류: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function resetTransient() {
+    setEditing(true);
+    setGuideOpen(false);
+    setError("");
+  }
+  function changeSubType(id: string) {
+    setSubTypeId(id);
+    setStep(0);
+    resetTransient();
+  }
+  function changeDate(d: string) {
+    setSelectedDate(d);
+    setStep(0);
+    resetTransient();
+  }
+  function goStep(idx: number) {
+    setStep(Math.min(Math.max(idx, 0), phases.length - 1));
+    resetTransient();
+  }
+
+  // 검측 위치 지도(VWorld 캡처)를 map 타입으로 백그라운드 업로드
+  const lastMapRef = useRef<string>("");
+  async function uploadMapImage(dataUrl: string) {
+    if (!dataUrl || dataUrl === lastMapRef.current) return;
+    lastMapRef.current = dataUrl;
+    const f1 = phases[0];
+    if (!f1) return;
+    setMapCapturing(true);
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], "location-map.png", { type: "image/png" });
+      const fd = new FormData();
+      fd.append("siteStructureId", siteStructureId);
+      fd.append("subTypeId", subTypeId);
+      fd.append("phaseTemplateId", f1.id);
+      fd.append("inspectionDate", selectedDate);
+      fd.append("assetType", "map");
+      fd.append("file", file);
+      await fetch("/api/records/assets", { method: "POST", body: fd });
+      router.refresh();
+    } catch {
+      // 조용히 무시 (지도는 보조 자료)
+    } finally {
+      setMapCapturing(false);
+    }
+  }
+
+  function openEdit(p: Phase) {
+    const r = recMap.get(p.id);
+    setForm({
+      lat: r?.latitude ?? null,
+      lng: r?.longitude ?? null,
+      address: r?.locationAddress ?? "",
+      textDescription: r?.textDescription ?? "",
+      inspectionContent: r?.inspectionContent ?? "",
+      partFromMain: r?.inspectionPartFromMain != null ? String(r.inspectionPartFromMain) : "",
+      partFromSub: r?.inspectionPartFromSub != null ? String(r.inspectionPartFromSub) : "",
+      partToMain: r?.inspectionPartToMain != null ? String(r.inspectionPartToMain) : "",
+      partToSub: r?.inspectionPartToSub != null ? String(r.inspectionPartToSub) : "",
+      notApplicable: r?.notApplicable ?? false,
+      notApplicableReason: r?.notApplicableReason ?? "",
+    });
+    setError("");
+    setEditing(true);
+  }
+
+  // 단계/날짜/세부항목이 바뀌면 저장된 기록을 자동으로 form 에 불러오기
+  useEffect(() => {
+    const cur = phases[step];
+    if (!cur) return;
+    const rec = recMap.get(cur.id);
+    setForm({
+      lat: rec?.latitude ?? null,
+      lng: rec?.longitude ?? null,
+      address: rec?.locationAddress ?? "",
+      textDescription: rec?.textDescription ?? "",
+      inspectionContent: rec?.inspectionContent ?? "",
+      partFromMain: rec?.inspectionPartFromMain != null ? String(rec.inspectionPartFromMain) : "",
+      partFromSub: rec?.inspectionPartFromSub != null ? String(rec.inspectionPartFromSub) : "",
+      partToMain: rec?.inspectionPartToMain != null ? String(rec.inspectionPartToMain) : "",
+      partToSub: rec?.inspectionPartToSub != null ? String(rec.inspectionPartToSub) : "",
+      notApplicable: rec?.notApplicable ?? false,
+      notApplicableReason: rec?.notApplicableReason ?? "",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, selectedDate, subTypeId, records]);
+
+=== '이 단계는 해당 없음' 위치 ===
+#0: 'div className="mt-3 space-y-3 border-t border-neutral-100 pt-3">\n                <label className="flex items-center gap-2 text-sm">\n                  <input\n                    type="checkbox"\n                    checked={form.notApplicable}\n                    onChange={(e) => setForm((f) => ({ ...f, notApplicable: e.target.checked }))}\n                  />\n                  이 단계는 해당 없음\n                </label>\n                {form.notApplicab'
+
+=== saveText 시그니처 ===
+async function saveText(p: Phase, i: number) {
+
+=== 기록저장 버튼 ===
+'sName="flex-1" onClick={() => setEditing(false)}>\n                    취소\n                  </Button>\n                  <ActionButton className="flex-1" onClick={() => saveText(p, step)} disabled={loading}>\n                    {loading ? "저장 중..." : "기록 저장"}\n                  </ActionButton>\n        '

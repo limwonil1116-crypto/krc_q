@@ -365,11 +365,17 @@ export function PhaseRecorder({
     setEditing(true);
   }
 
-  // 단계/날짜/세부항목이 바뀌면 저장된 기록을 자동으로 form 에 불러오기
+  // 단계/날짜/세부항목 "전환 시에만" 저장된 기록을 form 에 로드 (records 갱신에는 반응 안 함 -> 입력 안 덮어씀)
+  const loadKeyRef = useRef<string>("");
+  const justLoadedRef = useRef<boolean>(false);
   useEffect(() => {
     const cur = phases[step];
     if (!cur) return;
+    const key = `${step}|${selectedDate}|${subTypeId}`;
+    if (loadKeyRef.current === key) return; // 같은 단계에서 records 만 갱신된 경우: 로드 스킵
+    loadKeyRef.current = key;
     const rec = recMap.get(cur.id);
+    justLoadedRef.current = true; // 로드 직후 자동저장 1회 스킵
     setForm({
       lat: rec?.latitude ?? null,
       lng: rec?.longitude ?? null,
@@ -384,11 +390,41 @@ export function PhaseRecorder({
       notApplicableReason: rec?.notApplicableReason ?? "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, selectedDate, subTypeId, records]);
+  }, [step, selectedDate, subTypeId]);
 
-  async function saveText(p: Phase, i: number) {
-    setError("");
-    setLoading(true);
+  // 자동저장: form 이 바뀌면 1.5초 후 자동으로 저장 (기록저장 버튼 없이도)
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (justLoadedRef.current) {
+      justLoadedRef.current = false; // 로드로 인한 변경은 저장 안 함
+      return;
+    }
+    const cur = phases[step];
+    if (!cur || !selectedDate || !subTypeId) return;
+    // 내용이 아무것도 없으면 저장 안 함
+    const hasContent =
+      !!form.textDescription ||
+      !!form.inspectionContent ||
+      form.lat != null ||
+      !!form.address ||
+      form.partFromMain !== "" ||
+      form.notApplicable;
+    if (!hasContent) return;
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      saveText(cur, step, true); // silent 저장
+    }, 1500);
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
+
+  async function saveText(p: Phase, i: number, silent: boolean = false) {
+    if (!silent) {
+      setError("");
+      setLoading(true);
+    }
     try {
       const res = await fetch("/api/records", {
         method: "POST",
@@ -418,15 +454,16 @@ export function PhaseRecorder({
         // ignore
       }
       if (!res.ok || !data.ok) {
-        setError(data.error || ("서버 오류 (" + res.status + ")"));
+        if (!silent) setError(data.error || ("서버 오류 (" + res.status + ")"));
         return;
       }
       setEditing(true);
-      router.refresh();
+      // 자동저장(silent)일 땐 화면 새로고침 안 함 (입력 중 form 유지). 수동 저장만 refresh.
+      if (!silent) router.refresh();
     } catch (e) {
-      setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+      if (!silent) setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
