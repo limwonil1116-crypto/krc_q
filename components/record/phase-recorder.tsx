@@ -304,17 +304,40 @@ export function PhaseRecorder({
     setGuideOpen(false);
     setError("");
   }
+  // 단계/날짜/세부항목을 옮기기 전에 대기 중인 자동저장을 즉시 실행
+  function flushSave() {
+    const cur = phases[step];
+    if (!cur || !selectedDate || !subTypeId) return;
+    const hasContent =
+      !!form.textDescription ||
+      !!form.inspectionContent ||
+      form.lat != null ||
+      !!form.address ||
+      form.partFromMain !== "" ||
+      form.partFromSub !== "" ||
+      form.partToMain !== "" ||
+      form.partToSub !== "";
+    if (!hasContent) return;
+    if (autosaveTimer.current) {
+      clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = null;
+    }
+    void saveText(cur, step, true);
+  }
   function changeSubType(id: string) {
+    flushSave();
     setSubTypeId(id);
     setStep(0);
     resetTransient();
   }
   function changeDate(d: string) {
+    flushSave();
     setSelectedDate(d);
     setStep(0);
     resetTransient();
   }
   function goStep(idx: number) {
+    flushSave();
     setStep(Math.min(Math.max(idx, 0), phases.length - 1));
     resetTransient();
   }
@@ -428,7 +451,9 @@ export function PhaseRecorder({
     try {
       const res = await fetch("/api/records", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: silent
+          ? { "Content-Type": "application/json", "x-silent": "1" }
+          : { "Content-Type": "application/json" },
         body: JSON.stringify({
           siteStructureId,
           subTypeId,
@@ -903,13 +928,13 @@ export function PhaseRecorder({
                     </div>
                   </div>
                 {error && <p className="text-sm text-red-600">{error}</p>}
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <Button type="button" variant="outline" className="flex-1" onClick={() => setEditing(false)}>
                     취소
                   </Button>
-                  <ActionButton className="flex-1" onClick={() => saveText(p, step)} disabled={loading}>
-                    {loading ? "저장 중..." : "기록 저장"}
-                  </ActionButton>
+                  <span className="flex-1 text-xs text-neutral-400">
+                    {loading ? "저장 중..." : "입력한 내용은 자동으로 저장됩니다"}
+                  </span>
                 </div>
               </div>
             ) : (

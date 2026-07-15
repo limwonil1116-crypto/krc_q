@@ -69,6 +69,10 @@ export function BusyProvider({ children }: { children: React.ReactNode }) {
     let timer: number | null = null;
     let shown = false;
     const patched: typeof window.fetch = (...args) => {
+      // x-silent 헤더 요청(자동저장 등)은 전역 로딩 오버레이를 띄우지 않음
+      const _init = args[1] as RequestInit | undefined;
+      const _h = (_init?.headers || {}) as Record<string, string>;
+      if (_h["x-silent"] === "1" || _h["X-Silent"] === "1") return orig(...args);
       pending += 1;
       if (timer === null && !shown) {
         timer = window.setTimeout(() => {
