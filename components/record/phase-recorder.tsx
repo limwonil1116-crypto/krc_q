@@ -362,6 +362,31 @@ export function PhaseRecorder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 보던 세부항목/검측일자 기억 (영상 화면 등에 다녀와도 그대로 복원)
+  const stateKey = `krc:rec:${siteStructureId}`;
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    try {
+      const raw = sessionStorage.getItem(stateKey);
+      if (!raw) return;
+      const v = JSON.parse(raw) as { date?: string; subTypeId?: string };
+      if (v.subTypeId && subTypes.some((s) => s.id === v.subTypeId)) setSubTypeId(v.subTypeId);
+      if (v.date && /^\d{4}-\d{2}-\d{2}$/.test(v.date)) setSelectedDate(v.date);
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(stateKey, JSON.stringify({ date: selectedDate, subTypeId }));
+    } catch {
+      // ignore
+    }
+  }, [stateKey, selectedDate, subTypeId]);
+
   // 검측 위치 지도(VWorld 캡처)를 map 타입으로 백그라운드 업로드
   const lastMapRef = useRef<string>("");
   async function uploadMapImage(dataUrl: string) {
