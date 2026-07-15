@@ -55,6 +55,13 @@ export default async function Page() {
           <ActionButton>+ 현장 등록</ActionButton>
         </Link>
       </div>
+      <Link
+        href="/contractor/inspections"
+        className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-3 hover:border-[#0033A0]"
+      >
+        <span className="text-sm font-bold text-[#0033A0]">📋 검측 관리</span>
+        <span className="text-xs text-neutral-400">내가 요청한 검측 현황 보기 ›</span>
+      </Link>
       <SitesTable sites={sites} basePath="/contractor/sites" />
     </div>
   );
