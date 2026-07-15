@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     };
 
     const existing = await db
-      .select({ id: constructionRecords.id })
+      .select({ id: constructionRecords.id, status: constructionRecords.status })
       .from(constructionRecords)
       .where(
         and(
@@ -90,16 +90,30 @@ export async function POST(req: Request) {
       .limit(1);
 
     if (existing[0]) {
+      // 이미 제출/승인된 기록은 자동저장이 status 를 draft 로 되돌리지 않도록 유지
+      const prev = existing[0].status;
+      const locked = prev === "submitted" || prev === "approved" || prev === "revision_requested";
+      const nextValues = locked ? { ...values, status: prev } : values;
       await db
         .update(constructionRecords)
-        .set({ ...values, updatedAt: new Date() })
+        .set({ ...nextValues, updatedAt: new Date() })
         .where(eq(constructionRecords.id, existing[0].id));
       return NextResponse.json({ ok: true, id: existing[0].id });
     }
 
+    // 동시 자동저장으로 중복 행이 생기지 않도록 UNIQUE 인덱스 기반 upsert
     const [row] = await db
       .insert(constructionRecords)
       .values({ siteId: ss.siteId, siteStructureId, phaseTemplateId, ...values, createdBy: userId })
+      .onConflictDoUpdate({
+        target: [
+          constructionRecords.siteStructureId,
+          constructionRecords.subTypeId,
+          constructionRecords.phaseTemplateId,
+          constructionRecords.inspectionDate,
+        ],
+        set: { ...values, updatedAt: new Date() },
+      })
       .returning();
     return NextResponse.json({ ok: true, id: row.id });
   } catch (e) {
