@@ -91,6 +91,7 @@ export function InspectionPdfButton({
           isRecheck: data.request.isRecheck,
           contractorAgentName: data.request.contractorAgentName,
           contractorCheckerName: data.request.contractorCheckerName,
+          contractorSignature: data.request.contractorSignature ?? null,
           inspectionResult: data.request.inspectionResult,
           instruction: data.request.instruction,
           supervisorSignature: data.request.supervisorSignature,
