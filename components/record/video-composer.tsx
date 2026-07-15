@@ -177,7 +177,10 @@ export function VideoComposer({
       const r = recMap.get(p.id);
       const list = byPhase.get(p.id) || [];
       const photos = list.filter((a) => a.assetType === "photo");
-      const videos = list.filter((a) => a.assetType === "video");
+      // 자동 생성된 완성 영상([최종영상]_*.webm)은 슬라이드에서 제외 (영상 속 영상 중첩 방지)
+      const videos = list.filter(
+        (a) => a.assetType === "video" && !(a.fileName || "").startsWith("[최종영상]")
+      );
       const isFirst = i === 0; // F1(공종종류)
       // F1 은 자료가 없어도 간지 + 위치 슬라이드를 항상 노출
       if (isFirst) {

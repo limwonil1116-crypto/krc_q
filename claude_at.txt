@@ -1,0 +1,12 @@
+=== Asset 타입 ===
+type Asset = {
+  id: string;
+  phaseTemplateId: string;
+  inspectionDate: string | null;
+  assetType: string;
+  fileName: string;
+  mimeType: string;
+};
+
+=== video page assets 매핑 ===
+' )\n  );\n\n  const assets = await db\n    .select({\n      id: recordAssets.id,\n      phaseTemplateId: constructionRecords.phaseTemplateId,\n      inspectionDate: constructionRecords.inspectionDate,\n      assetType: recordAssets.assetType,\n      fileName: recordAssets.fileName,\n      mimeType: recordAssets.mimeType,\n    })\n    .from(recordAssets)\n    .innerJoin(constructionRecords, eq(recordAssets.recordId, constructionRecords.id))\n    .where(and(eq(constructionRecords.siteStructureId, structureId), '
