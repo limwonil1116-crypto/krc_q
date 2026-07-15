@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users, organizations, organizationMembers } from "@/lib/db/schema";
@@ -44,27 +44,58 @@ export async function POST(req: Request) {
     const passwordHash = await bcrypt.hash(password, 10);
     const orgType = role === "client" ? "client_agency" : "contractor";
 
-    const [org] = await db
-      .insert(organizations)
-      .values({
-        name: companyName,
-        type: orgType,
-        status: "active",
-        headquarters: role === "client" ? (headquarters || "충남") : null,
-        branch: role === "client" ? branch : null,
-      })
-      .returning();
+    // 한국농어촌공사는 조직을 새로 만들지 않고 기존 조직을 재사용 (조직 중복 생성 방지)
+    let org: { id: string } | undefined;
+    if (role === "client") {
+      const found = await db
+        .select({ id: organizations.id })
+        .from(organizations)
+        .where(eq(organizations.type, "client_agency"))
+        .orderBy(asc(organizations.createdAt))
+        .limit(1);
+      org = found[0];
+    }
+    if (!org) {
+      const [created] = await db
+        .insert(organizations)
+        .values({
+          name: companyName,
+          type: orgType,
+          status: "active",
+          headquarters: role === "client" ? (headquarters || "충남") : null,
+          branch: role === "client" ? branch : null,
+        })
+        .returning({ id: organizations.id });
+      org = created;
+    }
 
     await db
       .update(users)
-      .set({ email, passwordHash, name, phone: phone || null, role, status: "active" })
+      .set({
+        email,
+        passwordHash,
+        name,
+        phone: phone || null,
+        role,
+        status: "active",
+        // 지사는 조직이 아니라 사용자에 저장 (조직은 하나로 통합되므로)
+        branch: role === "client" ? branch || null : null,
+      })
       .where(eq(users.id, userId));
 
-    await db.insert(organizationMembers).values({
-      organizationId: org.id,
-      userId,
-      memberRole: "owner",
-    });
+    // 이미 같은 조직 소속이면 중복 추가 안 함
+    const already = await db
+      .select({ id: organizationMembers.id })
+      .from(organizationMembers)
+      .where(and(eq(organizationMembers.organizationId, org.id), eq(organizationMembers.userId, userId)))
+      .limit(1);
+    if (!already[0]) {
+      await db.insert(organizationMembers).values({
+        organizationId: org.id,
+        userId,
+        memberRole: role === "client" ? "staff" : "owner",
+      });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e) {
