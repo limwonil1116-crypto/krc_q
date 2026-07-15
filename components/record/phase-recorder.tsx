@@ -499,14 +499,16 @@ export function PhaseRecorder({
         // ignore
       }
       if (!res.ok || !data.ok) {
-        if (!silent) setError(data.error || ("서버 오류 (" + res.status + ")"));
+        // 자동저장 실패도 화면에 표시 (조용히 사라지는 것 방지)
+        setError((silent ? "⚠ 자동 저장 실패: " : "") + (data.error || ("서버 오류 (" + res.status + ")")));
         return;
       }
       setEditing(true);
+      setError("");
       // 자동저장(silent)일 땐 화면 새로고침 안 함 (입력 중 form 유지). 수동 저장만 refresh.
       if (!silent) router.refresh();
     } catch (e) {
-      if (!silent) setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+      setError((silent ? "⚠ 자동 저장 실패: " : "") + "요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
     } finally {
       if (!silent) setLoading(false);
     }
