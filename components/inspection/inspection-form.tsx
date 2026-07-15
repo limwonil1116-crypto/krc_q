@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { InspectionPdfButton } from "@/components/inspection/inspection-pdf-button";
@@ -56,6 +56,8 @@ export function InspectionForm({
   initialDate,
   initialReqId,
   backHref,
+  initialSubTypeId,
+  autoFill,
 }: {
   siteId: string;
   siteStructureId: string;
@@ -70,6 +72,8 @@ export function InspectionForm({
   initialDate: string;
   initialReqId: string;
   backHref: string;
+  initialSubTypeId?: string;
+  autoFill?: boolean;
 }) {
   const router = useRouter();
 
@@ -81,7 +85,7 @@ export function InspectionForm({
   }, [records]);
 
   const [selectedDate, setSelectedDate] = useState(initialDate || dates[0] || "");
-  const [subTypeId, setSubTypeId] = useState("");
+  const [subTypeId, setSubTypeId] = useState(initialSubTypeId || "");
   const [form, setForm] = useState({
     locationWork: typeName || "",
     inspectionPart: "",
@@ -183,6 +187,54 @@ export function InspectionForm({
       inspectionMatter: dayRec.inspectionContent || f.inspectionMatter,
     }));
   }
+
+  // 검측기록 화면의 [검측요청서] 로 들어온 경우: 기록 자동채움 + AI 체크리스트 자동 생성
+  const autoRanRef = useRef(false);
+  useEffect(() => {
+    if (!autoFill || autoRanRef.current || !dayRec) return;
+    autoRanRef.current = true;
+    const part = partText(dayRec) || "";
+    const matter = dayRec.inspectionContent || "";
+    setForm((f) => ({
+      ...f,
+      locationWork: f.locationWork || subTypeName || structureName,
+      inspectionPart: part || f.inspectionPart,
+      inspectionMatter: matter || f.inspectionMatter,
+    }));
+    const work = matter || subTypeName || typeName;
+    if (!work) return;
+    (async () => {
+      setAiBusy(true);
+      try {
+        const res = await fetch("/api/ai/checklist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workName: work,
+            subTypeName,
+            subTypeId: subTypeId || "",
+            context: part ? `검측부위: ${part}` : "",
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          setItems(
+            (data.items || []).map((x: { check_item: string; standard: string }) => ({
+              checkItem: x.check_item,
+              standard: x.standard || "",
+              contractorResult: "",
+              contractorNote: "",
+            }))
+          );
+        }
+      } catch {
+        // ignore
+      } finally {
+        setAiBusy(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFill, dayRec]);
 
   // 선택 날짜의 자료 개수
   const dayAssets = useMemo(() => {

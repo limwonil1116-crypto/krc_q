@@ -21,10 +21,10 @@ export default async function InspectionPage({
   searchParams,
 }: {
   params: Promise<{ id: string; structureId: string }>;
-  searchParams: Promise<{ date?: string; reqId?: string }>;
+  searchParams: Promise<{ date?: string; reqId?: string; sub?: string; auto?: string }>;
 }) {
   const { id, structureId } = await params;
-  const { date, reqId } = await searchParams;
+  const { date, reqId, sub, auto } = await searchParams;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -110,6 +110,8 @@ export default async function InspectionPage({
 
   return (
     <InspectionForm
+      initialSubTypeId={sub || ""}
+      autoFill={auto === "1"}
       siteId={id}
       siteStructureId={ss.id}
       structureName={ss.name}

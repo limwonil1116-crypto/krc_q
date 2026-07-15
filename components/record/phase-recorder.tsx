@@ -1019,14 +1019,34 @@ export function PhaseRecorder({
               {submittedCurrent ? (
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-green-700">✓ 제출됨 ({selectedDate})</span>
-                  <Button type="button" variant="outline" onClick={() => submitInspection("cancel")} disabled={submitting}>
-                    {submitting ? "처리 중..." : "제출 취소"}
-                  </Button>
+                  <div className="flex gap-2">
+                    {inspectionHref && (
+                      <Link
+                        href={`${inspectionHref}?date=${encodeURIComponent(selectedDate)}&sub=${encodeURIComponent(subTypeId)}&auto=1`}
+                        className="whitespace-nowrap rounded-md bg-[#002A80] px-3 py-2 text-sm font-semibold text-white"
+                      >
+                        📋 검측요청서
+                      </Link>
+                    )}
+                    <Button type="button" variant="outline" onClick={() => submitInspection("cancel")} disabled={submitting}>
+                      {submitting ? "처리 중..." : "제출 취소"}
+                    </Button>
+                  </div>
                 </div>
               ) : (
-                <ActionButton className="w-full" onClick={() => setConsentOpen(true)} disabled={submitting}>
-                  {submitting ? "제출 중..." : `이 검측일자(${selectedDate}) 제출`}
-                </ActionButton>
+                <div className="flex gap-2">
+                  <ActionButton className="flex-1" onClick={() => setConsentOpen(true)} disabled={submitting}>
+                    {submitting ? "제출 중..." : `이 검측일자(${selectedDate}) 제출`}
+                  </ActionButton>
+                  {inspectionHref && (
+                    <Link
+                      href={`${inspectionHref}?date=${encodeURIComponent(selectedDate)}&sub=${encodeURIComponent(subTypeId)}&auto=1`}
+                      className="flex items-center whitespace-nowrap rounded-md bg-[#002A80] px-4 py-2.5 text-sm font-semibold text-white"
+                    >
+                      📋 검측요청서
+                    </Link>
+                  )}
+                </div>
               )}
             </div>
           )}
