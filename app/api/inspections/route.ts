@@ -183,6 +183,8 @@ export async function POST(req: Request) {
       isRecheck: !!b.isRecheck,
       contractorAgentName: (b.contractorAgentName ?? "").trim() || null,
       contractorCheckerName: (b.contractorCheckerName ?? "").trim() || null,
+      contractorSignature: (b.contractorSignature ?? "").trim() || null,
+      contractorSignedAt: (b.contractorSignature ?? "").trim() ? new Date() : null,
       supervisorId: (b.supervisorId ?? "").trim() || null,
     };
 
@@ -190,6 +192,9 @@ export async function POST(req: Request) {
     const doSubmit = b.submit === true;
     if (doSubmit && !reqValues.supervisorId) {
       return NextResponse.json({ error: "제출하려면 공사감독원을 지정해야 합니다." }, { status: 400 });
+    }
+    if (doSubmit && !reqValues.contractorSignature) {
+      return NextResponse.json({ error: "제출하려면 현장대리인 서명이 필요합니다." }, { status: 400 });
     }
 
     // 기존 요청서 (id 있으면 업데이트)

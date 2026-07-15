@@ -240,6 +240,7 @@ export const inspectionRequests = pgTable("inspection_requests", {
   // 시공사측
   contractorAgentName: varchar("contractor_agent_name", { length: 80 }),
   contractorCheckerName: varchar("contractor_checker_name", { length: 80 }),
+  contractorSignature: text("contractor_signature"),
   contractorSignedAt: timestamp("contractor_signed_at", { withTimezone: true }),
   // 감독측
   supervisorId: uuid("supervisor_id").references(() => users.id),

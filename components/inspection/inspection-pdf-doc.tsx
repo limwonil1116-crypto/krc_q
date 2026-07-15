@@ -40,6 +40,7 @@ export type PdfData = {
     isRecheck: boolean;
     contractorAgentName: string | null;
     contractorCheckerName: string | null;
+    contractorSignature: string | null;
     inspectionResult: string | null;
     instruction: string | null;
     supervisorSignature: string | null;

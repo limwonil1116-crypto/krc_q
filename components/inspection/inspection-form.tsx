@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { SignaturePad } from "@/components/inspection/signature-pad";
 import { InspectionPdfButton } from "@/components/inspection/inspection-pdf-button";
 
 type SubType = { id: string; name: string };
@@ -93,6 +94,7 @@ export function InspectionForm({
     requestNo: "",
     contractorAgentName: "",
     contractorCheckerName: "",
+    contractorSignature: "",
     supervisorId: "",
     isRecheck: false,
   });
@@ -103,6 +105,10 @@ export function InspectionForm({
   function tryOpenConsent() {
     if (!selectedDate) {
       alert("검측일자를 선택하세요.");
+      return;
+    }
+    if (!form.contractorSignature) {
+      alert("제출하려면 현장대리인 서명이 필요합니다.");
       return;
     }
     if (!form.supervisorId) {
@@ -276,6 +282,7 @@ export function InspectionForm({
           isRecheck: form.isRecheck,
           contractorAgentName: form.contractorAgentName,
           contractorCheckerName: form.contractorCheckerName,
+          contractorSignature: form.contractorSignature || null,
           supervisorId: form.supervisorId || null,
           checklists: [
             {
@@ -421,6 +428,15 @@ export function InspectionForm({
           </div>
         </div>
 
+        {/* 현장대리인 서명 (제출 필수) */}
+        <div>
+          <label className={labelCls}>현장대리인 서명 *</label>
+          <SignaturePad
+            value={form.contractorSignature}
+            onChange={(v) => setForm((f) => ({ ...f, contractorSignature: v || "" }))}
+            label="현장대리인 서명"
+          />
+        </div>
         {/* 공사감독원 지정 */}
         <div>
           <label className={labelCls}>공사감독원 지정</label>
