@@ -928,14 +928,9 @@ export function PhaseRecorder({
                     </div>
                   </div>
                 {error && <p className="text-sm text-red-600">{error}</p>}
-                <div className="flex items-center gap-2">
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => setEditing(false)}>
-                    취소
-                  </Button>
-                  <span className="flex-1 text-xs text-neutral-400">
-                    {loading ? "저장 중..." : "입력한 내용은 자동으로 저장됩니다"}
-                  </span>
-                </div>
+                <p className="text-xs text-neutral-400">
+                  {loading ? "저장 중..." : "입력한 내용은 자동으로 저장됩니다"}
+                </p>
               </div>
             ) : (
               <div className="mt-3 flex gap-2">
