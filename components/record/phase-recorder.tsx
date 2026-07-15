@@ -342,6 +342,26 @@ export function PhaseRecorder({
     resetTransient();
   }
 
+  // 영상 화면 등에 다녀와서 돌아오면(뒤로가기 포함) 최신 기록/제출상태로 자동 갱신
+  const didInitRefresh = useRef(false);
+  useEffect(() => {
+    if (!didInitRefresh.current) {
+      didInitRefresh.current = true;
+      router.refresh();
+    }
+    const onShow = () => router.refresh();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") router.refresh();
+    };
+    window.addEventListener("pageshow", onShow);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("pageshow", onShow);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // 검측 위치 지도(VWorld 캡처)를 map 타입으로 백그라운드 업로드
   const lastMapRef = useRef<string>("");
   async function uploadMapImage(dataUrl: string) {
