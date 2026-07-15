@@ -73,6 +73,9 @@ export function BusyProvider({ children }: { children: React.ReactNode }) {
       const _init = args[1] as RequestInit | undefined;
       const _h = (_init?.headers || {}) as Record<string, string>;
       if (_h["x-silent"] === "1" || _h["X-Silent"] === "1") return orig(...args);
+      // Next.js 라우터 갱신(RSC) 요청은 오버레이 대상에서 제외
+      const _u = typeof args[0] === "string" ? args[0] : ((args[0] as Request)?.url || "");
+      if (_u.includes("_rsc=")) return orig(...args);
       pending += 1;
       if (timer === null && !shown) {
         timer = window.setTimeout(() => {

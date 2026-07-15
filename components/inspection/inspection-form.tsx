@@ -197,10 +197,16 @@ export function InspectionForm({
   // 검측기록 화면의 [검측요청서] 로 들어온 경우: 기록 자동채움 + AI 체크리스트 자동 생성
   const autoRanRef = useRef(false);
   useEffect(() => {
-    if (!autoFill || autoRanRef.current || !dayRec) return;
+    if (!autoFill || autoRanRef.current) return;
+    // 같은 날짜+세부공종 기록 우선, 비어 있으면 같은 날짜의 내용 있는 기록으로 대체
+    const src =
+      dayRec && (dayRec.inspectionContent || partText(dayRec))
+        ? dayRec
+        : records.find((r) => r.inspectionDate === selectedDate && (r.inspectionContent || partText(r)));
+    if (!src) return;
     autoRanRef.current = true;
-    const part = partText(dayRec) || "";
-    const matter = dayRec.inspectionContent || "";
+    const part = partText(src) || "";
+    const matter = src.inspectionContent || "";
     setForm((f) => ({
       ...f,
       locationWork: f.locationWork || subTypeName || structureName,

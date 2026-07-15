@@ -405,7 +405,7 @@ export function PhaseRecorder({
       fd.append("inspectionDate", selectedDate);
       fd.append("assetType", "map");
       fd.append("file", file);
-      await fetch("/api/records/assets", { method: "POST", body: fd });
+      await fetch("/api/records/assets", { method: "POST", body: fd, headers: { "x-silent": "1" } });
       router.refresh();
     } catch {
       // 조용히 무시 (지도는 보조 자료)
