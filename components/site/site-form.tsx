@@ -9,6 +9,7 @@ import { StepSection } from "@/components/kit/step-section";
 import { BottomBar } from "@/components/kit/bottom-bar";
 import { ActionButton } from "@/components/kit/buttons";
 import { KakaoMapPicker } from "@/components/kit/kakao-map-picker";
+import { ParticipantManager } from "@/components/site/participant-manager";
 
 const PROJECT_TYPES = [
   "다목적용수", "체계재편", "논범용화", "배수개선", "경지정리", "대행위탁사업",
@@ -436,6 +437,13 @@ export function SiteForm({
           </div>
         </div>
       </StepSection>
+
+      {siteId && (
+        <div>
+          <p className="mb-1 text-xs font-bold tracking-wide text-[#FE5000]">STEP 06</p>
+          <ParticipantManager siteId={siteId} canManage />
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

@@ -1,0 +1,30 @@
+총 줄수: 453
+=== import 첫 12줄 ===
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { StepSection } from "@/components/kit/step-section";
+import { BottomBar } from "@/components/kit/bottom-bar";
+import { ActionButton } from "@/components/kit/buttons";
+import { KakaoMapPicker } from "@/components/kit/kakao-map-picker";
+
+
+=== SiteForm props ===
+export function SiteForm({
+  clientOrgs,
+  mode = "contractor",
+  siteId,
+  initial,
+}: {
+  clientOrgs: { id: string; name: string }[];
+  mode?: "contractor" | "client";
+  siteId?: string;
+  initial?: InitialSite;
+}) {
+
+=== STEP 05 ~ 이후 1400자 ===
+'t: v.lat, lng: v.lng, address: v.address }))}\n        />\n        <div className="mt-3 space-y-1">\n          <Label>현장 주소 *</Label>\n          <Input value={f.address} onChange={onText("address")} />\n        </div>\n      </StepSection>\n\n      <StepSection step="STEP 05" title="공사 기간">\n        <div className="grid grid-cols-2 gap-3">\n          <div className="space-y-1">\n            <Label>시작일</Label>\n            <Input type="date" value={f.startedOn} onChange={onText("startedOn")} />\n          </div>\n          <div className="space-y-1">\n            <Label>종료일</Label>\n            <Input type="date" value={f.endedOn} onChange={onText("endedOn")} />\n          </div>\n        </div>\n      </StepSection>\n\n      {error && <p className="text-sm text-red-600">{error}</p>}\n\n      <BottomBar>\n        <Button type="button" variant="outline" className="flex-1" onClick={() => router.push(listPath)}>\n          취소\n        </Button>\n        <ActionButton className="flex-1" onClick={submit} disabled={loading}>\n          {loading ? "저장 중..." : isEdit ? "수정 저장" : "저장"}\n        </ActionButton>\n      </BottomBar>\n    </div>\n  );\n}\n'

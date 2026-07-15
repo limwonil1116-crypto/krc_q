@@ -1,0 +1,12 @@
+=== PhaseRecorder 사용 페이지 ===
+[app\client\sites\[id]\structures\[structureId]\page.tsx] inspectionHref 전달: False
+  '<PhaseRecorder\n      siteStructureId={ss.id}\n      structureName={ss.name}\n      typeName={ss.typeName}\n      subTypes={subTypes}\n      phases={phases}\n      records={recs}\n      assets={assets}\n      videoHref={`/client/sites/${id}/structures/${structureId}/video`}\n    />\n  );\n}\n'
+[app\contractor\sites\[id]\structures\[structureId]\page.tsx] inspectionHref 전달: True
+  '<PhaseRecorder\n      siteStructureId={ss.id}\n      structureName={ss.name}\n      typeName={ss.typeName}\n      subTypes={subTypes}\n      phases={phases}\n      records={recs}\n      assets={assets}\n      videoHref={`/contractor/sites/${id}/structures/${structureId}/video`}\n      inspectionHref={`/contractor/sites/${id}/structures/${structureId}/inspection`}\n    />\n  );\n}\n'
+
+=== inspection 관련 페이지 경로 ===
+app\client\inspections\page.tsx
+app\client\inspections\[reqId]\page.tsx
+app\contractor\sites\[id]\structures\[structureId]\inspection\page.tsx
+app\supervisor\inspections\page.tsx
+app\supervisor\inspections\[reqId]\page.tsx
