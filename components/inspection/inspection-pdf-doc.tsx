@@ -142,8 +142,14 @@ export function InspectionPdfDoc({ data, pageRefs }: { data: PdfData; pageRefs: 
           </tbody>
         </table>
         <p style={{ margin: "8px 0", fontSize: 11 }}>붙 임 : 검측 체크리스트, 시공사진, 도면 각1부</p>
-        <div style={{ textAlign: "right", margin: "16px 0", fontSize: 13 }}>
-          현장대리인 &nbsp; {r.contractorAgentName || "___________"} &nbsp; (인)
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, margin: "16px 0", fontSize: 13 }}>
+          <span>현장대리인 &nbsp; {r.contractorAgentName || "___________"}</span>
+          {r.contractorSignature ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={r.contractorSignature} alt="현장대리인 서명" style={{ height: 36 }} />
+          ) : (
+            <span>(인)</span>
+          )}
         </div>
 
         <hr style={{ border: "none", borderTop: "1px dashed #999", margin: "24px 0" }} />
