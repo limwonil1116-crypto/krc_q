@@ -309,7 +309,7 @@ export function PhaseRecorder({
     mapDirtyRef.current = false;
   }
   // 단계/날짜/세부항목을 옮기기 전에 대기 중인 자동저장을 즉시 실행
-  async function flushSave() {
+  function flushSave() {
     const cur = phases[step];
     if (!cur || !selectedDate || !subTypeId) return;
     const hasContent =
@@ -326,22 +326,23 @@ export function PhaseRecorder({
       clearTimeout(autosaveTimer.current);
       autosaveTimer.current = null;
     }
-    await saveText(cur, step, true);
+    // 저장은 백그라운드로 진행 - 화면 전환을 막지 않음
+    void saveText(cur, step, true);
   }
-  async function changeSubType(id: string) {
-    await flushSave();
+  function changeSubType(id: string) {
+    flushSave();
     setSubTypeId(id);
     setStep(0);
     resetTransient();
   }
-  async function changeDate(d: string) {
-    await flushSave();
+  function changeDate(d: string) {
+    flushSave();
     setSelectedDate(d);
     setStep(0);
     resetTransient();
   }
-  async function goStep(idx: number) {
-    await flushSave();
+  function goStep(idx: number) {
+    flushSave();
     setStep(Math.min(Math.max(idx, 0), phases.length - 1));
     resetTransient();
   }
@@ -447,6 +448,8 @@ export function PhaseRecorder({
   // 단계/날짜/세부항목 "전환 시에만" 저장된 기록을 form 에 로드 (records 갱신에는 반응 안 함 -> 입력 안 덮어씀)
   const loadKeyRef = useRef<string>("");
   const justLoadedRef = useRef<boolean>(false);
+  // 저장한 값을 메모리에 캐시 - 서버 갱신이 늦어도 단계 복귀 시 입력값 유지
+  const savedFormsRef = useRef<Map<string, typeof form>>(new Map());
   useEffect(() => {
     const cur = phases[step];
     if (!cur) return;
@@ -455,6 +458,14 @@ export function PhaseRecorder({
     loadKeyRef.current = key;
     const rec = recMap.get(cur.id);
     justLoadedRef.current = true; // 로드 직후 자동저장 1회 스킵
+    const cached = savedFormsRef.current.get(key);
+    if (cached) {
+      // 이 세션에서 저장한 값이 있으면 우선 사용 (서버 갱신 지연 대비)
+      setForm(cached);
+      setError("");
+      setEditing(true);
+      return;
+    }
     setForm({
       lat: rec?.latitude ?? null,
       lng: rec?.longitude ?? null,
@@ -505,6 +516,8 @@ export function PhaseRecorder({
       setLoading(true);
     }
     try {
+      // 저장 값을 캐시에 기록 (백그라운드 저장 중 단계 이동해도 값 유지)
+      savedFormsRef.current.set(`${i}|${selectedDate}|${subTypeId}`, form);
       const res = await fetch("/api/records", {
         method: "POST",
         headers: silent
