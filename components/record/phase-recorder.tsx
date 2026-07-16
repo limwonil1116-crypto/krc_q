@@ -211,6 +211,8 @@ export function PhaseRecorder({
   const router = useRouter();
 
   const [subTypeId, setSubTypeId] = useState<string>(subTypes[0]?.id || "");
+  // 캘린더 조회 필터 ("" = 전체보기) — 입력용 세부항목(subTypeId) 과 분리
+  const [calFilter, setCalFilter] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>(todayStr());
   const [editTarget, setEditTarget] = useState<{ phaseId: string; file: File } | null>(null);
   const [step, setStep] = useState(0); // 현재 단계 탭 인덱스
@@ -238,18 +240,18 @@ export function PhaseRecorder({
 
   const markedDates = useMemo(() => {
     const set = new Set<string>();
-    records.filter((r) => r.subTypeId === subTypeId).forEach((r) => r.inspectionDate && set.add(r.inspectionDate));
-    assets.filter((a) => a.subTypeId === subTypeId).forEach((a) => a.inspectionDate && set.add(a.inspectionDate));
+    records.filter((r) => !calFilter || r.subTypeId === calFilter).forEach((r) => r.inspectionDate && set.add(r.inspectionDate));
+    assets.filter((a) => !calFilter || a.subTypeId === calFilter).forEach((a) => a.inspectionDate && set.add(a.inspectionDate));
     return set;
-  }, [records, assets, subTypeId]);
+  }, [records, assets, calFilter]);
 
   const submittedDates = useMemo(() => {
     const set = new Set<string>();
     records
-      .filter((r) => r.subTypeId === subTypeId && r.status === "submitted")
+      .filter((r) => (!calFilter || r.subTypeId === calFilter) && r.status === "submitted")
       .forEach((r) => r.inspectionDate && set.add(r.inspectionDate));
     return set;
-  }, [records, subTypeId]);
+  }, [records, calFilter]);
 
   const recMap = new Map<string, Rec>();
   records
@@ -530,8 +532,8 @@ export function PhaseRecorder({
       }
       setEditing(true);
       setError("");
-      // 자동저장(silent)일 땐 화면 새로고침 안 함 (입력 중 form 유지). 수동 저장만 refresh.
-      if (!silent) router.refresh();
+      // 저장 후 항상 최신 기록으로 갱신 (form 은 단계 전환 시에만 로드하므로 입력값은 유지됨)
+      router.refresh();
     } catch (e) {
       setError((silent ? "⚠ 자동 저장 실패: " : "") + "요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
     } finally {
@@ -658,14 +660,7 @@ export function PhaseRecorder({
           <h1 className="text-xl font-bold text-[#0033A0]">{structureName}</h1>
           <p className="text-sm text-neutral-500">{typeName} · 세부항목별 검측 기록</p>
         </div>
-        {inspectionHref && (
-          <Link
-            href={inspectionHref}
-            className="whitespace-nowrap rounded-md bg-[#002A80] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#001d5c]"
-          >
-            📋 검측 요청서
-          </Link>
-        )}
+        {/* 상단 검측 요청서 버튼 제거 — 하단 제출 옆 [📋 검측요청서] 사용 */}
         <Link
           href={videoHref}
           className="whitespace-nowrap rounded-md bg-[#FE5000] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#E04800]"
@@ -674,6 +669,34 @@ export function PhaseRecorder({
         </Link>
       </div>
 
+      <div className="space-y-2 rounded-2xl border border-neutral-200 bg-white p-3">
+        <Label>캘린더 조회 (공종별)</Label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setCalFilter("")}
+            className={
+              "rounded-full px-3 py-1.5 text-sm font-semibold " +
+              (calFilter === "" ? "bg-[#FE5000] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
+            }
+          >
+            전체보기
+          </button>
+          {subTypes.map((t) => (
+            <button
+              key={"cal-" + t.id}
+              type="button"
+              onClick={() => setCalFilter(t.id)}
+              className={
+                "rounded-full px-3 py-1.5 text-sm font-semibold " +
+                (calFilter === t.id ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
+              }
+            >
+              {t.name}
+            </button>
+          ))}
+        </div>
+      </div>
       {subTypeId && (
         <>
           <Calendar selected={selectedDate} marked={markedDates} submitted={submittedDates} onSelect={changeDate} />
@@ -697,28 +720,7 @@ export function PhaseRecorder({
         </>
       )}
 
-      <div className="space-y-2 rounded-2xl border border-neutral-200 bg-white p-3">
-        <Label>세부 항목 (공종)</Label>
-        {subTypes.length === 0 ? (
-          <p className="text-sm text-neutral-500">이 대분류에는 세부 항목이 없습니다.</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {subTypes.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => changeSubType(t.id)}
-                className={
-                  "rounded-full px-3 py-1.5 text-sm font-semibold " +
-                  (t.id === subTypeId ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
-                }
-              >
-                {t.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* 상단 세부항목 탭 제거 — F1 카드 안에서 선택 */}
 
       {!subTypeId ? (
         <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
@@ -871,6 +873,26 @@ export function PhaseRecorder({
                   <div className="space-y-3">
                     {step === 0 && (
                       <>
+                        <div className="space-y-1">
+                          <Label>세부 항목 (공종)</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {subTypes.map((t) => (
+                              <button
+                                key={"f1-" + t.id}
+                                type="button"
+                                onClick={() => changeSubType(t.id)}
+                                className={
+                                  "rounded-full px-3 py-1.5 text-sm font-semibold " +
+                                  (t.id === subTypeId
+                                    ? "bg-[#0033A0] text-white"
+                                    : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
+                                }
+                              >
+                                {t.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                         <div className="space-y-1">
                           <Label>검측내용</Label>
                           <input
