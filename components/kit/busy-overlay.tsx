@@ -69,12 +69,24 @@ export function BusyProvider({ children }: { children: React.ReactNode }) {
     let timer: number | null = null;
     let shown = false;
     const patched: typeof window.fetch = (...args) => {
-      // x-silent 헤더 요청(자동저장 등)은 전역 로딩 오버레이를 띄우지 않음
+      // 헤더 읽기 - 객체 / Headers 인스턴스 모두 지원
       const _init = args[1] as RequestInit | undefined;
-      const _h = (_init?.headers || {}) as Record<string, string>;
-      if (_h["x-silent"] === "1" || _h["X-Silent"] === "1") return orig(...args);
-      // Next.js 라우터 갱신(RSC) 요청은 오버레이 대상에서 제외
-      const _u = typeof args[0] === "string" ? args[0] : ((args[0] as Request)?.url || "");
+      const _raw = _init?.headers;
+      const _get = (k: string): string | null => {
+        if (!_raw) return null;
+        if (typeof (_raw as Headers).get === "function") return (_raw as Headers).get(k);
+        const o = _raw as Record<string, string>;
+        return o[k] ?? o[k.toLowerCase()] ?? o[k.toUpperCase()] ?? null;
+      };
+      // x-silent 요청 - 자동저장, 지도 업로드 등은 오버레이 제외
+      if (_get("x-silent") === "1") return orig(...args);
+      // Next.js RSC 요청 - router.refresh / prefetch 는 오버레이 제외
+      if (_get("RSC") === "1" || _get("Next-Router-State-Tree")) return orig(...args);
+      const _req = typeof Request !== "undefined" && args[0] instanceof Request ? (args[0] as Request) : null;
+      if (_req && (_req.headers.get("RSC") === "1" || _req.headers.get("Next-Router-State-Tree"))) {
+        return orig(...args);
+      }
+      const _u = typeof args[0] === "string" ? args[0] : (_req?.url || "");
       if (_u.includes("_rsc=")) return orig(...args);
       pending += 1;
       if (timer === null && !shown) {
