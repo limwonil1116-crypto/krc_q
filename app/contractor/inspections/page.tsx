@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { desc, eq, inArray, or } from "drizzle-orm";
+import { InspectionActions } from "@/components/inspection/inspection-actions";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { constructionSites, siteStructures, siteParticipants, inspectionRequests } from "@/lib/db/schema";
@@ -98,10 +99,10 @@ export default async function Page() {
       ) : (
         <div className="space-y-2">
           {rows.map((r) => (
+            <div key={r.id} className="rounded-xl border border-neutral-200 bg-white p-3">
             <Link
-              key={r.id}
               href={`/contractor/sites/${r.siteId}/structures/${r.structureId}/inspection?reqId=${r.id}`}
-              className="block rounded-xl border border-neutral-200 bg-white p-3 hover:border-[#0033A0]"
+              className="block hover:opacity-80"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
@@ -123,6 +124,8 @@ export default async function Page() {
                 </span>
               </div>
             </Link>
+            <InspectionActions id={r.id} status={r.status || "draft"} />
+            </div>
           ))}
         </div>
       )}
