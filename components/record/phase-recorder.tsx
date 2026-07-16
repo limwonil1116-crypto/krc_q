@@ -305,6 +305,8 @@ export function PhaseRecorder({
     setEditing(true);
     setGuideOpen(false);
     setError("");
+    // 날짜/공종/단계 전환 시 지도 캡처 플래그 초기화
+    mapDirtyRef.current = false;
   }
   // 단계/날짜/세부항목을 옮기기 전에 대기 중인 자동저장을 즉시 실행
   function flushSave() {
@@ -391,7 +393,13 @@ export function PhaseRecorder({
 
   // 검측 위치 지도(VWorld 캡처)를 map 타입으로 백그라운드 업로드
   const lastMapRef = useRef<string>("");
+  // 사용자가 지도를 직접 클릭/검색해 위치를 지정했을 때만 true (조회만 할 땐 캡처 안 함)
+  const mapDirtyRef = useRef(false);
   async function uploadMapImage(dataUrl: string) {
+    // 조회만 할 때(저장된 기록 열람)는 캡처하지 않음 — 사용자가 위치를 새로 지정한 경우만
+    if (!mapDirtyRef.current) return;
+    // 이미 제출된 검측일자는 지도 갱신 안 함
+    if (submittedCurrent) return;
     if (!dataUrl || dataUrl === lastMapRef.current) return;
     lastMapRef.current = dataUrl;
     const f1 = phases[0];
@@ -408,6 +416,7 @@ export function PhaseRecorder({
       fd.append("assetType", "map");
       fd.append("file", file);
       await fetch("/api/records/assets", { method: "POST", body: fd, headers: { "x-silent": "1" } });
+      mapDirtyRef.current = false;
       router.refresh();
     } catch {
       // 조용히 무시 (지도는 보조 자료)
@@ -955,7 +964,10 @@ export function PhaseRecorder({
                           <Label>검측 위치 (지도)</Label>
                           <KakaoMapPicker
                             value={{ lat: form.lat, lng: form.lng, address: form.address }}
-                            onChange={(v) => setForm((f) => ({ ...f, lat: v.lat, lng: v.lng, address: v.address }))}
+                            onChange={(v) => {
+                              mapDirtyRef.current = true;
+                              setForm((f) => ({ ...f, lat: v.lat, lng: v.lng, address: v.address }));
+                            }}
                             onCapture={(dataUrl) => uploadMapImage(dataUrl)}
                           />
                           {mapCapturing && (
