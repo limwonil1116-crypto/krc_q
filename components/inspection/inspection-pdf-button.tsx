@@ -18,7 +18,12 @@ async function captureVideoFrames(url: string): Promise<string[]> {
     const frames: string[] = [];
     v.onloadeddata = async () => {
       const dur = v.duration || 0;
-      const points = dur > 0 ? [dur * 0.1, dur * 0.5, dur * 0.9] : [0];
+      // 재생 길이를 9등분해 8장을 균등 간격으로 캡처 (같은 장면 반복 방지)
+      const FRAME_COUNT = 8;
+      const points =
+        dur > 0
+          ? Array.from({ length: FRAME_COUNT }, (_, i) => (dur * (i + 1)) / (FRAME_COUNT + 1))
+          : [0];
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       for (const t of points) {

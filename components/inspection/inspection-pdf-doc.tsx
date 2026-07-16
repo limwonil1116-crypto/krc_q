@@ -141,7 +141,7 @@ export function InspectionPdfDoc({ data, pageRefs }: { data: PdfData; pageRefs: 
             </tr>
           </tbody>
         </table>
-        <p style={{ margin: "8px 0", fontSize: 11 }}>붙 임 : 검측 체크리스트, 시공사진, 도면 각1부</p>
+        <p style={{ margin: "8px 0", fontSize: 11 }}>붙 임 : 검측 체크리스트, 설계도면 및 검측사진, 영상 주요장면 각1부</p>
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, margin: "16px 0", fontSize: 13 }}>
           <span>현장대리인 &nbsp; {r.contractorAgentName || "___________"}</span>
           {r.contractorSignature ? (
@@ -274,7 +274,7 @@ export function InspectionPdfDoc({ data, pageRefs }: { data: PdfData; pageRefs: 
       {photoPages.map((pagePhotos, pi) => (
         <div key={"ph" + pi} ref={(el) => pageRefs(el, photoPageBase + pi)} style={PAGE_STYLE}>
           <h2 style={{ textAlign: "center", fontSize: 18, fontWeight: 800, margin: "0 0 16px" }}>
-            시공 사진 {photoPages.length > 1 ? `(${pi + 1}/${photoPages.length})` : ""}
+            설계도면 및 검측사진 {photoPages.length > 1 ? `(${pi + 1}/${photoPages.length})` : ""}
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {pagePhotos.map((a) => (
@@ -296,7 +296,7 @@ export function InspectionPdfDoc({ data, pageRefs }: { data: PdfData; pageRefs: 
             {videoFrames.map((src, i) => (
               <div key={i} style={{ border: "1px solid #ddd", padding: 6 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={"frame" + i} style={{ width: "100%", height: 200, objectFit: "cover" }} />
+                <img src={src} alt={"frame" + i} style={{ width: "100%", height: 150, objectFit: "cover" }} />
                 <p style={{ fontSize: 10, color: "#666", marginTop: 4, textAlign: "center" }}>장면 {i + 1}</p>
               </div>
             ))}
