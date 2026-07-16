@@ -309,7 +309,7 @@ export function PhaseRecorder({
     mapDirtyRef.current = false;
   }
   // 단계/날짜/세부항목을 옮기기 전에 대기 중인 자동저장을 즉시 실행
-  function flushSave() {
+  async function flushSave() {
     const cur = phases[step];
     if (!cur || !selectedDate || !subTypeId) return;
     const hasContent =
@@ -326,22 +326,22 @@ export function PhaseRecorder({
       clearTimeout(autosaveTimer.current);
       autosaveTimer.current = null;
     }
-    void saveText(cur, step, true);
+    await saveText(cur, step, true);
   }
-  function changeSubType(id: string) {
-    flushSave();
+  async function changeSubType(id: string) {
+    await flushSave();
     setSubTypeId(id);
     setStep(0);
     resetTransient();
   }
-  function changeDate(d: string) {
-    flushSave();
+  async function changeDate(d: string) {
+    await flushSave();
     setSelectedDate(d);
     setStep(0);
     resetTransient();
   }
-  function goStep(idx: number) {
-    flushSave();
+  async function goStep(idx: number) {
+    await flushSave();
     setStep(Math.min(Math.max(idx, 0), phases.length - 1));
     resetTransient();
   }
