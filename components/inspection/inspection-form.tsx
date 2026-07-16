@@ -19,7 +19,14 @@ type Rec = {
   inspectionPartToSub: number | null;
   locationAddress: string | null;
 };
-type AssetRow = { inspectionDate: string | null; subTypeId: string | null; assetType: string };
+type AssetRow = {
+  id?: string;
+  inspectionDate: string | null;
+  subTypeId: string | null;
+  assetType: string;
+  fileName?: string | null;
+  mimeType?: string | null;
+};
 type ReqRow = { id: string; inspectionDate: string | null; inspectionMatter: string | null; status: string };
 type Site = { projectName: string; districtName: string; address: string; contractorCompany: string | null } | null;
 
@@ -209,7 +216,7 @@ export function InspectionForm({
     const matter = src.inspectionContent || "";
     setForm((f) => ({
       ...f,
-      locationWork: f.locationWork || subTypeName || structureName,
+      locationWork: subTypeName ? `${structureName} · ${subTypeName}` : f.locationWork || structureName,
       inspectionPart: part || f.inspectionPart,
       inspectionMatter: matter || f.inspectionMatter,
     }));
@@ -258,6 +265,17 @@ export function InspectionForm({
       doc: a.filter((x) => x.assetType === "document").length,
     };
   }, [assets, selectedDate]);
+  // 선택 날짜의 연계 자료 목록 (미리보기용). 자동 생성된 완성영상은 제외
+  const dayAssetList = useMemo(
+    () =>
+      assets.filter(
+        (x) =>
+          x.inspectionDate === selectedDate &&
+          !!x.id &&
+          !(x.fileName || "").startsWith("[최종영상]")
+      ),
+    [assets, selectedDate]
+  );
 
   async function saveDraft(submit = false) {
     if (submit) {
@@ -548,6 +566,40 @@ export function InspectionForm({
           )}
         </div>
 
+        {dayAssetList.length > 0 && (
+          <div className="rounded-md border border-neutral-200 bg-white p-3">
+            <p className="mb-2 text-sm font-bold text-[#0033A0]">연계 자료 ({selectedDate})</p>
+            <div className="flex flex-wrap gap-2">
+              {dayAssetList.map((a) => (
+                <div key={a.id} className="w-28">
+                  {a.assetType === "video" ? (
+                    <video
+                      src={`/api/assets/${a.id}/raw`}
+                      controls
+                      className="h-20 w-28 rounded border border-neutral-200 object-cover"
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`/api/assets/${a.id}/raw`}
+                      alt={a.fileName || ""}
+                      className="h-20 w-28 rounded border border-neutral-200 object-cover"
+                    />
+                  )}
+                  <p className="mt-0.5 truncate text-[10px] text-neutral-500">
+                    {a.assetType === "photo"
+                      ? "사진"
+                      : a.assetType === "video"
+                      ? "영상"
+                      : a.assetType === "map"
+                      ? "지도"
+                      : "도면"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex gap-2">
           <button
             type="button"

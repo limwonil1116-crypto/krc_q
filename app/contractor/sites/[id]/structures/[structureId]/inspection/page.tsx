@@ -88,9 +88,12 @@ export default async function InspectionPage({
   // 자료(사진/영상/도면/지도) 개수 확인용
   const assets = await db
     .select({
+      id: recordAssets.id,
       inspectionDate: constructionRecords.inspectionDate,
       subTypeId: constructionRecords.subTypeId,
       assetType: recordAssets.assetType,
+      fileName: recordAssets.fileName,
+      mimeType: recordAssets.mimeType,
     })
     .from(recordAssets)
     .innerJoin(constructionRecords, eq(recordAssets.recordId, constructionRecords.id))
