@@ -8,6 +8,7 @@ import {
   phaseTemplates,
   constructionRecords,
   recordAssets,
+  inspectionRequests,
 } from "@/lib/db/schema";
 import { PhaseRecorder } from "@/components/record/phase-recorder";
 
@@ -98,6 +99,17 @@ export default async function StructurePhasesPage({
     .innerJoin(constructionRecords, eq(recordAssets.recordId, constructionRecords.id))
     .where(and(eq(constructionRecords.siteStructureId, structureId), eq(recordAssets.uploadStatus, "uploaded")));
 
+  // 검측요청서(날짜+공종별) — 확인/결과서 버튼 표시용
+  const requests = await db
+    .select({
+      id: inspectionRequests.id,
+      subTypeId: inspectionRequests.subTypeId,
+      inspectionDate: inspectionRequests.inspectionDate,
+      status: inspectionRequests.status,
+    })
+    .from(inspectionRequests)
+    .where(eq(inspectionRequests.siteStructureId, structureId));
+
   return (
     <PhaseRecorder
       siteStructureId={ss.id}
@@ -108,6 +120,8 @@ export default async function StructurePhasesPage({
       records={recs}
       assets={assets}
       videoHref={`/client/sites/${id}/structures/${structureId}/video`}
+      requests={requests}
+      inspectionBaseHref="/client/inspections"
     />
   );
 }
