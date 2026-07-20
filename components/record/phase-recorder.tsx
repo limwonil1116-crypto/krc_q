@@ -301,6 +301,37 @@ export function PhaseRecorder({
     }
   }
 
+  async function deleteDayRecord() {
+    if (!selectedDate || !subTypeId) return;
+    if (
+      !window.confirm(
+        `${selectedDate} 검측기록(공종종류·설계도면·세부촬영)과 첨부 사진·영상을 모두 삭제합니다.\n되돌릴 수 없습니다. 계속할까요?`
+      )
+    )
+      return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/records", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        setError(data.error || "삭제에 실패했습니다.");
+        return;
+      }
+      // 화면 초기화 + 갱신
+      loadKeyRef.current = "";
+      savedFormsRef.current.delete(`${step}|${selectedDate}|${subTypeId}`);
+      setStep(0);
+      router.refresh();
+    } catch (e) {
+      setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
   function resetTransient() {
     setEditing(true);
     setGuideOpen(false);
@@ -1078,6 +1109,14 @@ export function PhaseRecorder({
                     <Button type="button" variant="outline" onClick={() => submitInspection("cancel")} disabled={submitting}>
                       {submitting ? "처리 중..." : "제출 취소"}
                     </Button>
+                    <button
+                      type="button"
+                      onClick={deleteDayRecord}
+                      disabled={submitting}
+                      className="whitespace-nowrap rounded-md border border-red-300 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      🗑 삭제
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -1092,6 +1131,16 @@ export function PhaseRecorder({
                     >
                       📋 검측요청서
                     </Link>
+                  )}
+                  {hasCurrent && (
+                    <button
+                      type="button"
+                      onClick={deleteDayRecord}
+                      disabled={submitting}
+                      className="flex items-center whitespace-nowrap rounded-md border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      🗑 삭제
+                    </button>
                   )}
                 </div>
               )}

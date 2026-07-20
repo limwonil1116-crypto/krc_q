@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { constructionSites, siteStructures, constructionRecords, siteParticipants } from "@/lib/db/schema";
+import { constructionSites, siteStructures, constructionRecords, recordAssets, siteParticipants } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
 
 function todayStr() {
@@ -120,5 +120,61 @@ export async function POST(req: Request) {
     console.error("[records:post]", e);
     const msg = e instanceof Error ? e.message : "알 수 없는 오류";
     return NextResponse.json({ error: "기록 저장 오류: " + msg }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await auth();
+    const role = session?.user?.role;
+    if (!session?.user?.id || (role !== "contractor" && role !== "client" && role !== "admin")) {
+      return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+    }
+    const userId = session.user.id;
+
+    const b = await req.json();
+    const siteStructureId = (b.siteStructureId ?? "").trim();
+    const subTypeId = (b.subTypeId ?? "").trim();
+    const inspectionDate = (b.inspectionDate ?? "").trim();
+    if (!siteStructureId || !subTypeId || !inspectionDate) {
+      return NextResponse.json({ error: "구조물/세부항목/검측일자 정보가 필요합니다." }, { status: 400 });
+    }
+
+    const ssRows = await db.select().from(siteStructures).where(eq(siteStructures.id, siteStructureId)).limit(1);
+    const ss = ssRows[0];
+    if (!ss) return NextResponse.json({ error: "구조물을 찾을 수 없습니다." }, { status: 404 });
+    if (!(await ownsSite(userId, ss.siteId))) {
+      return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+    }
+
+    // 해당 날짜+공종의 F1~F3 기록 조회
+    const recs = await db
+      .select({ id: constructionRecords.id })
+      .from(constructionRecords)
+      .where(
+        and(
+          eq(constructionRecords.siteStructureId, siteStructureId),
+          eq(constructionRecords.subTypeId, subTypeId),
+          eq(constructionRecords.inspectionDate, inspectionDate)
+        )
+      );
+    if (recs.length === 0) {
+      return NextResponse.json({ ok: true, deleted: 0 });
+    }
+    const recordIds = recs.map((r) => r.id);
+
+    // 자료(사진/영상/지도/도면) 먼저 삭제 (DB 만; 드라이브 원본은 보존)
+    for (const rid of recordIds) {
+      await db.delete(recordAssets).where(eq(recordAssets.recordId, rid));
+    }
+    // 기록 삭제
+    for (const rid of recordIds) {
+      await db.delete(constructionRecords).where(eq(constructionRecords.id, rid));
+    }
+    return NextResponse.json({ ok: true, deleted: recordIds.length });
+  } catch (e) {
+    console.error("[records:delete]", e);
+    const msg = e instanceof Error ? e.message : "알 수 없는 오류";
+    return NextResponse.json({ error: "삭제 오류: " + msg }, { status: 500 });
   }
 }
