@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SignaturePad } from "@/components/inspection/signature-pad";
 import { InspectionPdfButton } from "@/components/inspection/inspection-pdf-button";
+import { InspectionActions } from "@/components/inspection/inspection-actions";
 
 type SubType = { id: string; name: string };
 type Supervisor = { id: string; name: string; branch: string | null };
@@ -623,6 +624,13 @@ export function InspectionForm({
         <div className="mt-3 flex justify-center">
           <InspectionPdfButton requestId={initialReqId} label="📄 검측 서류 PDF (사진·영상 증빙 포함)" />
         </div>
+      )}
+      {initialReqId && (
+        <InspectionActions
+          id={initialReqId}
+          status={existingRequests.find((r) => r.id === initialReqId)?.status || "draft"}
+          afterDelete={backHref}
+        />
       )}
 
       {showConsent && (

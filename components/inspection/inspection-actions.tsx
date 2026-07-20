@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function InspectionActions({ id, status }: { id: string; status: string }) {
+export function InspectionActions({
+  id,
+  status,
+  afterDelete,
+}: {
+  id: string;
+  status: string;
+  afterDelete?: string;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -26,6 +34,10 @@ export function InspectionActions({ id, status }: { id: string; status: string }
       const data = await res.json();
       if (!res.ok || !data.ok) {
         alert(data.error || "처리에 실패했습니다.");
+        return;
+      }
+      if (action === "delete" && afterDelete) {
+        router.push(afterDelete);
         return;
       }
       router.refresh();
