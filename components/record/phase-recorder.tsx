@@ -197,6 +197,8 @@ export function PhaseRecorder({
   assets,
   videoHref,
   inspectionHref,
+  requests = [],
+  inspectionBaseHref,
 }: {
   siteStructureId: string;
   structureName: string;
@@ -207,6 +209,8 @@ export function PhaseRecorder({
   assets: Asset[];
   videoHref: string;
   inspectionHref?: string;
+  requests?: { id: string; subTypeId: string | null; inspectionDate: string | null; status: string }[];
+  inspectionBaseHref?: string;
 }) {
   const router = useRouter();
 
@@ -268,6 +272,10 @@ export function PhaseRecorder({
 
   const submittedCurrent = Array.from(recMap.values()).some((r) => r.status === "submitted");
   const hasCurrent = recMap.size > 0 || assetMap.size > 0;
+  // 발주처/감독: 선택 날짜+공종의 검측요청서
+  const currentRequest = requests.find(
+    (q) => q.inspectionDate === selectedDate && (q.subTypeId || "") === (subTypeId || "")
+  );
 
   async function submitInspection(action: "submit" | "cancel") {
     if (action === "submit") setConsentOpen(false);
@@ -1106,6 +1114,22 @@ export function PhaseRecorder({
                         📋 검측요청서
                       </Link>
                     )}
+                    {inspectionBaseHref && currentRequest && (
+                      <Link
+                        href={`${inspectionBaseHref}/${currentRequest.id}`}
+                        className={
+                          "whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold text-white " +
+                          (currentRequest.status === "approved" ? "bg-emerald-600" : "bg-[#002A80]")
+                        }
+                      >
+                        {currentRequest.status === "approved" ? "📄 검측결과서 확인하기" : "📋 검측요청서 확인하기"}
+                      </Link>
+                    )}
+                    {inspectionBaseHref && !currentRequest && (
+                      <span className="whitespace-nowrap rounded-md bg-neutral-100 px-3 py-2 text-sm text-neutral-500">
+                        검측요청서가 아직 제출되지 않았습니다
+                      </span>
+                    )}
                     <Button type="button" variant="outline" onClick={() => submitInspection("cancel")} disabled={submitting}>
                       {submitting ? "처리 중..." : "제출 취소"}
                     </Button>
@@ -1131,6 +1155,22 @@ export function PhaseRecorder({
                     >
                       📋 검측요청서
                     </Link>
+                  )}
+                  {inspectionBaseHref && currentRequest && (
+                    <Link
+                      href={`${inspectionBaseHref}/${currentRequest.id}`}
+                      className={
+                        "flex items-center whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-semibold text-white " +
+                        (currentRequest.status === "approved" ? "bg-emerald-600" : "bg-[#002A80]")
+                      }
+                    >
+                      {currentRequest.status === "approved" ? "📄 검측결과서 확인하기" : "📋 검측요청서 확인하기"}
+                    </Link>
+                  )}
+                  {inspectionBaseHref && !currentRequest && (
+                    <span className="flex items-center whitespace-nowrap rounded-md bg-neutral-100 px-4 py-2.5 text-sm text-neutral-500">
+                      검측요청서가 아직 제출되지 않았습니다
+                    </span>
                   )}
                   {hasCurrent && (
                     <button
