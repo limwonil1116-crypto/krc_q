@@ -1095,9 +1095,9 @@ export function PhaseRecorder({
           {hasCurrent && (isLast || submittedCurrent) && (
             <div className="rounded-2xl border border-neutral-200 bg-white p-4">
               {submittedCurrent ? (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-green-700">✓ 제출됨 ({selectedDate})</span>
-                  <div className="flex gap-2">
+                <div className="space-y-3">
+                  <span className="block font-semibold text-green-700">✓ 제출됨 ({selectedDate})</span>
+                  <div className="flex flex-wrap gap-2">
                     {inspectionHref && (
                       <Link
                         href={`${inspectionHref}?date=${encodeURIComponent(selectedDate)}&sub=${encodeURIComponent(subTypeId)}&auto=1`}
