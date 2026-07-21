@@ -6,8 +6,8 @@ export type ExportSlide =
   | { kind: "title" }
   | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null; mapSrc: string | null }
   | { kind: "section"; label: string; text: string | null }
-  | { kind: "image"; src: string; caption: string }
-  | { kind: "video"; src: string; caption: string };
+  | { kind: "image"; src: string; caption: string; description?: string | null }
+  | { kind: "video"; src: string; caption: string; description?: string | null };
 
 export type ExportMeta = {
   projectName: string;
@@ -280,7 +280,8 @@ export function VideoExporter({
     src: CanvasImageSource,
     iw: number,
     ih: number,
-    caption: string
+    caption: string,
+    description?: string | null
   ) {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, W, H);
@@ -294,16 +295,46 @@ export function VideoExporter({
     ctx.font = "bold 18px sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(`KRC 건설공사실록 · ${date}`, 36, 48);
-    const grad = ctx.createLinearGradient(0, H - 90, 0, H);
+    // 설명(F2·F3 텍스트)이 있으면 자막 영역을 키워 여러 줄 표시
+    const desc = (description || "").trim();
+    const boxH = desc ? 200 : 90;
+    const grad = ctx.createLinearGradient(0, H - boxH, 0, H);
     grad.addColorStop(0, "rgba(0,0,0,0)");
-    grad.addColorStop(1, "rgba(0,0,0,0.75)");
+    grad.addColorStop(0.35, "rgba(0,0,0,0.55)");
+    grad.addColorStop(1, "rgba(0,0,0,0.82)");
     ctx.fillStyle = grad;
-    ctx.fillRect(0, H - 90, W, 90);
+    ctx.fillRect(0, H - boxH, W, boxH);
     ctx.fillStyle = ORANGE;
-    ctx.fillRect(36, H - 52, 6, 28);
+    ctx.fillRect(36, H - boxH + 30, 6, 28);
     ctx.fillStyle = "#fff";
     ctx.font = "bold 26px sans-serif";
-    ctx.fillText(caption, 56, H - 30);
+    ctx.textAlign = "left";
+    ctx.fillText(caption, 56, H - boxH + 52);
+    if (desc) {
+      ctx.font = "22px sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      // 단어 단위 줄바꿈 (최대 4줄)
+      const maxWidth = W - 72;
+      const words = desc.split(/\s+/);
+      const lines: string[] = [];
+      let cur = "";
+      for (const w of words) {
+        const test = cur ? cur + " " + w : w;
+        if (ctx.measureText(test).width > maxWidth && cur) {
+          lines.push(cur);
+          cur = w;
+        } else {
+          cur = test;
+        }
+        if (lines.length >= 4) break;
+      }
+      if (cur && lines.length < 4) lines.push(cur);
+      let ly = H - boxH + 88;
+      for (const line of lines.slice(0, 4)) {
+        ctx.fillText(line, 56, ly);
+        ly += 30;
+      }
+    }
   }
 
   async function exportVideo(withBgm: boolean, opts?: { download?: boolean; upload?: boolean }) {
@@ -411,7 +442,7 @@ export function VideoExporter({
               }
               const iw = v.videoWidth || W;
               const ih = v.videoHeight || H;
-              drawMediaFrame(ctx, v, iw, ih, s.caption);
+              drawMediaFrame(ctx, v, iw, ih, s.caption, "description" in s ? s.description : null);
               elapsed += 1 / FPS;
               setProgress(15 + Math.round((elapsed / totalSec) * 83));
               setTimeout(tick, frameMs);
@@ -434,7 +465,7 @@ export function VideoExporter({
             else if (s.kind === "section") drawSection(ctx, s.label, s.text);
             else {
               const m = media[i] as HTMLImageElement | null;
-              if (m) drawMediaFrame(ctx, m, m.naturalWidth || W, m.naturalHeight || H, s.caption);
+              if (m) drawMediaFrame(ctx, m, m.naturalWidth || W, m.naturalHeight || H, s.caption, "description" in s ? s.description : null);
               else {
                 drawBackground(ctx, "#111");
                 ctx.fillStyle = "#fff";

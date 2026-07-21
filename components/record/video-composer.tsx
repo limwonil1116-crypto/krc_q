@@ -30,8 +30,8 @@ type Slide =
   | { kind: "title" }
   | { kind: "location"; address: string; lat: number; lng: number; content: string | null; part: string | null; mapSrc: string | null }
   | { kind: "section"; label: string; text: string | null }
-  | { kind: "image"; src: string; caption: string }
-  | { kind: "video"; src: string; caption: string };
+  | { kind: "image"; src: string; caption: string; description?: string | null }
+  | { kind: "video"; src: string; caption: string; description?: string | null };
 
 const TITLE_MS = 4200;
 const LOCATION_MS = 3400;
@@ -189,8 +189,8 @@ export function VideoComposer({
       } else if (list.length > 0 || (r && r.textDescription)) {
         out.push({ kind: "section", label: `${i + 1}. ${p.name}`, text: r?.textDescription ?? null });
       }
-      photos.forEach((a) => out.push({ kind: "image", src: `/api/assets/${a.id}/raw`, caption: p.name }));
-      videos.forEach((a) => out.push({ kind: "video", src: `/api/assets/${a.id}/raw`, caption: p.name }));
+      photos.forEach((a) => out.push({ kind: "image", src: `/api/assets/${a.id}/raw`, caption: p.name, description: r?.textDescription ?? null }));
+      videos.forEach((a) => out.push({ kind: "video", src: `/api/assets/${a.id}/raw`, caption: p.name, description: r?.textDescription ?? null }));
     });
     return out;
   }, [date, phases, records, assets]);
