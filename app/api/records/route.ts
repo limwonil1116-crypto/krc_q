@@ -89,6 +89,25 @@ export async function POST(req: Request) {
       )
       .limit(1);
 
+    // [빈 저장 방어] 내용이 전부 비어 있고 기존 기록도 없으면 새로 만들지 않음
+    // (삭제 직후 자동저장이 빈 폼을 새 기록으로 재생성하는 문제 원천 차단)
+    const isEmptyValues =
+      !values.inspectionContent &&
+      !values.textDescription &&
+      !values.voiceMemoText &&
+      !values.title &&
+      values.inspectionPartFromMain == null &&
+      values.inspectionPartFromSub == null &&
+      values.inspectionPartToMain == null &&
+      values.inspectionPartToSub == null &&
+      values.latitude == null &&
+      values.longitude == null &&
+      !values.locationAddress &&
+      !values.notApplicable;
+    if (isEmptyValues && !existing[0]) {
+      return NextResponse.json({ ok: true, skipped: true });
+    }
+
     if (existing[0]) {
       // 이미 제출/승인된 기록은 자동저장이 status 를 draft 로 되돌리지 않도록 유지
       const prev = existing[0].status;
