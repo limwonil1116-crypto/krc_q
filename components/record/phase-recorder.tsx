@@ -213,6 +213,8 @@ export function PhaseRecorder({
   inspectionBaseHref?: string;
 }) {
   const router = useRouter();
+  // 발주처/감독 화면(검측요청 확인용)은 읽기 전용 — 기록 저장/자동저장/삭제 금지
+  const readOnly = !!inspectionBaseHref && !inspectionHref;
 
   const [subTypeId, setSubTypeId] = useState<string>(subTypes[0]?.id || "");
   // 캘린더 조회 필터 ("" = 전체보기) — 입력용 세부항목(subTypeId) 과 분리
@@ -367,6 +369,7 @@ export function PhaseRecorder({
   }
   // 단계/날짜/세부항목을 옮기기 전에 대기 중인 자동저장을 즉시 실행
   function flushSave() {
+    if (readOnly) return; // 발주처/감독: 저장 금지
     const cur = phases[step];
     if (!cur || !selectedDate || !subTypeId) return;
     const hasContent =
@@ -542,6 +545,7 @@ export function PhaseRecorder({
   // 자동저장: form 이 바뀌면 1.5초 후 자동으로 저장 (기록저장 버튼 없이도)
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (readOnly) return; // 발주처/감독: 자동저장 금지
     if (justLoadedRef.current) {
       justLoadedRef.current = false; // 로드로 인한 변경은 저장 안 함
       return;
@@ -568,6 +572,7 @@ export function PhaseRecorder({
   }, [form]);
 
   async function saveText(p: Phase, i: number, silent: boolean = false) {
+    if (readOnly) return; // 발주처/감독: 저장 금지
     if (!silent) {
       setError("");
       setLoading(true);
