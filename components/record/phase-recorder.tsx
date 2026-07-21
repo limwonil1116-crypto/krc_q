@@ -329,9 +329,25 @@ export function PhaseRecorder({
         setError(data.error || "삭제에 실패했습니다.");
         return;
       }
-      // 화면 초기화 + 갱신
+      // 화면 초기화 + 갱신 — 삭제한 날짜·공종의 모든 단계 캐시 제거 (되살아남 방지)
       loadKeyRef.current = "";
-      savedFormsRef.current.delete(`${step}|${selectedDate}|${subTypeId}`);
+      for (let _i = 0; _i < phases.length; _i++) {
+        savedFormsRef.current.delete(`${_i}|${selectedDate}|${subTypeId}`);
+      }
+      // 폼도 즉시 비워 캐시 재기록 방지
+      setForm({
+        lat: null,
+        lng: null,
+        address: "",
+        textDescription: "",
+        inspectionContent: "",
+        partFromMain: "",
+        partFromSub: "",
+        partToMain: "",
+        partToSub: "",
+        notApplicable: false,
+        notApplicableReason: "",
+      });
       setStep(0);
       router.refresh();
     } catch (e) {
