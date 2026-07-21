@@ -334,6 +334,8 @@ export function PhaseRecorder({
       for (let _i = 0; _i < phases.length; _i++) {
         savedFormsRef.current.delete(`${_i}|${selectedDate}|${subTypeId}`);
       }
+      // 캘린더를 삭제한 공종 기준으로 맞춤 (전체보기면 다른 공종 때문에 마킹이 남아 혼동되므로)
+      setCalFilter(subTypeId);
       // 폼도 즉시 비워 캐시 재기록 방지
       setForm({
         lat: null,
