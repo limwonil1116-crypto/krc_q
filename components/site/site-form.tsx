@@ -124,6 +124,8 @@ export function SiteForm({
   const listPath = mode === "client" ? "/client/sites" : "/contractor/sites";
   const [f, setF] = useState<Form>(buildInitial(initial));
   const [error, setError] = useState("");
+  const [delConfirm, setDelConfirm] = useState("");
+  const [delBusy, setDelBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [logoName, setLogoName] = useState<string>(initial?.contractorLogoName ?? "");
   const [logoVer, setLogoVer] = useState(0);
@@ -155,6 +157,29 @@ export function SiteForm({
     }
   }
 
+  async function removeSite() {
+    if (!siteId) return;
+    if (!confirm("이 현장과 모든 하위 데이터를 삭제합니다. 되돌릴 수 없습니다. 계속할까요?")) return;
+    setDelBusy(true);
+    try {
+      const res = await fetch(`/api/sites/${siteId}`, { method: "DELETE" });
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // ignore
+      }
+      if (!res.ok || !data.ok) {
+        setError(data.error || "현장 삭제에 실패했습니다.");
+        return;
+      }
+      router.push(listPath);
+    } catch (e) {
+      setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+    } finally {
+      setDelBusy(false);
+    }
+  }
   async function deleteLogo() {
     if (!siteId || !confirm("시공사 로고를 삭제할까요?")) return;
     setLogoBusy(true);
@@ -446,6 +471,36 @@ export function SiteForm({
       )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {isEdit && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+          <p className="text-sm font-bold text-red-700">⚠️ 현장 삭제</p>
+          <p className="mt-1 text-xs text-red-600">
+            이 현장의 지구·검측기록·사진·영상·검측요청서가 <b>모두 삭제</b>됩니다. 되돌릴 수 없습니다.
+            <br />
+            (구글 드라이브에 저장된 원본 영상 파일은 보존됩니다)
+          </p>
+          <p className="mt-3 text-xs text-neutral-700">
+            삭제하려면 현장명 <b>{f.projectName || initial?.projectName || ""}</b> 을(를) 정확히 입력하세요.
+          </p>
+          <div className="mt-2 flex gap-2">
+            <Input
+              value={delConfirm}
+              onChange={(e) => setDelConfirm(e.target.value)}
+              placeholder="현장명 입력"
+              className="flex-1"
+            />
+            <button
+              type="button"
+              onClick={removeSite}
+              disabled={delBusy || delConfirm.trim() !== (f.projectName || "").trim() || !delConfirm.trim()}
+              className="whitespace-nowrap rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+            >
+              {delBusy ? "삭제 중..." : "🗑 영구 삭제"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <BottomBar>
         <Button type="button" variant="outline" className="flex-1" onClick={() => router.push(listPath)}>
