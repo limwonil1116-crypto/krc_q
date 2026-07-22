@@ -16,7 +16,22 @@ function sanitize(name: string) {
   return (name || "untitled").replace(/['\\]/g, " ").replace(/\s+/g, " ").trim().slice(0, 120) || "untitled";
 }
 
+// 동시 업로드 시 같은 폴더가 중복 생성되지 않도록 진행 중 요청을 공유
+const folderPromises = new Map<string, Promise<string>>();
 async function ensureFolder(drive: Drive, name: string, parentId: string): Promise<string> {
+  const key = parentId + "/" + sanitize(name);
+  const inflight = folderPromises.get(key);
+  if (inflight) return inflight;
+  const p = ensureFolderInner(drive, name, parentId);
+  folderPromises.set(key, p);
+  try {
+    return await p;
+  } catch (e) {
+    folderPromises.delete(key);
+    throw e;
+  }
+}
+async function ensureFolderInner(drive: Drive, name: string, parentId: string): Promise<string> {
   const safe = sanitize(name);
   const q = [
     "mimeType='application/vnd.google-apps.folder'",
