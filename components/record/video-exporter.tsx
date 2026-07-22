@@ -499,11 +499,46 @@ export function VideoExporter({
       if (doUpload && siteStructureId) {
         setMsg("드라이브에 저장 중...");
         try {
-          const form = new FormData();
-          form.append("siteStructureId", siteStructureId);
-          form.append("inspectionDate", date);
-          form.append("file", new File([blob], `${fileBase}_${date}.webm`, { type: "video/webm" }));
-          const res = await fetch("/api/records/video", { method: "POST", body: form });
+          const upName = `${fileBase}_${date}.webm`;
+          // 1) 업로드 세션 발급 (서버는 URL 만 발급, 파일은 통과하지 않음)
+          const sres = await fetch("/api/records/video/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              siteStructureId,
+              inspectionDate: date,
+              fileName: upName,
+              mimeType: "video/webm",
+            }),
+          });
+          const sd = await sres.json().catch(() => ({}));
+          if (!sres.ok || !sd.uploadUrl) {
+            throw new Error(sd.error || "업로드 세션 생성 실패 (" + sres.status + ")");
+          }
+          // 2) 브라우저에서 드라이브로 직접 업로드 (용량 제한 없음)
+          setMsg("드라이브 업로드 중...");
+          const put = await fetch(sd.uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": "video/webm" },
+            body: blob,
+          });
+          if (!put.ok) {
+            throw new Error("드라이브 업로드 실패 (" + put.status + ")");
+          }
+          const pd = await put.json().catch(() => ({}));
+          // 3) 서버에 파일 정보 등록
+          const res = await fetch("/api/records/video/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              siteStructureId,
+              inspectionDate: date,
+              fileId: pd.id,
+              fileName: sd.driveName || upName,
+              webViewLink: pd.webViewLink || "",
+              fileSizeBytes: blob.size,
+            }),
+          });
           const d = await res.json().catch(() => ({}));
           if (!res.ok || !d.ok) {
             setMsg("드라이브 저장 실패: " + (d.error || res.status));
@@ -548,16 +583,6 @@ export function VideoExporter({
         >
           🎵 BGM 포함 다운로드
         </button>
-        {canSave && siteStructureId && (
-          <button
-            type="button"
-            disabled={busy || slides.length === 0}
-            onClick={() => exportVideo(true, { download: false, upload: true })}
-            className="rounded-md bg-[#0033A0] px-4 py-2 text-sm font-bold text-white hover:bg-[#002A80] disabled:opacity-50"
-          >
-            💾 드라이브에 저장
-          </button>
-        )}
         {busy && (
           <button
             type="button"

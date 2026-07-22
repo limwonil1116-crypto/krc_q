@@ -95,3 +95,43 @@ export async function getDriveStream(fileId: string): Promise<NodeJS.ReadableStr
   const res = await drive.files.get({ fileId, alt: "media" }, { responseType: "stream" });
   return res.data as unknown as NodeJS.ReadableStream;
 }
+
+// 브라우저가 드라이브로 직접 업로드할 수 있는 재개가능 업로드 세션 생성
+// (서버는 URL 만 만들고 파일 본문은 통과시키지 않음 -> 용량 제한 없음)
+export async function createResumableSession(params: {
+  name: string;
+  mimeType: string;
+  folderPath?: string[];
+}): Promise<{ uploadUrl: string } | null> {
+  const oauth2 = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  );
+  oauth2.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+  const at = await oauth2.getAccessToken();
+  const token = typeof at === "string" ? at : at?.token;
+  if (!token) return null;
+  let folder: string | undefined = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  if (params.folderPath && params.folderPath.length > 0) {
+    const target = await ensureFolderPath(params.folderPath);
+    if (target) folder = target;
+  }
+  const res = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,webViewLink,size",
+    {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-Upload-Content-Type": params.mimeType,
+      },
+      body: JSON.stringify({
+        name: params.name,
+        parents: folder ? [folder] : undefined,
+      }),
+    }
+  );
+  if (!res.ok) return null;
+  const uploadUrl = res.headers.get("location");
+  return uploadUrl ? { uploadUrl } : null;
+}
