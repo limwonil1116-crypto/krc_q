@@ -507,6 +507,7 @@ export function VideoExporter({
           const d = await res.json().catch(() => ({}));
           if (!res.ok || !d.ok) {
             setMsg("드라이브 저장 실패: " + (d.error || res.status));
+            alert("드라이브 저장 실패: " + (d.error || res.status));
           } else {
             setMsg(doDownload ? "완료! 다운로드 + 드라이브 저장됨." : "드라이브에 저장되었습니다.");
           }
@@ -551,10 +552,10 @@ export function VideoExporter({
           <button
             type="button"
             disabled={busy || slides.length === 0}
-            onClick={() => exportVideo(true, { download: true, upload: true })}
+            onClick={() => exportVideo(true, { download: false, upload: true })}
             className="rounded-md bg-[#0033A0] px-4 py-2 text-sm font-bold text-white hover:bg-[#002A80] disabled:opacity-50"
           >
-            💾 드라이브 저장 + 다운로드
+            💾 드라이브에 저장
           </button>
         )}
         {busy && (
