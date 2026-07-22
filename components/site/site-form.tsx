@@ -159,7 +159,7 @@ export function SiteForm({
 
   async function removeSite() {
     if (!siteId) return;
-    if (!confirm("이 현장과 모든 하위 데이터를 삭제합니다. 되돌릴 수 없습니다. 계속할까요?")) return;
+    if (!confirm("이 지구와 모든 하위 데이터를 삭제합니다. 되돌릴 수 없습니다. 계속할까요?")) return;
     setDelBusy(true);
     try {
       const res = await fetch(`/api/sites/${siteId}`, { method: "DELETE" });
@@ -170,7 +170,7 @@ export function SiteForm({
         // ignore
       }
       if (!res.ok || !data.ok) {
-        setError(data.error || "현장 삭제에 실패했습니다.");
+        setError(data.error || "지구 삭제에 실패했습니다.");
         return;
       }
       router.push(listPath);
@@ -474,26 +474,26 @@ export function SiteForm({
 
       {isEdit && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-          <p className="text-sm font-bold text-red-700">⚠️ 현장 삭제</p>
+          <p className="text-sm font-bold text-red-700">⚠️ 지구 삭제</p>
           <p className="mt-1 text-xs text-red-600">
-            이 현장의 지구·검측기록·사진·영상·검측요청서가 <b>모두 삭제</b>됩니다. 되돌릴 수 없습니다.
+            이 지구의 구조물·검측기록·사진·영상·검측요청서가 <b>모두 삭제</b>됩니다. 되돌릴 수 없습니다.
             <br />
             (구글 드라이브에 저장된 원본 영상 파일은 보존됩니다)
           </p>
           <p className="mt-3 text-xs text-neutral-700">
-            삭제하려면 현장명 <b>{f.projectName || initial?.projectName || ""}</b> 을(를) 정확히 입력하세요.
+            삭제하려면 지구명 <b>{f.districtName || initial?.districtName || ""}</b> 을(를) 정확히 입력하세요.
           </p>
           <div className="mt-2 flex gap-2">
             <Input
               value={delConfirm}
               onChange={(e) => setDelConfirm(e.target.value)}
-              placeholder="현장명 입력"
+              placeholder="지구명 입력"
               className="flex-1"
             />
             <button
               type="button"
               onClick={removeSite}
-              disabled={delBusy || delConfirm.trim() !== (f.projectName || "").trim() || !delConfirm.trim()}
+              disabled={delBusy || delConfirm.trim() !== (f.districtName || "").trim() || !delConfirm.trim()}
               className="whitespace-nowrap rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
             >
               {delBusy ? "삭제 중..." : "🗑 영구 삭제"}
