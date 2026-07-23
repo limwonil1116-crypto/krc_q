@@ -71,16 +71,21 @@ function todayStr() {
   return ymd(new Date());
 }
 
+type CalEntry = { subTypeId: string; name: string; submitted: boolean };
 function Calendar({
   selected,
   marked,
   submitted,
+  entries = {},
   onSelect,
+  onSelectEntry,
 }: {
   selected: string;
   marked: Set<string>;
   submitted: Set<string>;
+  entries?: Record<string, CalEntry[]>;
   onSelect: (d: string) => void;
+  onSelectEntry?: (d: string, subTypeId: string) => void;
 }) {
   const init = selected ? parseYmd(selected) : new Date();
   const [vy, setVy] = useState(init.getFullYear());
@@ -139,12 +144,11 @@ function Calendar({
           c === null ? (
             <div key={i} />
           ) : (
-            <button
+            <div
               key={i}
-              type="button"
               onClick={() => onSelect(c)}
               className={
-                "flex min-h-[56px] flex-col gap-1 rounded-lg p-1 text-left hover:bg-neutral-100 " +
+                "flex min-h-[56px] cursor-pointer flex-col gap-1 rounded-lg p-1 text-left hover:bg-neutral-100 " +
                 (c === selected ? "ring-2 ring-[#0033A0]" : "")
               }
             >
@@ -160,7 +164,41 @@ function Calendar({
               >
                 {Number(c.split("-")[2])}
               </span>
-              {submitted.has(c) ? (
+              {(entries[c] || []).length > 0 ? (
+                <>
+                  {(entries[c] || []).slice(0, 3).map((en) => (
+                    <button
+                      key={c + "|" + en.subTypeId}
+                      type="button"
+                      title={en.name}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        if (onSelectEntry) onSelectEntry(c, en.subTypeId);
+                        else onSelect(c);
+                      }}
+                      className={
+                        "flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-[9px] font-semibold " +
+                        (en.submitted
+                          ? "bg-green-100 text-green-700 hover:bg-green-200"
+                          : "bg-orange-100 text-orange-700 hover:bg-orange-200")
+                      }
+                    >
+                      <span
+                        className={
+                          "inline-block h-2 w-2 shrink-0 rounded-full " +
+                          (en.submitted ? "bg-green-500" : "bg-orange-500")
+                        }
+                      />
+                      <span className="truncate">{en.name}</span>
+                    </button>
+                  ))}
+                  {(entries[c] || []).length > 3 && (
+                    <span className="px-1 text-[9px] text-neutral-500">
+                      +{(entries[c] || []).length - 3}
+                    </span>
+                  )}
+                </>
+              ) : submitted.has(c) ? (
                 <span className="flex items-center gap-1 truncate rounded bg-green-100 px-1 py-0.5 text-[9px] font-semibold text-green-700">
                   <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-green-500" />
                   제출완료
@@ -171,7 +209,7 @@ function Calendar({
                   기록중
                 </span>
               ) : null}
-            </button>
+            </div>
           )
         )}
       </div>
@@ -256,6 +294,32 @@ export function PhaseRecorder({
       .forEach((r) => r.inspectionDate && set.add(r.inspectionDate));
     return set;
   }, [records, calFilter]);
+
+  // 캘린더 칸에 공종별로 한 줄씩 표시하기 위한 데이터
+  const calEntries = useMemo(() => {
+    const map: Record<string, CalEntry[]> = {};
+    const nameOf = (id: string) => subTypes.find((t) => t.id === id)?.name || "기타";
+    const push = (d: string, st: string, sub: boolean) => {
+      if (!map[d]) map[d] = [];
+      const ex = map[d].find((x) => x.subTypeId === st);
+      if (ex) {
+        if (sub) ex.submitted = true;
+        return;
+      }
+      map[d].push({ subTypeId: st, name: nameOf(st), submitted: sub });
+    };
+    records.forEach((r) => {
+      if (!r.inspectionDate || !r.subTypeId) return;
+      if (calFilter && r.subTypeId !== calFilter) return;
+      push(r.inspectionDate, r.subTypeId, r.status === "submitted");
+    });
+    assets.forEach((a) => {
+      if (!a.inspectionDate || !a.subTypeId) return;
+      if (calFilter && a.subTypeId !== calFilter) return;
+      push(a.inspectionDate, a.subTypeId, false);
+    });
+    return map;
+  }, [records, assets, subTypes, calFilter]);
 
   const recMap = new Map<string, Rec>();
   records
@@ -408,6 +472,14 @@ export function PhaseRecorder({
   function changeSubType(id: string) {
     flushSave();
     setSubTypeId(id);
+    setStep(0);
+    resetTransient();
+  }
+  // 캘린더에서 공종 줄을 클릭 -> 그 날짜 + 그 공종으로 이동
+  function selectCalEntry(d: string, st: string) {
+    flushSave();
+    setSelectedDate(d);
+    setSubTypeId(st);
     setStep(0);
     resetTransient();
   }
@@ -801,7 +873,14 @@ export function PhaseRecorder({
       </div>
       {subTypeId && (
         <>
-          <Calendar selected={selectedDate} marked={markedDates} submitted={submittedDates} onSelect={changeDate} />
+          <Calendar
+            selected={selectedDate}
+            marked={markedDates}
+            submitted={submittedDates}
+            entries={calEntries}
+            onSelect={changeDate}
+            onSelectEntry={selectCalEntry}
+          />
           <div className="flex items-center justify-center gap-3">
             <button
               type="button"
