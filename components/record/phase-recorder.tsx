@@ -318,6 +318,12 @@ export function PhaseRecorder({
     )
       return;
     setSubmitting(true);
+    // 삭제 시작: 자동저장 차단 + 대기 중 타이머 취소
+    deletingRef.current = true;
+    if (autosaveTimer.current) {
+      clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = null;
+    }
     try {
       const res = await fetch("/api/records", {
         method: "DELETE",
@@ -327,6 +333,7 @@ export function PhaseRecorder({
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
         setError(data.error || "삭제에 실패했습니다.");
+        deletingRef.current = false; // 실패 시 자동저장 재허용
         return;
       }
       // 화면 초기화 + 갱신 — 삭제한 날짜·공종의 모든 단계 캐시 제거 (되살아남 방지)
@@ -349,9 +356,15 @@ export function PhaseRecorder({
         notApplicableReason: "",
       });
       setStep(0);
+      justLoadedRef.current = true; // 삭제 후 첫 로드가 자동저장을 유발하지 않도록
       router.refresh();
+      // refresh 로 새 records 가 반영된 뒤 자동저장 재허용
+      setTimeout(() => {
+        deletingRef.current = false;
+      }, 1500);
     } catch (e) {
       setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
+      deletingRef.current = false;
     } finally {
       setSubmitting(false);
     }
@@ -503,6 +516,8 @@ export function PhaseRecorder({
   // 단계/날짜/세부항목 "전환 시에만" 저장된 기록을 form 에 로드 (records 갱신에는 반응 안 함 -> 입력 안 덮어씀)
   const loadKeyRef = useRef<string>("");
   const justLoadedRef = useRef<boolean>(false);
+  // 삭제 진행 중 플래그 - 삭제 직후 자동저장이 기록을 재생성하는 것을 차단
+  const deletingRef = useRef<boolean>(false);
   // 저장한 값을 메모리에 캐시 - 서버 갱신이 늦어도 단계 복귀 시 입력값 유지
   const savedFormsRef = useRef<Map<string, typeof form>>(new Map());
   useEffect(() => {
@@ -540,6 +555,7 @@ export function PhaseRecorder({
   // 자동저장: form 이 바뀌면 1.5초 후 자동으로 저장 (기록저장 버튼 없이도)
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (deletingRef.current) return; // 삭제 중에는 자동저장 금지 (재생성 방지)
     if (justLoadedRef.current) {
       justLoadedRef.current = false; // 로드로 인한 변경은 저장 안 함
       return;
@@ -566,6 +582,7 @@ export function PhaseRecorder({
   }, [form]);
 
   async function saveText(p: Phase, i: number, silent: boolean = false) {
+    if (deletingRef.current) return; // 삭제 중에는 저장 금지 (재생성 방지)
     if (!silent) {
       setError("");
       setLoading(true);
