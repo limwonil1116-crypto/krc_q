@@ -358,13 +358,18 @@ export function PhaseRecorder({
         notApplicable: false,
         notApplicableReason: "",
       });
-      setStep(0);
-      justLoadedRef.current = true; // 삭제 후 첫 로드가 자동저장을 유발하지 않도록
-      router.refresh();
-      // refresh 로 새 records 가 반영된 뒤 자동저장 재허용
-      setTimeout(() => {
-        deletingRef.current = false;
-      }, 1500);
+      // 삭제 후에는 페이지를 완전히 새로 불러온다.
+      // (router.refresh 는 옛 records/폼 값이 남아 자동저장으로 되살아나는 문제가 있음)
+      try {
+        sessionStorage.setItem(
+          stateKey,
+          JSON.stringify({ subTypeId, selectedDate, calFilter: subTypeId })
+        );
+      } catch {
+        // ignore
+      }
+      window.location.reload();
+      return;
     } catch (e) {
       setError("요청 실패: " + (e instanceof Error ? e.message : "네트워크 오류"));
       deletingRef.current = false;
