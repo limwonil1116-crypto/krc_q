@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -72,6 +72,7 @@ export default async function VideoPage({
   const records = await db
     .select({
       phaseTemplateId: constructionRecords.phaseTemplateId,
+      subTypeId: constructionRecords.subTypeId,
       inspectionDate: constructionRecords.inspectionDate,
       title: constructionRecords.title,
       textDescription: constructionRecords.textDescription,
@@ -100,6 +101,7 @@ export default async function VideoPage({
     .select({
       id: recordAssets.id,
       phaseTemplateId: constructionRecords.phaseTemplateId,
+      subTypeId: constructionRecords.subTypeId,
       inspectionDate: constructionRecords.inspectionDate,
       assetType: recordAssets.assetType,
       fileName: recordAssets.fileName,
@@ -108,6 +110,15 @@ export default async function VideoPage({
     .from(recordAssets)
     .innerJoin(constructionRecords, eq(recordAssets.recordId, constructionRecords.id))
     .where(and(eq(constructionRecords.siteStructureId, structureId), eq(recordAssets.uploadStatus, "uploaded")));
+
+  // 기록에 등장한 세부공종 목록 (영상 공종 선택용)
+  const _subIds = Array.from(new Set(records.map((r) => r.subTypeId).filter(Boolean))) as string[];
+  const subTypes = _subIds.length
+    ? await db
+        .select({ id: structureTypes.id, name: structureTypes.name })
+        .from(structureTypes)
+        .where(inArray(structureTypes.id, _subIds))
+    : [];
 
   const dset = new Set<string>();
   records.forEach((r) => r.inspectionDate && dset.add(r.inspectionDate));
@@ -137,7 +148,7 @@ export default async function VideoPage({
           ⬇ 이 구조물 전체 다운로드(ZIP)
         </a>
       </div>
-      <VideoComposer meta={meta} phases={phases} records={records} assets={assets} dates={dates} siteStructureId={ss.id} submittedDates={submittedDates} initialDate={initialDate} autosaveOnLoad={autosaveFlag} />
+      <VideoComposer meta={meta} phases={phases} records={records} assets={assets} dates={dates} siteStructureId={ss.id} submittedDates={submittedDates} initialDate={initialDate} autosaveOnLoad={autosaveFlag} subTypes={subTypes} />
     </div>
   );
 }

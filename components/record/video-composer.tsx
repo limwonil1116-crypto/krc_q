@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { VideoExporter } from "@/components/record/video-exporter";
 
 type Phase = { id: string; code: string; name: string; sortOrder: number };
-type Rec = { phaseTemplateId: string; inspectionDate: string | null; title: string | null; textDescription: string | null; status?: string; latitude?: number | null; longitude?: number | null; locationAddress?: string | null; inspectionContent?: string | null; inspectionPartFromMain?: number | null; inspectionPartFromSub?: number | null; inspectionPartToMain?: number | null; inspectionPartToSub?: number | null };
+type Rec = { phaseTemplateId: string; subTypeId?: string | null; inspectionDate: string | null; title: string | null; textDescription: string | null; status?: string; latitude?: number | null; longitude?: number | null; locationAddress?: string | null; inspectionContent?: string | null; inspectionPartFromMain?: number | null; inspectionPartFromSub?: number | null; inspectionPartToMain?: number | null; inspectionPartToSub?: number | null };
 type Asset = {
   id: string;
   phaseTemplateId: string;
+  subTypeId?: string | null;
   inspectionDate: string | null;
   assetType: string;
   fileName: string;
@@ -48,6 +49,7 @@ export function VideoComposer({
   submittedDates = [],
   initialDate = "",
   autosaveOnLoad = false,
+  subTypes = [],
 }: {
   meta: Meta;
   phases: Phase[];
@@ -58,8 +60,11 @@ export function VideoComposer({
   submittedDates?: string[];
   initialDate?: string;
   autosaveOnLoad?: boolean;
+  subTypes?: { id: string; name: string }[];
 }) {
   const [date, setDate] = useState((initialDate && dates.includes(initialDate) ? initialDate : dates[0]) || "");
+  // 영상에 담을 세부공종 ("" = 전체)
+  const [vSubType, setVSubType] = useState<string>("");
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -136,10 +141,18 @@ export function VideoComposer({
 
   const slides = useMemo<Slide[]>(() => {
     if (!date) return [];
-    const recMap = new Map(records.filter((r) => r.inspectionDate === date).map((r) => [r.phaseTemplateId, r]));
+    // 같은 날짜에 여러 공종이 있으면 단계 키가 겹쳐 설명이 유실되므로 공종으로 먼저 거른다
+    const recMap = new Map<string, Rec>();
+    records
+      .filter((r) => r.inspectionDate === date && (!vSubType || (r.subTypeId || "") === vSubType))
+      .forEach((r) => {
+        const prev = recMap.get(r.phaseTemplateId);
+        // 전체보기일 때는 내용이 있는 기록을 우선 (설명 유실 방지)
+        if (!prev || (!prev.textDescription && !!r.textDescription)) recMap.set(r.phaseTemplateId, r);
+      });
     const byPhase = new Map<string, Asset[]>();
     assets
-      .filter((a) => a.inspectionDate === date)
+      .filter((a) => a.inspectionDate === date && (!vSubType || (a.subTypeId || "") === vSubType))
       .forEach((a) => {
         const arr = byPhase.get(a.phaseTemplateId) || [];
         arr.push(a);
@@ -149,7 +162,11 @@ export function VideoComposer({
 
     // 위치 슬라이드(F1 지도/내용) 미리 구성 -> F1 간지 뒤에 삽입
     const locRec = records.find(
-      (r) => r.inspectionDate === date && typeof r.latitude === "number" && typeof r.longitude === "number"
+      (r) =>
+        r.inspectionDate === date &&
+        (!vSubType || (r.subTypeId || "") === vSubType) &&
+        typeof r.latitude === "number" &&
+        typeof r.longitude === "number"
     );
     let locationSlide: Slide | null = null;
     if (locRec && typeof locRec.latitude === "number" && typeof locRec.longitude === "number") {
@@ -160,7 +177,9 @@ export function VideoComposer({
         ? `NO.${locRec.inspectionPartToMain ?? 0}+${String(locRec.inspectionPartToSub ?? 0).padStart(2, "0")}`
         : "";
       const _part = _pf && _pt ? `${_pf} ~ ${_pt}` : (_pf || _pt || "");
-      const _mapAsset = assets.find((a) => a.inspectionDate === date && a.assetType === "map");
+      const _mapAsset = assets.find(
+        (a) => a.inspectionDate === date && (!vSubType || (a.subTypeId || "") === vSubType) && a.assetType === "map"
+      );
       locationSlide = {
         kind: "location",
         address: locRec.locationAddress || "",
@@ -193,7 +212,7 @@ export function VideoComposer({
       videos.forEach((a) => out.push({ kind: "video", src: `/api/assets/${a.id}/raw`, caption: p.name, description: r?.textDescription ?? null }));
     });
     return out;
-  }, [date, phases, records, assets]);
+  }, [date, phases, records, assets, vSubType]);
 
   useEffect(() => {
     setIdx(0);
@@ -234,6 +253,35 @@ export function VideoComposer({
         <h1 className="text-xl font-bold text-[#0033A0]">KRC 건설공사실록 · 영상 미리보기</h1>
         <p className="text-sm text-neutral-500">{meta.structureName} · {meta.typeName}</p>
       </div>
+
+      {subTypes.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-neutral-500">공종</span>
+          <button
+            type="button"
+            onClick={() => setVSubType("")}
+            className={
+              "rounded-full px-3 py-1 text-xs font-semibold " +
+              (vSubType === "" ? "bg-[#FE5000] text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
+            }
+          >
+            전체
+          </button>
+          {subTypes.map((t) => (
+            <button
+              key={"vst-" + t.id}
+              type="button"
+              onClick={() => setVSubType(t.id)}
+              className={
+                "rounded-full px-3 py-1 text-xs font-semibold " +
+                (vSubType === t.id ? "bg-[#0033A0] text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
+              }
+            >
+              {t.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {dates.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
