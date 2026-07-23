@@ -155,7 +155,8 @@ export async function DELETE(req: Request) {
     const siteStructureId = (b.siteStructureId ?? "").trim();
     const subTypeId = (b.subTypeId ?? "").trim();
     const inspectionDate = (b.inspectionDate ?? "").trim();
-    if (!siteStructureId || !subTypeId || !inspectionDate) {
+    const allSubTypes = b.allSubTypes === true;
+    if (!siteStructureId || !inspectionDate || (!allSubTypes && !subTypeId)) {
       return NextResponse.json({ error: "구조물/세부항목/검측일자 정보가 필요합니다." }, { status: 400 });
     }
 
@@ -171,11 +172,16 @@ export async function DELETE(req: Request) {
       .select({ id: constructionRecords.id })
       .from(constructionRecords)
       .where(
-        and(
-          eq(constructionRecords.siteStructureId, siteStructureId),
-          eq(constructionRecords.subTypeId, subTypeId),
-          eq(constructionRecords.inspectionDate, inspectionDate)
-        )
+        allSubTypes
+          ? and(
+              eq(constructionRecords.siteStructureId, siteStructureId),
+              eq(constructionRecords.inspectionDate, inspectionDate)
+            )
+          : and(
+              eq(constructionRecords.siteStructureId, siteStructureId),
+              eq(constructionRecords.subTypeId, subTypeId),
+              eq(constructionRecords.inspectionDate, inspectionDate)
+            )
       );
     if (recs.length === 0) {
       return NextResponse.json({ ok: true, deleted: 0 });

@@ -313,7 +313,7 @@ export function PhaseRecorder({
     if (!selectedDate || !subTypeId) return;
     if (
       !window.confirm(
-        `${selectedDate} 검측기록(공종종류·설계도면·세부촬영)과 첨부 사진·영상을 모두 삭제합니다.\n되돌릴 수 없습니다. 계속할까요?`
+        `${selectedDate} 의 모든 공종 검측기록(공종종류·설계도면·세부촬영)과 첨부 사진·영상을 삭제합니다.\n제출완료된 기록도 함께 삭제됩니다. 되돌릴 수 없습니다. 계속할까요?`
       )
     )
       return;
@@ -328,7 +328,7 @@ export function PhaseRecorder({
       const res = await fetch("/api/records", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate }),
+        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate, allSubTypes: true }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
@@ -338,8 +338,11 @@ export function PhaseRecorder({
       }
       // 화면 초기화 + 갱신 — 삭제한 날짜·공종의 모든 단계 캐시 제거 (되살아남 방지)
       loadKeyRef.current = "";
-      for (let _i = 0; _i < phases.length; _i++) {
-        savedFormsRef.current.delete(`${_i}|${selectedDate}|${subTypeId}`);
+      // 그 날짜의 모든 공종·단계 캐시 제거 (날짜 전체 삭제이므로)
+      for (const _t of subTypes) {
+        for (let _i = 0; _i < phases.length; _i++) {
+          savedFormsRef.current.delete(`${_i}|${selectedDate}|${_t.id}`);
+        }
       }
       // 폼도 즉시 비워 캐시 재기록 방지
       setForm({
