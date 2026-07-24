@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { constructionSites, siteStructures, constructionRecords, recordAssets, siteParticipants } from "@/lib/db/schema";
+import { constructionSites, siteStructures, constructionRecords, recordAssets, siteParticipants, structureTypes } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
 import { uploadToDrive } from "@/lib/drive";
 
@@ -104,7 +104,18 @@ export async function POST(req: Request) {
       .limit(1);
     const sf = siteForFolder[0];
     const siteFolder = sf ? `${sf.projectName}_${sf.districtName}` : ss.siteId;
+    // 세부공종(공종) 하위 폴더까지 분리 - 같은 날 여러 공종이 섞이지 않게
+    let subFolder = "";
+    if (subTypeId) {
+      const stRows = await db
+        .select({ name: structureTypes.name })
+        .from(structureTypes)
+        .where(eq(structureTypes.id, subTypeId))
+        .limit(1);
+      subFolder = stRows[0]?.name || "";
+    }
     const folderPath = [siteFolder, ss.name || siteStructureId, inspectionDate];
+    if (subFolder) folderPath.push(subFolder);
     const up = await uploadToDrive({ name: driveName, mimeType, buffer, folderPath });
 
     const [asset] = await db
