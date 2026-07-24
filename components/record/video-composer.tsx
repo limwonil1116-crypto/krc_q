@@ -485,9 +485,14 @@ export function VideoComposer({
                 <div className="pointer-events-none absolute left-3 top-3 z-10 rounded bg-[#0033A0]/85 px-2 py-1 text-[11px] font-bold text-white">
                   KRC 건설공사실록 · {date}
                 </div>
-                <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex items-center gap-2 bg-gradient-to-t from-black/75 to-transparent p-3 text-sm font-semibold text-white">
-                  <span className="inline-block h-4 w-1 rounded-full bg-[#FE5000]" />
-                  {cur.caption}
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/60 to-transparent p-3 text-white">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <span className="inline-block h-4 w-1 rounded-full bg-[#FE5000]" />
+                    {cur.caption}
+                  </div>
+                  {cur.description && (
+                    <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-white/90">{cur.description}</p>
+                  )}
                 </div>
               </>
             )}
