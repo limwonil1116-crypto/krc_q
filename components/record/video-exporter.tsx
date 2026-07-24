@@ -155,9 +155,16 @@ export function VideoExporter({
     // 하단 4칸 정보 바
     ctx.fillStyle = "rgba(0,0,0,0.35)";
     ctx.fillRect(0, H - 70, W, 70);
+    // 시행자: 지사값(예: 홍성) -> "한국농어촌공사 홍성지사"
+    const _ex = (meta.executor || "").trim();
+    const _executor = !_ex
+      ? "한국농어촌공사"
+      : _ex.includes("한국농어촌공사")
+      ? _ex
+      : `한국농어촌공사 ${_ex}${_ex.endsWith("지사") ? "" : "지사"}`;
     const cols = [
       ["공종", meta.workType || "-"],
-      ["시행자", meta.executor || "-"],
+      ["시행자", _executor],
       ["시공사", meta.contractorCompany || "-"],
       ["구조물", meta.typeName || "-"],
     ];
