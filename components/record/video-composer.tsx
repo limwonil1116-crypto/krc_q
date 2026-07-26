@@ -65,6 +65,14 @@ export function VideoComposer({
   const [date, setDate] = useState((initialDate && dates.includes(initialDate) ? initialDate : dates[0]) || "");
   // 영상에 담을 세부공종 ("" = 전체)
   const [vSubType, setVSubType] = useState<string>("");
+  // 저장 폴더용 실효 공종: 선택 없으면 그 날짜 자료의 공종을 자동 추론
+  const effSubType = useMemo(() => {
+    if (vSubType) return vSubType;
+    const r = records.find((x) => x.inspectionDate === date && x.subTypeId);
+    if (r?.subTypeId) return r.subTypeId as string;
+    const a = assets.find((x) => x.inspectionDate === date && x.subTypeId);
+    return (a?.subTypeId as string) || "";
+  }, [vSubType, records, assets, date]);
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -572,7 +580,7 @@ export function VideoComposer({
             date={date}
             fileBase={`KRC_${meta.structureName || "record"}`}
             siteStructureId={siteStructureId}
-            subTypeId={vSubType || undefined}
+            subTypeId={effSubType || undefined}
             canSave={!!siteStructureId}
             autoSave={!!siteStructureId && autosaveOnLoad}
           />
