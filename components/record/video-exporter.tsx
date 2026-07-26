@@ -516,7 +516,7 @@ export function VideoExporter({
             body: JSON.stringify({
               siteStructureId,
               inspectionDate: date,
-              subTypeId: vSubType || undefined,
+              subTypeId: subTypeId || undefined,
               fileName: upName,
               mimeType: "video/webm",
             }),
