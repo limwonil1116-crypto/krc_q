@@ -572,6 +572,7 @@ export function VideoComposer({
             date={date}
             fileBase={`KRC_${meta.structureName || "record"}`}
             siteStructureId={siteStructureId}
+            subTypeId={vSubType || undefined}
             canSave={!!siteStructureId}
             autoSave={!!siteStructureId && autosaveOnLoad}
           />

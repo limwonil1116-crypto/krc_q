@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { constructionSites, siteStructures, siteParticipants } from "@/lib/db/schema";
+import { constructionSites, siteStructures, siteParticipants, structureTypes } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
 import { createResumableSession } from "@/lib/drive";
 
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
     const b = await req.json();
     const siteStructureId = (b.siteStructureId ?? "").trim();
     const inspectionDate = (b.inspectionDate ?? "").trim();
+    const subTypeId = (b.subTypeId ?? "").trim();
     const mimeType = (b.mimeType ?? "video/webm").trim();
     if (!siteStructureId || !inspectionDate) {
       return NextResponse.json({ error: "구조물/검측일자 정보가 필요합니다." }, { status: 400 });
@@ -52,7 +53,18 @@ export async function POST(req: Request) {
 
     const driveName = `[최종영상]_${inspectionDate}_${Date.now()}.webm`;
     const siteFolder = `${owned.site.projectName}_${owned.site.districtName}`;
+    // 자료와 동일하게 세부공종(공종) 하위 폴더에 최종영상 저장
+    let subFolder = "";
+    if (subTypeId) {
+      const stRows = await db
+        .select({ name: structureTypes.name })
+        .from(structureTypes)
+        .where(eq(structureTypes.id, subTypeId))
+        .limit(1);
+      subFolder = stRows[0]?.name || "";
+    }
     const folderPath = [siteFolder, ss.name || siteStructureId, inspectionDate];
+    if (subFolder) folderPath.push(subFolder);
 
     const made = await createResumableSession({ name: driveName, mimeType, folderPath });
     if (!made) {

@@ -79,6 +79,7 @@ export function VideoExporter({
   date,
   fileBase,
   siteStructureId,
+  subTypeId,
   canSave,
   autoSave,
 }: {
@@ -87,6 +88,7 @@ export function VideoExporter({
   date: string;
   fileBase: string;
   siteStructureId?: string;
+  subTypeId?: string;
   canSave?: boolean;
   autoSave?: boolean;
 }) {
@@ -514,6 +516,7 @@ export function VideoExporter({
             body: JSON.stringify({
               siteStructureId,
               inspectionDate: date,
+              subTypeId: vSubType || undefined,
               fileName: upName,
               mimeType: "video/webm",
             }),
