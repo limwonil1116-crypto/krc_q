@@ -149,6 +149,7 @@ export const constructionRecords = pgTable("construction_records", {
   phaseTemplateId: uuid("phase_template_id").notNull().references(() => phaseTemplates.id),
   inspectionDate: date("inspection_date"),
   subTypeId: uuid("sub_type_id"),
+  seq: integer("seq").notNull().default(1),
   inspectionContent: text("inspection_content"),
   inspectionPartFromMain: integer("inspection_part_from_main"),
   inspectionPartFromSub: integer("inspection_part_from_sub"),

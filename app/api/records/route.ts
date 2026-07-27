@@ -44,6 +44,7 @@ export async function POST(req: Request) {
     const subTypeId = (b.subTypeId ?? "").trim();
     const phaseTemplateId = (b.phaseTemplateId ?? "").trim();
     const inspectionDate = (b.inspectionDate ?? "").trim() || todayStr();
+    const seq = typeof b.seq === "number" && b.seq >= 1 ? Math.floor(b.seq) : 1;
     if (!siteStructureId || !subTypeId || !phaseTemplateId) {
       return NextResponse.json({ error: "구조물/세부항목/단계 정보가 필요합니다." }, { status: 400 });
     }
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
     const notApplicable = !!b.notApplicable;
     const values = {
       subTypeId,
+      seq,
       inspectionDate,
       inspectionContent: notApplicable ? null : (b.inspectionContent ?? "").trim() || null,
       inspectionPartFromMain: notApplicable ? null : (typeof b.inspectionPartFromMain === "number" ? b.inspectionPartFromMain : null),
@@ -84,7 +86,8 @@ export async function POST(req: Request) {
           eq(constructionRecords.siteStructureId, siteStructureId),
           eq(constructionRecords.subTypeId, subTypeId),
           eq(constructionRecords.phaseTemplateId, phaseTemplateId),
-          eq(constructionRecords.inspectionDate, inspectionDate)
+          eq(constructionRecords.inspectionDate, inspectionDate),
+          eq(constructionRecords.seq, seq)
         )
       )
       .limit(1);
@@ -130,6 +133,7 @@ export async function POST(req: Request) {
           constructionRecords.subTypeId,
           constructionRecords.phaseTemplateId,
           constructionRecords.inspectionDate,
+          constructionRecords.seq,
         ],
         set: { ...values, updatedAt: new Date() },
       })
