@@ -73,6 +73,14 @@ export function VideoComposer({
     const a = assets.find((x) => x.inspectionDate === date && x.subTypeId);
     return (a?.subTypeId as string) || "";
   }, [vSubType, records, assets, date]);
+  // 최종영상 저장 폴더용 회차: 그 날짜·공종 자료의 seq (없으면 1)
+  const effSeq = useMemo(() => {
+    const sub = effSubType;
+    const r = records.find(
+      (x) => x.inspectionDate === date && (!sub || (x.subTypeId || "") === sub) && (x as { seq?: number | null }).seq != null
+    );
+    return ((r as { seq?: number | null } | undefined)?.seq as number) || 1;
+  }, [records, date, effSubType]);
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -581,6 +589,7 @@ export function VideoComposer({
             fileBase={`KRC_${meta.structureName || "record"}`}
             siteStructureId={siteStructureId}
             subTypeId={effSubType || undefined}
+            seq={effSeq}
             canSave={!!siteStructureId}
             autoSave={!!siteStructureId && autosaveOnLoad}
           />

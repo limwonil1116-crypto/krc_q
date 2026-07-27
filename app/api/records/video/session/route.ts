@@ -38,6 +38,8 @@ export async function POST(req: Request) {
     const siteStructureId = (b.siteStructureId ?? "").trim();
     const inspectionDate = (b.inspectionDate ?? "").trim();
     const subTypeId = (b.subTypeId ?? "").trim();
+    const seqRaw = typeof b.seq === "number" ? b.seq : parseInt(String(b.seq ?? "1"), 10);
+    const seq = Number.isFinite(seqRaw) && seqRaw >= 1 ? Math.floor(seqRaw) : 1;
     const mimeType = (b.mimeType ?? "video/webm").trim();
     if (!siteStructureId || !inspectionDate) {
       return NextResponse.json({ error: "구조물/검측일자 정보가 필요합니다." }, { status: 400 });
@@ -63,6 +65,7 @@ export async function POST(req: Request) {
         .limit(1);
       subFolder = stRows[0]?.name || "";
     }
+    if (subFolder && seq >= 2) subFolder = `${subFolder} (${seq})`;
     const folderPath = [siteFolder, ss.name || siteStructureId, inspectionDate];
     if (subFolder) folderPath.push(subFolder);
 

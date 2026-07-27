@@ -583,6 +583,7 @@ export function PhaseRecorder({
       const fd = new FormData();
       fd.append("siteStructureId", siteStructureId);
       fd.append("subTypeId", subTypeId);
+      fd.append("seq", String(vSeq));
       fd.append("phaseTemplateId", f1.id);
       fd.append("inspectionDate", selectedDate);
       fd.append("assetType", "map");
@@ -769,6 +770,7 @@ export function PhaseRecorder({
       const fd = new FormData();
       fd.append("siteStructureId", siteStructureId);
       fd.append("subTypeId", subTypeId);
+      fd.append("seq", String(vSeq));
       fd.append("phaseTemplateId", phaseId);
       fd.append("inspectionDate", selectedDate);
       fd.append("assetType", assetType);

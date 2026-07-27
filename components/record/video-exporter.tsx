@@ -80,6 +80,7 @@ export function VideoExporter({
   fileBase,
   siteStructureId,
   subTypeId,
+  seq,
   canSave,
   autoSave,
 }: {
@@ -89,6 +90,7 @@ export function VideoExporter({
   fileBase: string;
   siteStructureId?: string;
   subTypeId?: string;
+  seq?: number;
   canSave?: boolean;
   autoSave?: boolean;
 }) {
@@ -517,6 +519,7 @@ export function VideoExporter({
               siteStructureId,
               inspectionDate: date,
               subTypeId: subTypeId || undefined,
+              seq: seq || 1,
               fileName: upName,
               mimeType: "video/webm",
             }),

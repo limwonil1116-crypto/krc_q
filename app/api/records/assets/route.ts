@@ -44,6 +44,8 @@ export async function POST(req: Request) {
     const fd = await req.formData();
     const siteStructureId = String(fd.get("siteStructureId") || "");
     const subTypeId = String(fd.get("subTypeId") || "");
+    const seqRaw = parseInt(String(fd.get("seq") || "1"), 10);
+    const seq = Number.isFinite(seqRaw) && seqRaw >= 1 ? seqRaw : 1;
     const phaseTemplateId = String(fd.get("phaseTemplateId") || "");
     const inspectionDate = String(fd.get("inspectionDate") || "") || todayStr();
     const _at = String(fd.get("assetType") || "photo");
@@ -114,6 +116,8 @@ export async function POST(req: Request) {
         .limit(1);
       subFolder = stRows[0]?.name || "";
     }
+    // 회차가 2 이상이면 "공종명 (n)" 폴더로 분리
+    if (subFolder && seq >= 2) subFolder = `${subFolder} (${seq})`;
     const folderPath = [siteFolder, ss.name || siteStructureId, inspectionDate];
     if (subFolder) folderPath.push(subFolder);
     const up = await uploadToDrive({ name: driveName, mimeType, buffer, folderPath });
