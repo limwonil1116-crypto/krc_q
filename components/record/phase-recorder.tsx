@@ -472,9 +472,27 @@ export function PhaseRecorder({
     // 저장은 백그라운드로 진행 - 화면 전환을 막지 않음
     void saveText(cur, step, true);
   }
+  // 현재 날짜·공종에 존재하는 회차 목록 (최소 1회차)
+  const seqList = (() => {
+    const set = new Set<number>([1]);
+    records
+      .filter((r) => r.subTypeId === subTypeId && (r.inspectionDate || "") === selectedDate)
+      .forEach((r) => set.add(r.seq ?? 1));
+    assets
+      .filter((a) => a.subTypeId === subTypeId && (a.inspectionDate || "") === selectedDate)
+      .forEach((a) => set.add((a as { seq?: number | null }).seq ?? 1));
+    return Array.from(set).sort((x, y) => x - y);
+  })();
+  function changeSeq(n: number) {
+    flushSave();
+    setVSeq(n);
+    setStep(0);
+    resetTransient();
+  }
   function changeSubType(id: string) {
     flushSave();
     setSubTypeId(id);
+    setVSeq(1);
     setStep(0);
     resetTransient();
   }
@@ -483,12 +501,14 @@ export function PhaseRecorder({
     flushSave();
     setSelectedDate(d);
     setSubTypeId(st);
+    setVSeq(1);
     setStep(0);
     resetTransient();
   }
   function changeDate(d: string) {
     flushSave();
     setSelectedDate(d);
+    setVSeq(1);
     setStep(0);
     resetTransient();
   }
@@ -873,6 +893,33 @@ export function PhaseRecorder({
               {t.name}
             </button>
           ))}
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label>회차</Label>
+        <div className="flex flex-wrap gap-2">
+          {seqList.map((n) => (
+            <button
+              key={"seq-" + n}
+              type="button"
+              onClick={() => changeSeq(n)}
+              className={
+                "rounded-full px-3 py-1.5 text-sm font-semibold " +
+                (n === vSeq
+                  ? "bg-[#0033A0] text-white"
+                  : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
+              }
+            >
+              {n}회차
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => changeSeq(Math.max(0, ...seqList) + 1)}
+            className="rounded-full border border-dashed border-[#0033A0] px-3 py-1.5 text-sm font-semibold text-[#0033A0] hover:bg-[#EAF0FB]"
+          >
+            + 새 회차
+          </button>
         </div>
       </div>
       {subTypeId && (
