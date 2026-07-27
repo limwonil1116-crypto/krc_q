@@ -149,18 +149,18 @@ function Calendar({
               key={i}
               onClick={() => onSelect(c)}
               className={
-                "flex min-h-[56px] cursor-pointer flex-col gap-1 rounded-lg p-1 text-left hover:bg-neutral-100 " +
+                "flex min-h-[80px] cursor-pointer flex-col gap-1 rounded-lg p-1.5 text-left hover:bg-neutral-100 " +
                 (c === selected ? "ring-2 ring-[#0033A0]" : "")
               }
             >
               <span
                 className={
-                  "flex h-5 w-5 items-center justify-center rounded-full text-[11px] " +
+                  "flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold " +
                   (c === selected
                     ? "bg-[#0033A0] font-bold text-white"
                     : c === today
                     ? "font-bold text-[#0033A0]"
-                    : "text-neutral-700")
+                    : "text-neutral-800")
                 }
               >
                 {Number(c.split("-")[2])}
