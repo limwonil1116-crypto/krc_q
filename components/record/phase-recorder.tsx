@@ -26,6 +26,7 @@ type Rec = {
   id: string;
   phaseTemplateId: string;
   subTypeId: string | null;
+  seq?: number | null;
   inspectionDate: string | null;
   title: string | null;
   textDescription: string | null;
@@ -253,6 +254,8 @@ export function PhaseRecorder({
   const router = useRouter();
 
   const [subTypeId, setSubTypeId] = useState<string>(subTypes[0]?.id || "");
+  // 회차 (같은 날·같은 공종을 여러 번 기록) — 기본 1회차
+  const [vSeq, setVSeq] = useState<number>(1);
   // 캘린더 조회 필터 ("" = 전체보기) — 입력용 세부항목(subTypeId) 과 분리
   const [calFilter, setCalFilter] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>(todayStr());
@@ -323,11 +326,11 @@ export function PhaseRecorder({
 
   const recMap = new Map<string, Rec>();
   records
-    .filter((r) => r.subTypeId === subTypeId && (r.inspectionDate || "") === selectedDate)
+    .filter((r) => r.subTypeId === subTypeId && (r.inspectionDate || "") === selectedDate && (r.seq ?? 1) === vSeq)
     .forEach((r) => recMap.set(r.phaseTemplateId, r));
   const assetMap = new Map<string, Asset[]>();
   assets
-    .filter((a) => a.subTypeId === subTypeId && (a.inspectionDate || "") === selectedDate)
+    .filter((a) => a.subTypeId === subTypeId && (a.inspectionDate || "") === selectedDate && ((a as { seq?: number | null }).seq == null || (a as { seq?: number | null }).seq === vSeq))
     .forEach((a) => {
       const arr = assetMap.get(a.phaseTemplateId) || [];
       arr.push(a);
@@ -348,7 +351,7 @@ export function PhaseRecorder({
       const res = await fetch("/api/records/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate, action }),
+        body: JSON.stringify({ siteStructureId, subTypeId, seq: vSeq, inspectionDate: selectedDate, action }),
       });
       let data: { ok?: boolean; error?: string } = {};
       try {
@@ -603,7 +606,7 @@ export function PhaseRecorder({
   useEffect(() => {
     const cur = phases[step];
     if (!cur) return;
-    const key = `${step}|${selectedDate}|${subTypeId}`;
+    const key = `${step}|${selectedDate}|${subTypeId}|${vSeq}`;
     if (loadKeyRef.current === key) return; // 같은 단계에서 records 만 갱신된 경우: 로드 스킵
     loadKeyRef.current = key;
     const rec = recMap.get(cur.id);
@@ -669,7 +672,7 @@ export function PhaseRecorder({
     }
     try {
       // 저장 값을 캐시에 기록 (백그라운드 저장 중 단계 이동해도 값 유지)
-      savedFormsRef.current.set(`${i}|${selectedDate}|${subTypeId}`, form);
+      savedFormsRef.current.set(`${i}|${selectedDate}|${subTypeId}|${vSeq}`, form);
       const res = await fetch("/api/records", {
         method: "POST",
         headers: silent
@@ -678,6 +681,7 @@ export function PhaseRecorder({
         body: JSON.stringify({
           siteStructureId,
           subTypeId,
+          seq: vSeq,
           phaseTemplateId: p.id,
           inspectionDate: selectedDate,
           latitude: i === 0 && typeof form.lat === "number" ? form.lat : null,

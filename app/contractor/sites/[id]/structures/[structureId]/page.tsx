@@ -65,6 +65,7 @@ export default async function StructurePhasesPage({
       id: constructionRecords.id,
       phaseTemplateId: constructionRecords.phaseTemplateId,
       subTypeId: constructionRecords.subTypeId,
+      seq: constructionRecords.seq,
       inspectionDate: constructionRecords.inspectionDate,
       title: constructionRecords.title,
       textDescription: constructionRecords.textDescription,
