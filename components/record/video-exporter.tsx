@@ -526,26 +526,25 @@ export function VideoExporter({
             throw new Error(sd.error || "업로드 세션 생성 실패 (" + sres.status + ")");
           }
           // 2) 브라우저에서 드라이브로 직접 업로드 (용량 제한 없음)
+          //    구글은 업로드 응답에 CORS 헤더를 주지 않으므로 no-cors 로 보내고
+          //    파일 id 는 서버가 폴더에서 파일명으로 찾는다.
           setMsg("드라이브 업로드 중...");
-          const put = await fetch(sd.uploadUrl, {
+          await fetch(sd.uploadUrl, {
             method: "PUT",
+            mode: "no-cors",
             headers: { "Content-Type": "video/webm" },
             body: blob,
           });
-          if (!put.ok) {
-            throw new Error("드라이브 업로드 실패 (" + put.status + ")");
-          }
-          const pd = await put.json().catch(() => ({}));
-          // 3) 서버에 파일 정보 등록
+          // 3) 서버에 파일 정보 등록 (서버가 folderId+파일명으로 id 조회)
           const res = await fetch("/api/records/video/complete", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               siteStructureId,
               inspectionDate: date,
-              fileId: pd.id,
+              subTypeId: subTypeId || undefined,
+              folderId: sd.folderId,
               fileName: sd.driveName || upName,
-              webViewLink: pd.webViewLink || "",
               fileSizeBytes: blob.size,
             }),
           });

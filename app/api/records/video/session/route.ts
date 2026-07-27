@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     if (!made) {
       return NextResponse.json({ error: "드라이브 업로드 세션 생성 실패" }, { status: 500 });
     }
-    return NextResponse.json({ ok: true, uploadUrl: made.uploadUrl, driveName });
+    return NextResponse.json({ ok: true, uploadUrl: made.uploadUrl, folderId: made.folderId, driveName });
   } catch (e) {
     console.error("[records:video:session]", e);
     const msg = e instanceof Error ? e.message : "알 수 없는 오류";

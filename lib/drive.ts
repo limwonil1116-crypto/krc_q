@@ -102,7 +102,7 @@ export async function createResumableSession(params: {
   name: string;
   mimeType: string;
   folderPath?: string[];
-}): Promise<{ uploadUrl: string } | null> {
+}): Promise<{ uploadUrl: string; folderId?: string } | null> {
   const oauth2 = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET
@@ -133,5 +133,28 @@ export async function createResumableSession(params: {
   );
   if (!res.ok) return null;
   const uploadUrl = res.headers.get("location");
-  return uploadUrl ? { uploadUrl } : null;
+  return uploadUrl ? { uploadUrl, folderId: folder } : null;
+}
+
+// 폴더 안에서 파일명으로 방금 올린 파일의 id/링크/크기를 조회 (CORS 로 클라가 응답을 못 읽을 때 사용)
+export async function findDriveFileByName(
+  folderId: string,
+  name: string
+): Promise<{ id: string; webViewLink: string; size: number } | null> {
+  const drive = driveClient();
+  const safe = name.split("'").join("");
+  const q = [
+    "trashed=false",
+    `'${folderId}' in parents`,
+    `name='${safe}'`,
+  ].join(" and ");
+  const list = await drive.files.list({
+    q,
+    fields: "files(id,webViewLink,size,createdTime)",
+    orderBy: "createdTime desc",
+    pageSize: 1,
+  });
+  const f = list.data.files?.[0];
+  if (!f?.id) return null;
+  return { id: f.id, webViewLink: (f.webViewLink as string) || "", size: Number(f.size || 0) };
 }

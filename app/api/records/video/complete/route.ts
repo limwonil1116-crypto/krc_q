@@ -10,7 +10,7 @@ import {
   siteParticipants,
 } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
-import { deleteFromDrive } from "@/lib/drive";
+import { deleteFromDrive, findDriveFileByName } from "@/lib/drive";
 
 export const runtime = "nodejs";
 const COMPOSED_CAPTION = "최종 합성영상";
@@ -44,12 +44,26 @@ export async function POST(req: Request) {
     const b = await req.json();
     const siteStructureId = (b.siteStructureId ?? "").trim();
     const inspectionDate = (b.inspectionDate ?? "").trim();
-    const fileId = (b.fileId ?? "").trim();
+    const folderId = (b.folderId ?? "").trim();
     const fileName = (b.fileName ?? "video.webm").trim();
-    const webViewLink = (b.webViewLink ?? "").trim();
     const fileSizeBytes = typeof b.fileSizeBytes === "number" ? b.fileSizeBytes : 0;
-    if (!siteStructureId || !inspectionDate || !fileId) {
+    if (!siteStructureId || !inspectionDate || !folderId) {
       return NextResponse.json({ error: "구조물/검측일자/파일 정보가 필요합니다." }, { status: 400 });
+    }
+    // 브라우저 직접 업로드(no-cors)라 클라가 파일 id 를 못 받는다 -> 서버가 폴더에서 파일명으로 조회
+    let fileId = "";
+    let webViewLink = "";
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const found = await findDriveFileByName(folderId, fileName);
+      if (found) {
+        fileId = found.id;
+        webViewLink = found.webViewLink;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 800)); // 업로드 반영 대기
+    }
+    if (!fileId) {
+      return NextResponse.json({ error: "업로드된 파일을 찾지 못했습니다." }, { status: 404 });
     }
 
     const ssRows = await db.select().from(siteStructures).where(eq(siteStructures.id, siteStructureId)).limit(1);
