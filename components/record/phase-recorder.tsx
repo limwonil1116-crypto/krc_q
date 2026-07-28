@@ -641,7 +641,15 @@ export function PhaseRecorder({
     const key = `${step}|${selectedDate}|${subTypeId}|${vSeq}`;
     if (loadKeyRef.current === key) return; // 같은 단계에서 records 만 갱신된 경우: 로드 스킵
     loadKeyRef.current = key;
-    const rec = recMap.get(cur.id);
+    // recMap 은 렌더 시점 vSeq 로 만들어져 회차 전환 직후엔 이전 회차를 담을 수 있음.
+    // 로드 시점의 selectedDate/subTypeId/vSeq 로 records 를 직접 조회해 정확한 회차 기록을 사용.
+    const rec = records.find(
+      (r) =>
+        r.phaseTemplateId === cur.id &&
+        r.subTypeId === subTypeId &&
+        (r.inspectionDate || "") === selectedDate &&
+        (r.seq ?? 1) === vSeq
+    );
     justLoadedRef.current = true; // 로드 직후 자동저장 1회 스킵
     const cached = savedFormsRef.current.get(key);
     if (cached) {
