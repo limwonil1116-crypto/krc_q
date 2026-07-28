@@ -692,6 +692,18 @@ export function PhaseRecorder({
 
   async function saveText(p: Phase, i: number, silent: boolean = false) {
     if (deletingRef.current) return; // 삭제 중에는 저장 금지 (재생성 방지)
+    // 빈 폼이면 저장/캐시하지 않음 (새 회차·다른 공종의 빈 단계가 이전 값으로 되살아나는 것 방지)
+    const _hasContent =
+      !!form.textDescription ||
+      !!form.inspectionContent ||
+      form.lat != null ||
+      !!form.address ||
+      form.partFromMain !== "" ||
+      form.partFromSub !== "" ||
+      form.partToMain !== "" ||
+      form.partToSub !== "" ||
+      form.notApplicable;
+    if (!_hasContent) return;
     if (!silent) {
       setError("");
       setLoading(true);
