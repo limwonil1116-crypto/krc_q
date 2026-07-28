@@ -503,13 +503,19 @@ export function PhaseRecorder({
   function changeDate(d: string) {
     flushSave();
     setSelectedDate(d);
-    // 날짜 숫자 클릭 = 새로 등록. 그 날짜·현재 공종에 기록이 있으면 다음 회차, 없으면 1회차
+    // 날짜 숫자 클릭 = 새로 등록. F1 공종은 "일반사항" 기본 (없으면 첫 공종)
+    const defId =
+      subTypes.find((t) => (t.name || "").includes("일반사항"))?.id ||
+      subTypes[0]?.id ||
+      subTypeId;
+    setSubTypeId(defId);
+    // 그 공종에 이미 기록이 있으면 다음 회차, 없으면 1회차 (새로 입력)
     const used = new Set<number>();
     records.forEach((r) => {
-      if (r.subTypeId === subTypeId && (r.inspectionDate || "") === d) used.add(r.seq ?? 1);
+      if (r.subTypeId === defId && (r.inspectionDate || "") === d) used.add(r.seq ?? 1);
     });
     assets.forEach((a) => {
-      if (a.subTypeId === subTypeId && (a.inspectionDate || "") === d)
+      if (a.subTypeId === defId && (a.inspectionDate || "") === d)
         used.add((a as { seq?: number | null }).seq ?? 1);
     });
     const nextSeq = used.size ? Math.max(...used) + 1 : 1;
