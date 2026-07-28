@@ -478,7 +478,16 @@ export function PhaseRecorder({
   function changeSubType(id: string) {
     flushSave();
     setSubTypeId(id);
-    setVSeq(1);
+    // 공종 버튼 클릭 = 그 공종으로 새로 입력. 기존 기록 있으면 다음 회차, 없으면 1회차
+    const used = new Set<number>();
+    records.forEach((r) => {
+      if (r.subTypeId === id && (r.inspectionDate || "") === selectedDate) used.add(r.seq ?? 1);
+    });
+    assets.forEach((a) => {
+      if (a.subTypeId === id && (a.inspectionDate || "") === selectedDate)
+        used.add((a as { seq?: number | null }).seq ?? 1);
+    });
+    setVSeq(used.size ? Math.max(...used) + 1 : 1);
     setStep(0);
     resetTransient();
   }
