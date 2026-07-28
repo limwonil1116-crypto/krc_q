@@ -370,7 +370,7 @@ export function PhaseRecorder({
       }
       if (action === "submit" && videoHref) {
         // 제출 완료 -> 영상 미리보기로 이동하여 자동 생성·드라이브 저장
-        router.push(`${videoHref}?date=${encodeURIComponent(selectedDate)}&autosave=1`);
+        router.push(`${videoHref}?date=${encodeURIComponent(selectedDate)}&seq=${vSeq}&autosave=1`);
         return;
       }
       router.refresh();

@@ -19,11 +19,13 @@ export default async function VideoPage({
   searchParams,
 }: {
   params: Promise<{ id: string; structureId: string }>;
-  searchParams: Promise<{ date?: string; autosave?: string }>;
+  searchParams: Promise<{ date?: string; seq?: string; autosave?: string }>;
 }) {
   const { id, structureId } = await params;
   const sp = await searchParams;
   const initialDate = sp.date || "";
+  const initialSeqRaw = parseInt(sp.seq || "1", 10);
+  const initialSeq = Number.isFinite(initialSeqRaw) && initialSeqRaw >= 1 ? initialSeqRaw : 1;
   const autosaveFlag = sp.autosave === "1";
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -148,7 +150,7 @@ export default async function VideoPage({
           ⬇ 이 구조물 전체 다운로드(ZIP)
         </a>
       </div>
-      <VideoComposer meta={meta} phases={phases} records={records} assets={assets} dates={dates} siteStructureId={ss.id} submittedDates={submittedDates} initialDate={initialDate} autosaveOnLoad={autosaveFlag} subTypes={subTypes} />
+      <VideoComposer meta={meta} phases={phases} records={records} assets={assets} dates={dates} siteStructureId={ss.id} submittedDates={submittedDates} initialDate={initialDate} initialSeq={initialSeq} autosaveOnLoad={autosaveFlag} subTypes={subTypes} />
     </div>
   );
 }
