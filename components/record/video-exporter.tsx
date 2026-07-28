@@ -532,17 +532,29 @@ export function VideoExporter({
           //    구글은 업로드 응답에 CORS 헤더를 주지 않으므로 no-cors 로 보내고
           //    파일 id 는 서버가 폴더에서 파일명으로 찾는다.
           setMsg("드라이브 업로드 중...");
+          // 진단: no-cors 제거하고 실제 응답 상태 확인 (구글 upload 엔드포인트는
+          // resumable 세션 URL 에 한해 CORS 를 허용하므로 응답을 읽을 수 있음)
           try {
-            await fetch(sd.uploadUrl, {
+            const put = await fetch(sd.uploadUrl, {
               method: "PUT",
-              mode: "no-cors",
               headers: { "Content-Type": "video/webm" },
               body: blob,
             });
+            console.log("[video:put] status", put.status);
+            if (!put.ok) {
+              const errTxt = await put.text().catch(() => "");
+              console.error("[video:put] fail", put.status, errTxt);
+              setMsg("드라이브 업로드 실패: " + put.status);
+              alert("드라이브 업로드 실패: " + put.status + " " + errTxt.slice(0, 200));
+            } else {
+              // 성공 시 응답에서 바로 파일정보 취득 가능
+              const pd = await put.json().catch(() => ({}));
+              console.log("[video:put] ok", pd);
+            }
           } catch (putErr) {
-            // no-cors PUT 은 보통 예외를 던지지 않지만, 혹시 던져도
-            // 파일이 이미 올라갔을 수 있으므로 complete 로 진행 (서버가 파일 존재 확인)
-            console.error("[video:put]", putErr);
+            console.error("[video:put] exception", putErr);
+            setMsg("드라이브 업로드 예외: " + (putErr instanceof Error ? putErr.message : "unknown"));
+            alert("드라이브 업로드 예외: " + (putErr instanceof Error ? putErr.message : "unknown"));
           }
           // 3) 서버에 파일 정보 등록 (서버가 folderId+파일명으로 id 조회)
           const res = await fetch("/api/records/video/complete", {
