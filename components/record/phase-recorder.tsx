@@ -408,13 +408,11 @@ export function PhaseRecorder({
         deletingRef.current = false; // 실패 시 자동저장 재허용
         return;
       }
-      // 화면 초기화 + 갱신 — 삭제한 날짜·공종의 모든 단계 캐시 제거 (되살아남 방지)
+      // 화면 초기화 + 갱신 — 삭제한 회차(현재 공종·회차)의 모든 단계 캐시 제거 (되살아남 방지)
       loadKeyRef.current = "";
-      // 그 날짜의 모든 공종·단계 캐시 제거 (날짜 전체 삭제이므로)
-      for (const _t of subTypes) {
-        for (let _i = 0; _i < phases.length; _i++) {
-          savedFormsRef.current.delete(`${_i}|${selectedDate}|${_t.id}`);
-        }
+      // 삭제한 공종·회차의 캐시 제거 (키에 vSeq 포함)
+      for (let _i = 0; _i < phases.length; _i++) {
+        savedFormsRef.current.delete(`${_i}|${selectedDate}|${subTypeId}|${vSeq}`);
       }
       // 폼도 즉시 비워 캐시 재기록 방지
       setForm({
