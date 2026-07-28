@@ -532,12 +532,18 @@ export function VideoExporter({
           //    구글은 업로드 응답에 CORS 헤더를 주지 않으므로 no-cors 로 보내고
           //    파일 id 는 서버가 폴더에서 파일명으로 찾는다.
           setMsg("드라이브 업로드 중...");
-          await fetch(sd.uploadUrl, {
-            method: "PUT",
-            mode: "no-cors",
-            headers: { "Content-Type": "video/webm" },
-            body: blob,
-          });
+          try {
+            await fetch(sd.uploadUrl, {
+              method: "PUT",
+              mode: "no-cors",
+              headers: { "Content-Type": "video/webm" },
+              body: blob,
+            });
+          } catch (putErr) {
+            // no-cors PUT 은 보통 예외를 던지지 않지만, 혹시 던져도
+            // 파일이 이미 올라갔을 수 있으므로 complete 로 진행 (서버가 파일 존재 확인)
+            console.error("[video:put]", putErr);
+          }
           // 3) 서버에 파일 정보 등록 (서버가 folderId+파일명으로 id 조회)
           const res = await fetch("/api/records/video/complete", {
             method: "POST",
