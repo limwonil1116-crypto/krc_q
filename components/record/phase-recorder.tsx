@@ -47,6 +47,7 @@ type Asset = {
   id: string;
   phaseTemplateId: string;
   subTypeId: string | null;
+  seq?: number | null;
   inspectionDate: string | null;
   assetType: string;
   fileName: string;
@@ -399,7 +400,7 @@ export function PhaseRecorder({
       const res = await fetch("/api/records", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ siteStructureId, subTypeId, inspectionDate: selectedDate, allSubTypes: true }),
+        body: JSON.stringify({ siteStructureId, subTypeId, seq: vSeq, inspectionDate: selectedDate }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
@@ -651,7 +652,7 @@ export function PhaseRecorder({
       notApplicableReason: rec?.notApplicableReason ?? "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, selectedDate, subTypeId]);
+  }, [step, selectedDate, subTypeId, vSeq]);
 
   // 자동저장: form 이 바뀌면 1.5초 후 자동으로 저장 (기록저장 버튼 없이도)
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
