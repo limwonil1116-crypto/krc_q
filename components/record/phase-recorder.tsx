@@ -335,7 +335,7 @@ export function PhaseRecorder({
     .forEach((r) => recMap.set(r.phaseTemplateId, r));
   const assetMap = new Map<string, Asset[]>();
   assets
-    .filter((a) => a.subTypeId === subTypeId && (a.inspectionDate || "") === selectedDate && ((a as { seq?: number | null }).seq == null || (a as { seq?: number | null }).seq === vSeq))
+    .filter((a) => a.subTypeId === subTypeId && (a.inspectionDate || "") === selectedDate && (((a as { seq?: number | null }).seq ?? 1) === vSeq))
     .forEach((a) => {
       const arr = assetMap.get(a.phaseTemplateId) || [];
       arr.push(a);
