@@ -158,3 +158,38 @@ export async function findDriveFileByName(
   if (!f?.id) return null;
   return { id: f.id, webViewLink: (f.webViewLink as string) || "", size: Number(f.size || 0) };
 }
+
+// resumable 세션 URL 에 한 조각(chunk)을 Content-Range 로 PUT 한다.
+// 서버(node)->구글 통신이라 CORS 제약이 없다.
+// 반환: 아직 남았으면 {done:false}, 마지막 조각이면 {done:true, file}
+export async function uploadChunkToSession(
+  uploadUrl: string,
+  chunk: Buffer,
+  start: number,
+  total: number
+): Promise<{ done: boolean; file?: { id: string; webViewLink: string; size: number } }> {
+  const end = start + chunk.length - 1;
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Length": String(chunk.length),
+      "Content-Range": `bytes ${start}-${end}/${total}`,
+    },
+    body: chunk as unknown as BodyInit,
+  });
+  // 308 Resume Incomplete = 더 보낼 조각이 있음
+  if (res.status === 308) return { done: false };
+  if (res.status === 200 || res.status === 201) {
+    const d = (await res.json().catch(() => ({}))) as {
+      id?: string;
+      webViewLink?: string;
+      size?: string;
+    };
+    return {
+      done: true,
+      file: { id: d.id || "", webViewLink: d.webViewLink || "", size: Number(d.size || 0) },
+    };
+  }
+  const txt = await res.text().catch(() => "");
+  throw new Error(`청크 업로드 실패 ${res.status}: ${txt.slice(0, 200)}`);
+}

@@ -528,35 +528,33 @@ export function VideoExporter({
           if (!sres.ok || !sd.uploadUrl) {
             throw new Error(sd.error || "업로드 세션 생성 실패 (" + sres.status + ")");
           }
-          // 2) 브라우저에서 드라이브로 직접 업로드 (용량 제한 없음)
-          //    구글은 업로드 응답에 CORS 헤더를 주지 않으므로 no-cors 로 보내고
-          //    파일 id 는 서버가 폴더에서 파일명으로 찾는다.
+          // 2) 영상을 조각내 서버 경유로 드라이브에 순차 업로드
+          //    (브라우저->구글 직접 PUT 은 CORS 로 막히므로 서버가 중계)
           setMsg("드라이브 업로드 중...");
-          // 진단: no-cors 제거하고 실제 응답 상태 확인 (구글 upload 엔드포인트는
-          // resumable 세션 URL 에 한해 CORS 를 허용하므로 응답을 읽을 수 있음)
-          try {
-            const put = await fetch(sd.uploadUrl, {
-              method: "PUT",
-              headers: { "Content-Type": "video/webm" },
-              body: blob,
-            });
-            console.log("[video:put] status", put.status);
-            if (!put.ok) {
-              const errTxt = await put.text().catch(() => "");
-              console.error("[video:put] fail", put.status, errTxt);
-              setMsg("드라이브 업로드 실패: " + put.status);
-              alert("드라이브 업로드 실패: " + put.status + " " + errTxt.slice(0, 200));
-            } else {
-              // 성공 시 응답에서 바로 파일정보 취득 가능
-              const pd = await put.json().catch(() => ({}));
-              console.log("[video:put] ok", pd);
+          const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB (Vercel 요청 제한 이내)
+          const totalBytes = blob.size;
+          let uploaded = 0;
+          let uploadedFile: { id: string; webViewLink: string; size: number } | null = null;
+          while (uploaded < totalBytes) {
+            if (cancelRef.current) throw new Error("취소됨");
+            const end = Math.min(uploaded + CHUNK_SIZE, totalBytes);
+            const chunk = blob.slice(uploaded, end);
+            const cfd = new FormData();
+            cfd.append("uploadUrl", sd.uploadUrl);
+            cfd.append("start", String(uploaded));
+            cfd.append("total", String(totalBytes));
+            cfd.append("chunk", chunk, "chunk");
+            const cres = await fetch("/api/records/video/chunk", { method: "POST", body: cfd });
+            const cd = await cres.json().catch(() => ({}));
+            if (!cres.ok || cd.error) {
+              throw new Error(cd.error || ("청크 업로드 실패 (" + cres.status + ")"));
             }
-          } catch (putErr) {
-            console.error("[video:put] exception", putErr);
-            setMsg("드라이브 업로드 예외: " + (putErr instanceof Error ? putErr.message : "unknown"));
-            alert("드라이브 업로드 예외: " + (putErr instanceof Error ? putErr.message : "unknown"));
+            if (cd.done && cd.file) uploadedFile = cd.file;
+            uploaded = end;
+            setProgress(Math.round((uploaded / totalBytes) * 100));
+            setMsg("드라이브 업로드 중... " + Math.round((uploaded / totalBytes) * 100) + "%");
           }
-          // 3) 서버에 파일 정보 등록 (서버가 folderId+파일명으로 id 조회)
+          // 3) 서버에 파일 정보 등록 (청크 완료 응답의 fileId 우선, 없으면 폴더 조회)
           const res = await fetch("/api/records/video/complete", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -566,6 +564,8 @@ export function VideoExporter({
               subTypeId: subTypeId || undefined,
               folderId: sd.folderId,
               fileName: sd.driveName || upName,
+              fileId: uploadedFile?.id || undefined,
+              webViewLink: uploadedFile?.webViewLink || undefined,
               fileSizeBytes: blob.size,
             }),
           });

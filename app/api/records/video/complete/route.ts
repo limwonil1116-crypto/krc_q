@@ -46,14 +46,16 @@ export async function POST(req: Request) {
     const inspectionDate = (b.inspectionDate ?? "").trim();
     const folderId = (b.folderId ?? "").trim();
     const fileName = (b.fileName ?? "video.webm").trim();
+    const directFileId = (b.fileId ?? "").trim();
+    const directWebViewLink = (b.webViewLink ?? "").trim();
     const fileSizeBytes = typeof b.fileSizeBytes === "number" ? b.fileSizeBytes : 0;
-    if (!siteStructureId || !inspectionDate || !folderId) {
+    if (!siteStructureId || !inspectionDate || (!folderId && !directFileId)) {
       return NextResponse.json({ error: "구조물/검측일자/파일 정보가 필요합니다." }, { status: 400 });
     }
-    // 브라우저 직접 업로드(no-cors)라 클라가 파일 id 를 못 받는다 -> 서버가 폴더에서 파일명으로 조회
-    let fileId = "";
-    let webViewLink = "";
-    for (let attempt = 0; attempt < 5; attempt++) {
+    // 청크 업로드 완료 응답에서 파일 id 를 직접 받으면 조회 생략
+    let fileId = directFileId;
+    let webViewLink = directWebViewLink;
+    for (let attempt = 0; !fileId && folderId && attempt < 5; attempt++) {
       const found = await findDriveFileByName(folderId, fileName);
       if (found) {
         fileId = found.id;
