@@ -70,7 +70,8 @@ export async function POST(req: Request) {
           eq(constructionRecords.siteStructureId, siteStructureId),
           eq(constructionRecords.subTypeId, subTypeId),
           eq(constructionRecords.phaseTemplateId, phaseTemplateId),
-          eq(constructionRecords.inspectionDate, inspectionDate)
+          eq(constructionRecords.inspectionDate, inspectionDate),
+          eq(constructionRecords.seq, seq)
         )
       )
       .limit(1);
@@ -84,6 +85,7 @@ export async function POST(req: Request) {
           siteId: ss.siteId,
           siteStructureId,
           subTypeId,
+          seq,
           phaseTemplateId,
           inspectionDate,
           status: "draft",
