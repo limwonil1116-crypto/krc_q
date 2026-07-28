@@ -72,7 +72,7 @@ function todayStr() {
   return ymd(new Date());
 }
 
-type CalEntry = { subTypeId: string; name: string; submitted: boolean };
+type CalEntry = { subTypeId: string; seq: number; name: string; submitted: boolean };
 function Calendar({
   selected,
   marked,
@@ -86,7 +86,7 @@ function Calendar({
   submitted: Set<string>;
   entries?: Record<string, CalEntry[]>;
   onSelect: (d: string) => void;
-  onSelectEntry?: (d: string, subTypeId: string) => void;
+  onSelectEntry?: (d: string, subTypeId: string, seq: number) => void;
 }) {
   const init = selected ? parseYmd(selected) : new Date();
   const [vy, setVy] = useState(init.getFullYear());
@@ -169,12 +169,12 @@ function Calendar({
                 <>
                   {(entries[c] || []).slice(0, 3).map((en) => (
                     <button
-                      key={c + "|" + en.subTypeId}
+                      key={c + "|" + en.subTypeId + "|" + en.seq}
                       type="button"
-                      title={en.name}
+                      title={en.name + " " + en.seq + "회차"}
                       onClick={(ev) => {
                         ev.stopPropagation();
-                        if (onSelectEntry) onSelectEntry(c, en.subTypeId);
+                        if (onSelectEntry) onSelectEntry(c, en.subTypeId, en.seq);
                         else onSelect(c);
                       }}
                       className={
@@ -190,7 +190,7 @@ function Calendar({
                           (en.submitted ? "bg-green-500" : "bg-orange-500")
                         }
                       />
-                      <span className="truncate">{en.name}</span>
+                      <span className="truncate">{en.name} {en.seq}회차</span>
                     </button>
                   ))}
                   {(entries[c] || []).length > 3 && (
@@ -302,25 +302,29 @@ export function PhaseRecorder({
   const calEntries = useMemo(() => {
     const map: Record<string, CalEntry[]> = {};
     const nameOf = (id: string) => subTypes.find((t) => t.id === id)?.name || "기타";
-    const push = (d: string, st: string, sub: boolean) => {
+    const push = (d: string, st: string, sq: number, sub: boolean) => {
       if (!map[d]) map[d] = [];
-      const ex = map[d].find((x) => x.subTypeId === st);
+      const ex = map[d].find((x) => x.subTypeId === st && x.seq === sq);
       if (ex) {
         if (sub) ex.submitted = true;
         return;
       }
-      map[d].push({ subTypeId: st, name: nameOf(st), submitted: sub });
+      map[d].push({ subTypeId: st, seq: sq, name: nameOf(st), submitted: sub });
     };
     records.forEach((r) => {
       if (!r.inspectionDate || !r.subTypeId) return;
       if (calFilter && r.subTypeId !== calFilter) return;
-      push(r.inspectionDate, r.subTypeId, r.status === "submitted");
+      push(r.inspectionDate, r.subTypeId, r.seq ?? 1, r.status === "submitted");
     });
     assets.forEach((a) => {
       if (!a.inspectionDate || !a.subTypeId) return;
       if (calFilter && a.subTypeId !== calFilter) return;
-      push(a.inspectionDate, a.subTypeId, false);
+      push(a.inspectionDate, a.subTypeId, (a as { seq?: number | null }).seq ?? 1, false);
     });
+    // 공종명 -> 회차 순 정렬
+    Object.values(map).forEach((arr) =>
+      arr.sort((x, y) => (x.name === y.name ? x.seq - y.seq : x.name.localeCompare(y.name)))
+    );
     return map;
   }, [records, assets, subTypes, calFilter]);
 
@@ -472,23 +476,6 @@ export function PhaseRecorder({
     // 저장은 백그라운드로 진행 - 화면 전환을 막지 않음
     void saveText(cur, step, true);
   }
-  // 현재 날짜·공종에 존재하는 회차 목록 (최소 1회차)
-  const seqList = (() => {
-    const set = new Set<number>([1]);
-    records
-      .filter((r) => r.subTypeId === subTypeId && (r.inspectionDate || "") === selectedDate)
-      .forEach((r) => set.add(r.seq ?? 1));
-    assets
-      .filter((a) => a.subTypeId === subTypeId && (a.inspectionDate || "") === selectedDate)
-      .forEach((a) => set.add((a as { seq?: number | null }).seq ?? 1));
-    return Array.from(set).sort((x, y) => x - y);
-  })();
-  function changeSeq(n: number) {
-    flushSave();
-    setVSeq(n);
-    setStep(0);
-    resetTransient();
-  }
   function changeSubType(id: string) {
     flushSave();
     setSubTypeId(id);
@@ -497,18 +484,28 @@ export function PhaseRecorder({
     resetTransient();
   }
   // 캘린더에서 공종 줄을 클릭 -> 그 날짜 + 그 공종으로 이동
-  function selectCalEntry(d: string, st: string) {
+  function selectCalEntry(d: string, st: string, sq: number) {
     flushSave();
     setSelectedDate(d);
     setSubTypeId(st);
-    setVSeq(1);
+    setVSeq(sq);
     setStep(0);
     resetTransient();
   }
   function changeDate(d: string) {
     flushSave();
     setSelectedDate(d);
-    setVSeq(1);
+    // 날짜 숫자 클릭 = 새로 등록. 그 날짜·현재 공종에 기록이 있으면 다음 회차, 없으면 1회차
+    const used = new Set<number>();
+    records.forEach((r) => {
+      if (r.subTypeId === subTypeId && (r.inspectionDate || "") === d) used.add(r.seq ?? 1);
+    });
+    assets.forEach((a) => {
+      if (a.subTypeId === subTypeId && (a.inspectionDate || "") === d)
+        used.add((a as { seq?: number | null }).seq ?? 1);
+    });
+    const nextSeq = used.size ? Math.max(...used) + 1 : 1;
+    setVSeq(nextSeq);
     setStep(0);
     resetTransient();
   }
@@ -895,33 +892,6 @@ export function PhaseRecorder({
               {t.name}
             </button>
           ))}
-        </div>
-      </div>
-      <div className="space-y-1">
-        <Label>회차</Label>
-        <div className="flex flex-wrap gap-2">
-          {seqList.map((n) => (
-            <button
-              key={"seq-" + n}
-              type="button"
-              onClick={() => changeSeq(n)}
-              className={
-                "rounded-full px-3 py-1.5 text-sm font-semibold " +
-                (n === vSeq
-                  ? "bg-[#0033A0] text-white"
-                  : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200")
-              }
-            >
-              {n}회차
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => changeSeq(Math.max(0, ...seqList) + 1)}
-            className="rounded-full border border-dashed border-[#0033A0] px-3 py-1.5 text-sm font-semibold text-[#0033A0] hover:bg-[#EAF0FB]"
-          >
-            + 새 회차
-          </button>
         </div>
       </div>
       {subTypeId && (
