@@ -514,7 +514,7 @@ export function VideoExporter({
           // 1) 업로드 세션 발급 (서버는 URL 만 발급, 파일은 통과하지 않음)
           const sres = await fetch("/api/records/video/session", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-silent": "1" },
             body: JSON.stringify({
               siteStructureId,
               inspectionDate: date,
@@ -544,7 +544,7 @@ export function VideoExporter({
             cfd.append("start", String(uploaded));
             cfd.append("total", String(totalBytes));
             cfd.append("chunk", chunk, "chunk");
-            const cres = await fetch("/api/records/video/chunk", { method: "POST", body: cfd });
+            const cres = await fetch("/api/records/video/chunk", { method: "POST", headers: { "x-silent": "1" }, body: cfd });
             const cd = await cres.json().catch(() => ({}));
             if (!cres.ok || cd.error) {
               throw new Error(cd.error || ("청크 업로드 실패 (" + cres.status + ")"));
@@ -557,7 +557,7 @@ export function VideoExporter({
           // 3) 서버에 파일 정보 등록 (청크 완료 응답의 fileId 우선, 없으면 폴더 조회)
           const res = await fetch("/api/records/video/complete", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-silent": "1" },
             body: JSON.stringify({
               siteStructureId,
               inspectionDate: date,
