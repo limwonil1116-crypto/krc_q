@@ -85,6 +85,13 @@ export function VideoComposer({
     );
     return ((r as { seq?: number | null } | undefined)?.seq as number) || 1;
   }, [initialSeq, records, date, effSubType]);
+  // 시행자: 지사값(예: 홍성) -> "한국농어촌공사 홍성지사"
+  const titleExecutor = (() => {
+    const ex = (meta.executor || "").trim();
+    if (!ex) return "한국농어촌공사";
+    if (ex.includes("한국농어촌공사")) return ex;
+    return `한국농어촌공사 ${ex}${ex.endsWith("지사") ? "" : "지사"}`;
+  })();
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -350,7 +357,7 @@ export function VideoComposer({
                   <span>한국농어촌공사 · CONSTRUCTION INSPECTION RECORD</span>
                   <span>검측일자 {date}</span>
                 </div>
-                <div className="krc-stroke krc-pop relative z-10 text-4xl font-extrabold tracking-tight" style={{ animationDelay: "0.05s" }}>KRC 건설공사실록</div>
+                <div className="krc-stroke krc-pop relative z-10 text-4xl font-extrabold tracking-tight" style={{ animationDelay: "0.05s", fontFamily: 'Batang, GungSuh, "궁서", serif' }}>KRC 건설공사실록</div>
                 <div className="krc-grow2 relative z-10 mt-2 h-1 rounded-full bg-[#FE5000]" />
                 <div className="krc-rise2 relative z-10 mt-3 text-2xl font-bold" style={{ animationDelay: "0.55s" }}>{meta.structureName}</div>
                 <div className="krc-rise2 relative z-10 mt-1 text-sm text-white/90" style={{ animationDelay: "0.7s" }}>
@@ -376,18 +383,22 @@ export function VideoComposer({
                     ) : null}
                   </div>
                 )}
-                <div className="absolute bottom-0 left-0 right-0 grid grid-cols-3 divide-x divide-white/20 border-t border-white/20 bg-black/30 text-[11px]">
+                <div className="absolute bottom-0 left-0 right-0 grid grid-cols-4 divide-x divide-white/20 border-t border-white/20 bg-black/30 text-[11px]">
                   <div className="px-2 py-1.5">
                     <div className="text-white/50">공종</div>
-                    <div className="truncate font-semibold">{meta.workType || meta.typeName || "-"}</div>
+                    <div className="truncate font-semibold">{meta.workType || "-"}</div>
                   </div>
                   <div className="px-2 py-1.5">
                     <div className="text-white/50">시행자</div>
-                    <div className="truncate font-semibold">{meta.executor || "-"}</div>
+                    <div className="truncate font-semibold">{titleExecutor}</div>
                   </div>
                   <div className="px-2 py-1.5">
-                    <div className="text-white/50">{meta.contractorCompany ? "시공사" : "구조물"}</div>
-                    <div className="truncate font-semibold">{meta.contractorCompany || meta.typeName || "-"}</div>
+                    <div className="text-white/50">시공사</div>
+                    <div className="truncate font-semibold">{meta.contractorCompany || "-"}</div>
+                  </div>
+                  <div className="px-2 py-1.5">
+                    <div className="text-white/50">구조물</div>
+                    <div className="truncate font-semibold">{meta.typeName || "-"}</div>
                   </div>
                 </div>
               </div>

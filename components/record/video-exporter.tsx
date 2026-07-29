@@ -142,7 +142,7 @@ export function VideoExporter({
     drawBackground(ctx, DARKBLUE);
     ctx.textAlign = "center";
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 72px sans-serif";
+    ctx.font = "bold 72px Batang, GungSuh, '궁서', serif";
     ctx.fillText("KRC 건설공사실록", W / 2, 250);
     ctx.fillStyle = ORANGE;
     ctx.fillRect(W / 2 - 90, 282, 180, 6);

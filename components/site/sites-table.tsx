@@ -235,40 +235,21 @@ export function SitesTable({ sites, basePath }: { sites: Site[]; basePath: strin
                 <button type="button" className={thBtn} onClick={() => toggleSort("districtName")}>
                   지구명{arrow("districtName")}
                 </button>
-                <select className={selCls} value={fDistrict} onChange={(e) => setFDistrict(e.target.value)}>
-                  <option value="">전체</option>
-                  {opts.district.map((v) => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
               </th>
               <th className="px-3 py-2.5">
                 <button type="button" className={thBtn} onClick={() => toggleSort("projectName")}>
                   사업{arrow("projectName")}
                 </button>
-                <select className={selCls} value={fProject} onChange={(e) => setFProject(e.target.value)}>
-                  <option value="">전체</option>
-                  {opts.project.map((v) => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
               </th>
               <th className="px-3 py-2.5">
                 <button type="button" className={thBtn} onClick={() => toggleSort("executor")}>
                   사업시행자{arrow("executor")}
                 </button>
-                <select className={selCls} value={fExecutor} onChange={(e) => setFExecutor(e.target.value)}>
-                  <option value="">전체</option>
-                  {opts.executor.map((v) => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
               </th>
               <th className="px-3 py-2.5">
                 <button type="button" className={thBtn} onClick={() => toggleSort("address")}>
                   주소{arrow("address")}
                 </button>
-                <input value={fAddress} onChange={(e) => setFAddress(e.target.value)} placeholder="주소 포함" className={selCls} />
               </th>
               <th className="px-3 py-2.5">공사기간</th>
               <th className="px-3 py-2.5 text-right">작업</th>
