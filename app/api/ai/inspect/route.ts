@@ -91,6 +91,23 @@ export async function POST(req: Request) {
       }
     }
 
+    // 검측 영상 (assetType video) - Gemini 2.5 는 영상 입력 지원. 최대 1개, 대용량은 Big 스트림 사용
+    const inspectionVideos: { mimeType: string; data: string }[] = [];
+    if (assetIds.length > 0) {
+      const vrows = await db
+        .select({ id: recordAssets.id, storageFileId: recordAssets.storageFileId, mimeType: recordAssets.mimeType })
+        .from(recordAssets)
+        .where(and(inArray(recordAssets.id, assetIds), eq(recordAssets.assetType, "video")));
+      for (const r of vrows) {
+        if (!r.storageFileId) continue;
+        const vb64 = await streamToBase64Big(r.storageFileId);
+        if (vb64) {
+          inspectionVideos.push({ mimeType: r.mimeType || "video/webm", data: vb64 });
+          break; // 영상은 1개만 (분석 비용/시간)
+        }
+      }
+    }
+
     // 참고사진 (guide_assets: subTypeId + phaseCode, reference) 최대 2장
     const referenceImages: string[] = [];
     if (subTypeId && phaseCode) {
@@ -203,6 +220,7 @@ export async function POST(req: Request) {
     specPdfs.forEach((s) => parts.push({ inlineData: { mimeType: s.mimeType, data: s.data } }));
     referenceImages.forEach((data) => parts.push({ inlineData: { mimeType: "image/jpeg", data } }));
     inspectionImages.forEach((data) => parts.push({ inlineData: { mimeType: "image/jpeg", data } }));
+    inspectionVideos.forEach((v) => parts.push({ inlineData: { mimeType: v.mimeType, data: v.data } }));
     parts.push({ text: userText });
 
     const result = await model.generateContent({

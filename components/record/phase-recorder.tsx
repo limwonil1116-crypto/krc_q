@@ -1217,7 +1217,7 @@ export function PhaseRecorder({
                       )}
                       {step > 0 && (
                       <AiWriteButton
-                        assetIds={photos.map((a) => a.id)}
+                        assetIds={[...photos, ...videos].map((a) => a.id)}
                         phaseName={p.name}
                         phaseCode={p.code}
                         structureTypeName={typeName}
