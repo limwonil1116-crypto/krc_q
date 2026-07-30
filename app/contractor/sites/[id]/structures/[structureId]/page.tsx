@@ -90,6 +90,7 @@ export default async function StructurePhasesPage({
       id: recordAssets.id,
       phaseTemplateId: constructionRecords.phaseTemplateId,
       subTypeId: constructionRecords.subTypeId,
+      seq: constructionRecords.seq,
       inspectionDate: constructionRecords.inspectionDate,
       assetType: recordAssets.assetType,
       fileName: recordAssets.fileName,
