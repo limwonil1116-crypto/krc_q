@@ -218,8 +218,11 @@ export function SiteForm({
   async function submit() {
     setError("");
     const projectName = f.project === "기타" ? f.projectEtc.trim() : f.project;
+    console.log("[site:submit]", JSON.stringify({ districtName: f.districtName, project: f.project, projectEtc: f.projectEtc, projectName, address: f.address, contractorCompany: f.contractorCompany, siteManagerName: f.siteManagerName }));
     if (!f.districtName || !projectName || !f.address) {
-      setError("지구명, 사업, 현장 주소는 필수입니다.");
+      const _m = [!f.districtName && "지구명", !projectName && "사업", !f.address && "주소"].filter(Boolean).join(", ");
+      alert("저장불가(필수누락): " + _m + "\n지구=[" + f.districtName + "] 사업=[" + projectName + "] 주소=[" + f.address + "]\n시공사=[" + f.contractorCompany + "] 소장=[" + f.siteManagerName + "]");
+      setError("필수값 누락: " + _m);
       return;
     }
     if (!f.project) {
