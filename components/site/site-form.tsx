@@ -218,11 +218,8 @@ export function SiteForm({
   async function submit() {
     setError("");
     const projectName = f.project === "기타" ? f.projectEtc.trim() : f.project;
-    console.log("[site:submit]", JSON.stringify({ districtName: f.districtName, project: f.project, projectEtc: f.projectEtc, projectName, address: f.address, contractorCompany: f.contractorCompany, siteManagerName: f.siteManagerName }));
     if (!f.districtName || !projectName || !f.address) {
-      const _m = [!f.districtName && "지구명", !projectName && "사업", !f.address && "주소"].filter(Boolean).join(", ");
-      alert("저장불가(필수누락): " + _m + "\n지구=[" + f.districtName + "] 사업=[" + projectName + "] 주소=[" + f.address + "]\n시공사=[" + f.contractorCompany + "] 소장=[" + f.siteManagerName + "]");
-      setError("필수값 누락: " + _m);
+      setError("지구명, 사업, 현장 주소는 필수입니다.");
       return;
     }
     if (!f.project) {
@@ -262,14 +259,12 @@ export function SiteForm({
       } catch {
         // 빈 응답 방어
       }
-      console.log("[site:res]", res.status, JSON.stringify(data));
-      alert("서버응답: status=" + res.status + " ok=" + res.ok + "\ndata=" + JSON.stringify(data));
       if (!res.ok || !data.ok) {
         setError(data.error || ("서버 오류 (" + res.status + ")"));
         return;
       }
-      router.push(listPath);
       router.refresh();
+      router.push(listPath);
     } catch (err) {
       setError("요청 실패: " + (err instanceof Error ? err.message : "네트워크 오류"));
     } finally {
