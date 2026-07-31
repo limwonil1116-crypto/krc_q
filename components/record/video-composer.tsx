@@ -171,7 +171,7 @@ export function VideoComposer({
     // 같은 날짜에 여러 공종이 있으면 단계 키가 겹쳐 설명이 유실되므로 공종으로 먼저 거른다
     const recMap = new Map<string, Rec>();
     records
-      .filter((r) => r.inspectionDate === date && (!vSubType || (r.subTypeId || "") === vSubType))
+      .filter((r) => r.inspectionDate === date && (!vSubType || (r.subTypeId || "") === vSubType) && (((r as { seq?: number | null }).seq ?? 1) === effSeq))
       .forEach((r) => {
         const prev = recMap.get(r.phaseTemplateId);
         // 전체보기일 때는 내용이 있는 기록을 우선 (설명 유실 방지)
@@ -179,7 +179,7 @@ export function VideoComposer({
       });
     const byPhase = new Map<string, Asset[]>();
     assets
-      .filter((a) => a.inspectionDate === date && (!vSubType || (a.subTypeId || "") === vSubType))
+      .filter((a) => a.inspectionDate === date && (!vSubType || (a.subTypeId || "") === vSubType) && (((a as { seq?: number | null }).seq ?? 1) === effSeq))
       .forEach((a) => {
         const arr = byPhase.get(a.phaseTemplateId) || [];
         arr.push(a);
@@ -239,7 +239,7 @@ export function VideoComposer({
       videos.forEach((a) => out.push({ kind: "video", src: `/api/assets/${a.id}/raw`, caption: p.name, description: r?.textDescription ?? null }));
     });
     return out;
-  }, [date, phases, records, assets, vSubType]);
+  }, [date, phases, records, assets, vSubType, effSeq]);
 
   useEffect(() => {
     setIdx(0);
