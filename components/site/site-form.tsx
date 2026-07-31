@@ -262,6 +262,8 @@ export function SiteForm({
       } catch {
         // 빈 응답 방어
       }
+      console.log("[site:res]", res.status, JSON.stringify(data));
+      alert("서버응답: status=" + res.status + " ok=" + res.ok + "\ndata=" + JSON.stringify(data));
       if (!res.ok || !data.ok) {
         setError(data.error || ("서버 오류 (" + res.status + ")"));
         return;
