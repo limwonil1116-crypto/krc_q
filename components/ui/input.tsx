@@ -1,11 +1,11 @@
 import * as React from "react"
-import { Input as InputPrimitive } from "@base-ui/react/input"
 
 import { cn } from "@/lib/utils"
 
+// 표준 input 사용 (base-ui Primitive 는 controlled value/onChange 반영이 달라 입력값이 사라지는 문제)
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
-    <InputPrimitive
+    <input
       type={type}
       data-slot="input"
       className={cn(
