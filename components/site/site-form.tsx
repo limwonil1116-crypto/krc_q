@@ -506,7 +506,7 @@ export function SiteForm({
         <Button type="button" variant="outline" className="flex-1" onClick={() => router.push(listPath)}>
           취소
         </Button>
-        <ActionButton className="flex-1" onClick={submit} disabled={loading}>
+        <ActionButton className="flex-1" onPointerDown={(e) => { e.preventDefault(); if (!loading) submit(); }} onClick={submit} disabled={loading}>
           {loading ? "저장 중..." : isEdit ? "수정 저장" : "저장"}
         </ActionButton>
       </BottomBar>
