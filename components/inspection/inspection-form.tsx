@@ -183,6 +183,40 @@ export function InspectionForm({
   function addItem() {
     setItems((arr) => [...arr, { checkItem: "", standard: "", contractorResult: "", contractorNote: "" }]);
   }
+  // 이전 검측 체크리스트 불러오기 (검사항목+기준만, 결과는 새로 체크)
+  const [loadOpen, setLoadOpen] = useState(false);
+  const [loadBusy, setLoadBusy] = useState(false);
+  async function loadPrevChecklist(prevId: string) {
+    if (!prevId) return;
+    setLoadBusy(true);
+    try {
+      const res = await fetch(`/api/inspections?id=${prevId}`);
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.ok) {
+        alert(d.error || "이전 검측을 불러오지 못했습니다.");
+        return;
+      }
+      const cls: Array<{ items?: Array<{ checkItem?: string; standard?: string }> }> = d.checklists || [];
+      const loaded = cls.flatMap((cl) => cl.items || []);
+      if (loaded.length === 0) {
+        alert("이전 검측에 체크리스트 항목이 없습니다.");
+        return;
+      }
+      setItems(
+        loaded.map((it) => ({
+          checkItem: it.checkItem || "",
+          standard: it.standard || "",
+          contractorResult: "",
+          contractorNote: "",
+        }))
+      );
+      setLoadOpen(false);
+    } catch {
+      alert("불러오기 중 오류가 발생했습니다.");
+    } finally {
+      setLoadBusy(false);
+    }
+  }
   function removeItem(idx: number) {
     setItems((arr) => arr.filter((_, i) => i !== idx));
   }
@@ -478,11 +512,50 @@ export function InspectionForm({
           )}
         </div>
 
+        {/* 이전 검측 불러오기 모달 */}
+        {loadOpen && (
+          <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40 p-4" onClick={() => setLoadOpen(false)}>
+            <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-base font-bold text-[#0033A0]">이전 검측 체크리스트 불러오기</h3>
+              <p className="mt-1 text-xs text-neutral-500">검사항목과 기준만 가져옵니다. 검측 결과는 새로 체크하세요.</p>
+              <div className="mt-3 max-h-72 space-y-1.5 overflow-y-auto">
+                {existingRequests.length === 0 && (
+                  <p className="py-6 text-center text-sm text-neutral-400">이전 검측요청서가 없습니다.</p>
+                )}
+                {existingRequests.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    disabled={loadBusy}
+                    onClick={() => loadPrevChecklist(r.id)}
+                    className="flex w-full items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 text-left hover:border-[#0033A0] hover:bg-[#0033A0]/5 disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-[#0A2540]">{r.inspectionDate || "날짜미상"}</span>
+                    <span className="text-xs text-neutral-500">{r.inspectionMatter || ""}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button type="button" onClick={() => setLoadOpen(false)} className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-semibold hover:bg-neutral-50">
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 체크리스트 (별지 제5호) */}
         <div className="rounded-lg border border-neutral-200 p-3">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-bold text-[#002A80]">검측 체크리스트</span>
             <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setLoadOpen(true)}
+                className="rounded-md border border-[#0033A0] px-2.5 py-1 text-xs font-semibold text-[#0033A0] hover:bg-[#0033A0]/5"
+              >
+                📋 이전 불러오기
+              </button>
               <button
                 type="button"
                 onClick={generateChecklist}
