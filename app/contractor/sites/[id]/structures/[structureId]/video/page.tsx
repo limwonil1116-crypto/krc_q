@@ -75,6 +75,7 @@ export default async function VideoPage({
     .select({
       phaseTemplateId: constructionRecords.phaseTemplateId,
       subTypeId: constructionRecords.subTypeId,
+      seq: constructionRecords.seq,
       inspectionDate: constructionRecords.inspectionDate,
       title: constructionRecords.title,
       textDescription: constructionRecords.textDescription,
@@ -104,6 +105,7 @@ export default async function VideoPage({
       id: recordAssets.id,
       phaseTemplateId: constructionRecords.phaseTemplateId,
       subTypeId: constructionRecords.subTypeId,
+      seq: constructionRecords.seq,
       inspectionDate: constructionRecords.inspectionDate,
       assetType: recordAssets.assetType,
       fileName: recordAssets.fileName,
