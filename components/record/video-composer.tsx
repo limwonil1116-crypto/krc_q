@@ -79,21 +79,27 @@ export function VideoComposer({
   // 사용자가 미리보기에서 직접 고른 회차 (최우선)
   const [pickSeq, setPickSeq] = useState<number | null>(null);
   // 현재 날짜+공종 조합에 존재하는 회차 목록
-  const availSeqs = useMemo(() => {
-    const sub = effSubType;
-    const set = new Set<number>();
+  // 이 날짜의 (공종 + 회차) 조합 목록 - 공종 선택 시 그 공종만, 전체면 모든 공종
+  const availCombos = useMemo(() => {
+    const sub = vSubType; // 전체("")면 모든 공종 표시
+    const map = new Map<string, { subTypeId: string; subTypeName: string; seq: number }>();
+    const addOne = (stId: string, sq: number) => {
+      if (sub && stId !== sub) return;
+      const key = stId + "|" + sq;
+      if (map.has(key)) return;
+      const nm = subTypes.find((s) => s.id === stId)?.name || "";
+      map.set(key, { subTypeId: stId, subTypeName: nm, seq: sq });
+    };
     records.forEach((r) => {
-      if (r.inspectionDate === date && (!sub || (r.subTypeId || "") === sub)) {
-        set.add(((r as { seq?: number | null }).seq ?? 1) as number);
-      }
+      if (r.inspectionDate === date) addOne(r.subTypeId || "", ((r as { seq?: number | null }).seq ?? 1) as number);
     });
     assets.forEach((a) => {
-      if (a.inspectionDate === date && (!sub || (a.subTypeId || "") === sub)) {
-        set.add(((a as { seq?: number | null }).seq ?? 1) as number);
-      }
+      if (a.inspectionDate === date) addOne(a.subTypeId || "", ((a as { seq?: number | null }).seq ?? 1) as number);
     });
-    return Array.from(set).sort((x, y) => x - y);
-  }, [records, assets, date, effSubType]);
+    return Array.from(map.values()).sort((x, y) =>
+      x.subTypeName === y.subTypeName ? x.seq - y.seq : x.subTypeName.localeCompare(y.subTypeName)
+    );
+  }, [records, assets, date, vSubType, subTypes]);
   // 날짜/공종 바뀌면 회차 선택 초기화
   useEffect(() => {
     setPickSeq(null);
@@ -334,22 +340,28 @@ export function VideoComposer({
         </div>
       )}
 
-      {availSeqs.length > 1 && (
+      {availCombos.length > 1 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-neutral-500">회차</span>
-          {availSeqs.map((sq) => (
-            <button
-              key={"seq-" + sq}
-              type="button"
-              onClick={() => setPickSeq(sq)}
-              className={
-                "rounded-full px-3 py-1 text-xs font-semibold " +
-                (effSeq === sq ? "bg-[#FE5000] text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
-              }
-            >
-              {sq}회차
-            </button>
-          ))}
+          <span className="text-sm text-neutral-500">회차 선택</span>
+          {availCombos.map((c) => {
+            const active = (vSubType ? true : effSubType === c.subTypeId) && effSeq === c.seq;
+            return (
+              <button
+                key={"combo-" + c.subTypeId + "-" + c.seq}
+                type="button"
+                onClick={() => {
+                  if (!vSubType) setVSubType(c.subTypeId);
+                  setPickSeq(c.seq);
+                }}
+                className={
+                  "rounded-full px-3 py-1 text-xs font-semibold " +
+                  (active ? "bg-[#FE5000] text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
+                }
+              >
+                {vSubType ? `${c.seq}회차` : `${c.subTypeName} ${c.seq}회차`}
+              </button>
+            );
+          })}
         </div>
       )}
 
