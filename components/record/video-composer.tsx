@@ -67,6 +67,8 @@ export function VideoComposer({
   const [date, setDate] = useState((initialDate && dates.includes(initialDate) ? initialDate : dates[0]) || "");
   // 영상에 담을 세부공종 ("" = 전체)
   const [vSubType, setVSubType] = useState<string>("");
+  // 사용자가 미리보기에서 직접 고른 공종+회차 (최우선)
+  const [pickCombo, setPickCombo] = useState<{ subTypeId: string; seq: number } | null>(null);
   // 저장 폴더용 실효 공종: 선택 없으면 그 날짜 자료의 공종을 자동 추론
   const effSubType = useMemo(() => {
     if (pickCombo) return pickCombo.subTypeId;
@@ -77,8 +79,6 @@ export function VideoComposer({
     return (a?.subTypeId as string) || "";
   }, [vSubType, records, assets, date]);
   // 최종영상 저장 폴더용 회차: 그 날짜·공종 자료의 seq (없으면 1)
-  // 사용자가 미리보기에서 직접 고른 공종+회차 (최우선)
-  const [pickCombo, setPickCombo] = useState<{ subTypeId: string; seq: number } | null>(null);
   // 현재 날짜+공종 조합에 존재하는 회차 목록
   // 이 날짜의 (공종 + 회차) 조합 목록 - 공종 선택 시 그 공종만, 전체면 모든 공종
   const availCombos = useMemo(() => {
