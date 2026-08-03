@@ -69,6 +69,7 @@ export function VideoComposer({
   const [vSubType, setVSubType] = useState<string>("");
   // 저장 폴더용 실효 공종: 선택 없으면 그 날짜 자료의 공종을 자동 추론
   const effSubType = useMemo(() => {
+    if (pickCombo) return pickCombo.subTypeId;
     if (vSubType) return vSubType;
     const r = records.find((x) => x.inspectionDate === date && x.subTypeId);
     if (r?.subTypeId) return r.subTypeId as string;
@@ -76,15 +77,13 @@ export function VideoComposer({
     return (a?.subTypeId as string) || "";
   }, [vSubType, records, assets, date]);
   // 최종영상 저장 폴더용 회차: 그 날짜·공종 자료의 seq (없으면 1)
-  // 사용자가 미리보기에서 직접 고른 회차 (최우선)
-  const [pickSeq, setPickSeq] = useState<number | null>(null);
+  // 사용자가 미리보기에서 직접 고른 공종+회차 (최우선)
+  const [pickCombo, setPickCombo] = useState<{ subTypeId: string; seq: number } | null>(null);
   // 현재 날짜+공종 조합에 존재하는 회차 목록
   // 이 날짜의 (공종 + 회차) 조합 목록 - 공종 선택 시 그 공종만, 전체면 모든 공종
   const availCombos = useMemo(() => {
-    const sub = vSubType; // 전체("")면 모든 공종 표시
     const map = new Map<string, { subTypeId: string; subTypeName: string; seq: number }>();
     const addOne = (stId: string, sq: number) => {
-      if (sub && stId !== sub) return;
       const key = stId + "|" + sq;
       if (map.has(key)) return;
       const nm = subTypes.find((s) => s.id === stId)?.name || "";
@@ -99,14 +98,14 @@ export function VideoComposer({
     return Array.from(map.values()).sort((x, y) =>
       x.subTypeName === y.subTypeName ? x.seq - y.seq : x.subTypeName.localeCompare(y.subTypeName)
     );
-  }, [records, assets, date, vSubType, subTypes]);
-  // 날짜/공종 바뀌면 회차 선택 초기화
+  }, [records, assets, date, subTypes]);
+  // 날짜 바뀌면 선택 초기화
   useEffect(() => {
-    setPickSeq(null);
-  }, [date, vSubType]);
+    setPickCombo(null);
+  }, [date]);
   const effSeq = useMemo(() => {
-    // 미리보기에서 직접 고른 회차 최우선
-    if (pickSeq && pickSeq >= 1) return pickSeq;
+    // 미리보기에서 직접 고른 공종+회차 최우선
+    if (pickCombo && pickCombo.seq >= 1) return pickCombo.seq;
     // 제출에서 넘어온 회차(initialSeq)
     if (initialSeq && initialSeq >= 1) return initialSeq;
     const sub = effSubType;
@@ -114,7 +113,7 @@ export function VideoComposer({
       (x) => x.inspectionDate === date && (!sub || (x.subTypeId || "") === sub) && (x as { seq?: number | null }).seq != null
     );
     return ((r as { seq?: number | null } | undefined)?.seq as number) || 1;
-  }, [pickSeq, initialSeq, records, date, effSubType]);
+  }, [pickCombo, initialSeq, records, date, effSubType]);
   // 시행자: 지사값(예: 홍성) -> "한국농어촌공사 홍성지사"
   const titleExecutor = (() => {
     const ex = (meta.executor || "").trim();
@@ -340,25 +339,22 @@ export function VideoComposer({
         </div>
       )}
 
-      {availCombos.length > 1 && (
+      {availCombos.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-neutral-500">회차 선택</span>
+          <span className="text-sm text-neutral-500">공종·회차</span>
           {availCombos.map((c) => {
-            const active = (vSubType ? true : effSubType === c.subTypeId) && effSeq === c.seq;
+            const active = effSubType === c.subTypeId && effSeq === c.seq;
             return (
               <button
                 key={"combo-" + c.subTypeId + "-" + c.seq}
                 type="button"
-                onClick={() => {
-                  if (!vSubType) setVSubType(c.subTypeId);
-                  setPickSeq(c.seq);
-                }}
+                onClick={() => setPickCombo({ subTypeId: c.subTypeId, seq: c.seq })}
                 className={
                   "rounded-full px-3 py-1 text-xs font-semibold " +
                   (active ? "bg-[#FE5000] text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
                 }
               >
-                {vSubType ? `${c.seq}회차` : `${c.subTypeName} ${c.seq}회차`}
+                {`${c.subTypeName} ${c.seq}회차`}
               </button>
             );
           })}
