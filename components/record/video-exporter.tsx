@@ -142,10 +142,10 @@ export function VideoExporter({
     drawBackground(ctx, DARKBLUE);
     ctx.textAlign = "center";
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 72px Batang, GungSuh, '궁서', serif";
-    ctx.fillText("KRC 건설공사실록", W / 2, 250);
+    ctx.font = "96px 'Song Myung', Batang, GungSuh, serif";
+    ctx.fillText("KRC 건설공사실록", W / 2, 258);
     ctx.fillStyle = ORANGE;
-    ctx.fillRect(W / 2 - 90, 282, 180, 6);
+    ctx.fillRect(W / 2 - 110, 292, 220, 7);
     ctx.fillStyle = "#fff";
     ctx.font = "bold 44px sans-serif";
     ctx.fillText(meta.structureName, W / 2, 360);
@@ -349,6 +349,14 @@ export function VideoExporter({
   }
 
   async function exportVideo(withBgm: boolean, opts?: { download?: boolean; upload?: boolean }) {
+    // 제목 폰트(송명체) 로드 보장 - canvas 는 폰트가 로드돼 있어야 그려짐
+    try {
+      if (typeof document !== "undefined" && (document as Document & { fonts?: FontFaceSet }).fonts) {
+        await (document as Document & { fonts: FontFaceSet }).fonts.load("96px 'Song Myung'");
+      }
+    } catch {
+      // 폰트 로드 실패해도 기본 폰트로 진행
+    }
     const doDownload = opts?.download !== false;
     const doUpload = !!opts?.upload && !!siteStructureId;
     if (busy) return;

@@ -408,7 +408,7 @@ export function VideoComposer({
                   <span>한국농어촌공사 · CONSTRUCTION INSPECTION RECORD</span>
                   <span>검측일자 {date}</span>
                 </div>
-                <div className="krc-stroke krc-pop relative z-10 text-4xl font-extrabold tracking-tight" style={{ animationDelay: "0.05s", fontFamily: 'Batang, GungSuh, "궁서", serif' }}>KRC 건설공사실록</div>
+                <div className="krc-stroke krc-pop relative z-10 text-6xl font-extrabold tracking-tight" style={{ animationDelay: "0.05s", fontFamily: '"Song Myung", Batang, serif' }}>KRC 건설공사실록</div>
                 <div className="krc-grow2 relative z-10 mt-2 h-1 rounded-full bg-[#FE5000]" />
                 <div className="krc-rise2 relative z-10 mt-3 text-2xl font-bold" style={{ animationDelay: "0.55s" }}>{meta.structureName}</div>
                 <div className="krc-rise2 relative z-10 mt-1 text-sm text-white/90" style={{ animationDelay: "0.7s" }}>
