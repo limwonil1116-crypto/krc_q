@@ -76,15 +76,39 @@ export function VideoComposer({
     return (a?.subTypeId as string) || "";
   }, [vSubType, records, assets, date]);
   // 최종영상 저장 폴더용 회차: 그 날짜·공종 자료의 seq (없으면 1)
+  // 사용자가 미리보기에서 직접 고른 회차 (최우선)
+  const [pickSeq, setPickSeq] = useState<number | null>(null);
+  // 현재 날짜+공종 조합에 존재하는 회차 목록
+  const availSeqs = useMemo(() => {
+    const sub = effSubType;
+    const set = new Set<number>();
+    records.forEach((r) => {
+      if (r.inspectionDate === date && (!sub || (r.subTypeId || "") === sub)) {
+        set.add(((r as { seq?: number | null }).seq ?? 1) as number);
+      }
+    });
+    assets.forEach((a) => {
+      if (a.inspectionDate === date && (!sub || (a.subTypeId || "") === sub)) {
+        set.add(((a as { seq?: number | null }).seq ?? 1) as number);
+      }
+    });
+    return Array.from(set).sort((x, y) => x - y);
+  }, [records, assets, date, effSubType]);
+  // 날짜/공종 바뀌면 회차 선택 초기화
+  useEffect(() => {
+    setPickSeq(null);
+  }, [date, vSubType]);
   const effSeq = useMemo(() => {
-    // 제출에서 넘어온 회차(initialSeq)를 최우선 사용
+    // 미리보기에서 직접 고른 회차 최우선
+    if (pickSeq && pickSeq >= 1) return pickSeq;
+    // 제출에서 넘어온 회차(initialSeq)
     if (initialSeq && initialSeq >= 1) return initialSeq;
     const sub = effSubType;
     const r = records.find(
       (x) => x.inspectionDate === date && (!sub || (x.subTypeId || "") === sub) && (x as { seq?: number | null }).seq != null
     );
     return ((r as { seq?: number | null } | undefined)?.seq as number) || 1;
-  }, [initialSeq, records, date, effSubType]);
+  }, [pickSeq, initialSeq, records, date, effSubType]);
   // 시행자: 지사값(예: 홍성) -> "한국농어촌공사 홍성지사"
   const titleExecutor = (() => {
     const ex = (meta.executor || "").trim();
@@ -305,6 +329,25 @@ export function VideoComposer({
               }
             >
               {t.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {availSeqs.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-neutral-500">회차</span>
+          {availSeqs.map((sq) => (
+            <button
+              key={"seq-" + sq}
+              type="button"
+              onClick={() => setPickSeq(sq)}
+              className={
+                "rounded-full px-3 py-1 text-xs font-semibold " +
+                (effSeq === sq ? "bg-[#FE5000] text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200")
+              }
+            >
+              {sq}회차
             </button>
           ))}
         </div>
