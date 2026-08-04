@@ -81,6 +81,8 @@ function Calendar({
   entries = {},
   onSelect,
   onSelectEntry,
+  activeSubTypeId,
+  activeSeq,
 }: {
   selected: string;
   marked: Set<string>;
@@ -88,6 +90,8 @@ function Calendar({
   entries?: Record<string, CalEntry[]>;
   onSelect: (d: string) => void;
   onSelectEntry?: (d: string, subTypeId: string, seq: number) => void;
+  activeSubTypeId?: string;
+  activeSeq?: number;
 }) {
   const init = selected ? parseYmd(selected) : new Date();
   const [vy, setVy] = useState(init.getFullYear());
@@ -179,15 +183,18 @@ function Calendar({
                         else onSelect(c);
                       }}
                       className={
-                        "flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-[9px] font-semibold " +
+                        "flex w-full items-center gap-1.5 truncate rounded-md px-1.5 py-1 text-xs font-semibold " +
                         (en.submitted
                           ? "bg-green-100 text-green-700 hover:bg-green-200"
-                          : "bg-orange-100 text-orange-700 hover:bg-orange-200")
+                          : "bg-orange-100 text-orange-700 hover:bg-orange-200") +
+                        (activeSubTypeId === en.subTypeId && activeSeq === en.seq
+                          ? " ring-2 ring-[#FE5000] ring-offset-1"
+                          : "")
                       }
                     >
                       <span
                         className={
-                          "inline-block h-2 w-2 shrink-0 rounded-full " +
+                          "inline-block h-2.5 w-2.5 shrink-0 rounded-full " +
                           (en.submitted ? "bg-green-500" : "bg-orange-500")
                         }
                       />
@@ -195,7 +202,7 @@ function Calendar({
                     </button>
                   ))}
                   {(entries[c] || []).length > 3 && (
-                    <span className="px-1 text-[9px] text-neutral-500">
+                    <span className="px-1 text-[11px] font-semibold text-neutral-500">
                       +{(entries[c] || []).length - 3}
                     </span>
                   )}
@@ -937,6 +944,8 @@ export function PhaseRecorder({
             entries={calEntries}
             onSelect={changeDate}
             onSelectEntry={selectCalEntry}
+            activeSubTypeId={subTypeId}
+            activeSeq={vSeq}
           />
           <div className="flex items-center justify-center gap-3">
             <button
