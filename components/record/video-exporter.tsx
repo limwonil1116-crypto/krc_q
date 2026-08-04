@@ -18,6 +18,8 @@ export type ExportMeta = {
   structureName: string;
   typeName: string;
   contractorCompany: string | null;
+  subTypeName?: string;
+  seq?: number;
 };
 
 const W = 1280;
@@ -149,10 +151,16 @@ export function VideoExporter({
     ctx.fillStyle = "#fff";
     ctx.font = "bold 44px sans-serif";
     ctx.fillText(meta.structureName, W / 2, 360);
+    // 공종 + 회차 (주황 강조)
+    if (meta.subTypeName) {
+      ctx.fillStyle = ORANGE;
+      ctx.font = "bold 30px 'Song Myung', Batang, serif";
+      ctx.fillText(`${meta.subTypeName} ${meta.seq ?? 1}회차`, W / 2, 402);
+    }
     ctx.fillStyle = "rgba(255,255,255,0.9)";
     ctx.font = "26px sans-serif";
     const sub = meta.projectName + (meta.districtName ? ` · ${meta.districtName}` : "");
-    ctx.fillText(sub, W / 2, 410);
+    ctx.fillText(sub, W / 2, 444);
     ctx.fillStyle = "rgba(255,255,255,0.7)";
     ctx.font = "20px sans-serif";
     ctx.fillText(meta.address, W / 2, 446);

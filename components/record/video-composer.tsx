@@ -420,6 +420,9 @@ export function VideoComposer({
                 <div className="krc-stroke krc-pop relative z-10 text-6xl font-extrabold tracking-tight" style={{ animationDelay: "0.05s", fontFamily: '"Song Myung", Batang, serif' }}>KRC 건설공사실록</div>
                 <div className="krc-grow2 relative z-10 mt-2 h-1 rounded-full bg-[#FE5000]" />
                 <div className="krc-rise2 relative z-10 mt-3 text-2xl font-bold" style={{ animationDelay: "0.55s" }}>{meta.structureName}</div>
+                {curSubTypeName && (
+                  <div className="krc-rise2 relative z-10 mt-1 text-lg font-bold text-[#FE5000]" style={{ animationDelay: "0.62s" }}>{curSubTypeName} {effSeq}회차</div>
+                )}
                 <div className="krc-rise2 relative z-10 mt-1 text-sm text-white/90" style={{ animationDelay: "0.7s" }}>
                   {meta.projectName}{meta.districtName ? ` · ${meta.districtName}` : ""}
                 </div>
@@ -658,6 +661,8 @@ export function VideoComposer({
               executor: meta.executor,
               structureName: meta.structureName,
               typeName: meta.typeName,
+              subTypeName: curSubTypeName,
+              seq: effSeq,
               contractorCompany: meta.contractorCompany,
             }}
             date={date}
