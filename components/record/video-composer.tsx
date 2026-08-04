@@ -90,15 +90,29 @@ export function VideoComposer({
       map.set(key, { subTypeId: stId, subTypeName: nm, seq: sq });
     };
     records.forEach((r) => {
-      if (r.inspectionDate === date) addOne(r.subTypeId || "", ((r as { seq?: number | null }).seq ?? 1) as number);
+      if (r.inspectionDate === date && (!vSubType || (r.subTypeId || "") === vSubType))
+        addOne(r.subTypeId || "", ((r as { seq?: number | null }).seq ?? 1) as number);
     });
     assets.forEach((a) => {
-      if (a.inspectionDate === date) addOne(a.subTypeId || "", ((a as { seq?: number | null }).seq ?? 1) as number);
+      if (a.inspectionDate === date && (!vSubType || (a.subTypeId || "") === vSubType))
+        addOne(a.subTypeId || "", ((a as { seq?: number | null }).seq ?? 1) as number);
     });
     return Array.from(map.values()).sort((x, y) =>
       x.subTypeName === y.subTypeName ? x.seq - y.seq : x.subTypeName.localeCompare(y.subTypeName)
     );
-  }, [records, assets, date, subTypes]);
+  }, [records, assets, date, subTypes, vSubType]);
+  // 공종 선택 시 그 공종의 검측일자만 (전체면 원래 dates)
+  const fdates = useMemo(() => {
+    if (!vSubType) return dates;
+    const s = new Set<string>();
+    records.forEach((r) => {
+      if ((r.subTypeId || "") === vSubType && r.inspectionDate) s.add(r.inspectionDate);
+    });
+    assets.forEach((a) => {
+      if ((a.subTypeId || "") === vSubType && a.inspectionDate) s.add(a.inspectionDate);
+    });
+    return Array.from(s).sort().reverse();
+  }, [dates, vSubType, records, assets]);
   // 날짜 바뀌면 선택 초기화
   useEffect(() => {
     setPickCombo(null);
@@ -365,10 +379,10 @@ export function VideoComposer({
         </div>
       )}
 
-      {dates.length > 0 && (
+      {fdates.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-neutral-500">검측일자</span>
-          {dates.map((d) => (
+          {fdates.map((d) => (
             <button
               key={d}
               type="button"
