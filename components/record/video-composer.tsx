@@ -103,6 +103,10 @@ export function VideoComposer({
   useEffect(() => {
     setPickCombo(null);
   }, [date]);
+  const curSubTypeName = useMemo(
+    () => subTypes.find((s) => s.id === effSubType)?.name || "",
+    [subTypes, effSubType]
+  );
   const effSeq = useMemo(() => {
     // 미리보기에서 직접 고른 공종+회차 최우선
     if (pickCombo && pickCombo.seq >= 1) return pickCombo.seq;
@@ -307,7 +311,12 @@ export function VideoComposer({
     <div className="space-y-4 pb-4">
       <div>
         <h1 className="text-xl font-bold text-[#0033A0]">KRC 건설공사실록 · 영상 미리보기</h1>
-        <p className="text-sm text-neutral-500">{meta.structureName} · {meta.typeName}</p>
+        <p className="text-sm text-neutral-500">
+          {meta.structureName} · {meta.typeName}
+          {curSubTypeName && (
+            <span className="ml-1 font-semibold text-[#FE5000]">· {curSubTypeName} {effSeq}회차</span>
+          )}
+        </p>
       </div>
 
       {subTypes.length > 1 && (
