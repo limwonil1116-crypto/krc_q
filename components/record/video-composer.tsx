@@ -311,12 +311,7 @@ export function VideoComposer({
     <div className="space-y-4 pb-4">
       <div>
         <h1 className="text-xl font-bold text-[#0033A0]">KRC 건설공사실록 · 영상 미리보기</h1>
-        <p className="text-sm text-neutral-500">
-          {meta.structureName} · {meta.typeName}
-          {curSubTypeName && (
-            <span className="ml-1 font-semibold text-[#FE5000]">· {curSubTypeName} {effSeq}회차</span>
-          )}
-        </p>
+        <p className="text-sm text-neutral-500">{meta.structureName} · {meta.typeName}</p>
       </div>
 
       {subTypes.length > 1 && (
