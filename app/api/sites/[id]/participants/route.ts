@@ -95,6 +95,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const b = await req.json();
   const targetUserId = (b.userId ?? "").trim();
+  const reqRole = (b.role ?? "").trim();
   if (!targetUserId) return NextResponse.json({ error: "초대할 사용자를 선택하세요." }, { status: 400 });
 
   // 대상 유저 확인
@@ -110,9 +111,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .limit(1);
   if (dup[0]) return NextResponse.json({ error: "이미 참여 중인 사용자입니다." }, { status: 409 });
 
-  // 역할 결정: 시공사=contractor_manager, 농어촌공사(client/supervisor)=supervisor
+  // 역할 결정: 시공사=contractor_manager. 농어촌공사 직원은 요청된 직책(공사감독원/보조공사감독원) 사용, 없으면 supervisor
+  const allowed = ["supervisor", "assistant_supervisor"];
   const participantRole =
-    target.role === "contractor" ? "contractor_manager" : "supervisor";
+    target.role === "contractor"
+      ? "contractor_manager"
+      : allowed.includes(reqRole)
+      ? reqRole
+      : "supervisor";
 
   await db.insert(siteParticipants).values({
     siteId,

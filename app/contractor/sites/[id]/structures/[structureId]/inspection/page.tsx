@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -67,7 +67,7 @@ export default async function InspectionPage({
     .select({ id: users.id, name: users.name, branch: users.branch })
     .from(siteParticipants)
     .innerJoin(users, eq(siteParticipants.userId, users.id))
-    .where(and(eq(siteParticipants.siteId, id), eq(siteParticipants.participantRole, "supervisor")));
+    .where(and(eq(siteParticipants.siteId, id), inArray(siteParticipants.participantRole, ["supervisor", "assistant_supervisor"])));
 
   // 기존 검측기록 (위치·부위·검측내용 자동연계용)
   const recs = await db

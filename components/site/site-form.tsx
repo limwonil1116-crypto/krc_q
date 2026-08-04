@@ -351,24 +351,7 @@ export function SiteForm({
         </div>
       </StepSection>
 
-      <StepSection step="STEP 02" title="공감소장 정보" desc="제출 알림이 이 이메일로 발송됩니다.">
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>공감소장 이름</Label>
-            <Input value={f.supervisorName} onChange={onText("supervisorName")} />
-          </div>
-          <div className="space-y-1">
-            <Label>핸드폰</Label>
-            <Input value={f.supervisorPhone} onChange={onText("supervisorPhone")} />
-          </div>
-          <div className="space-y-1">
-            <Label>이메일</Label>
-            <Input type="email" value={f.supervisorEmail} onChange={onText("supervisorEmail")} />
-          </div>
-        </div>
-      </StepSection>
-
-      <StepSection step="STEP 03" title="현장소장 정보">
+      <StepSection step="STEP 02" title="현장소장 정보">
         <div className="space-y-3">
           <div className="space-y-1">
             <Label>시공사 (회사명)</Label>
@@ -439,7 +422,7 @@ export function SiteForm({
         </StepSection>
       )}
 
-      <StepSection step="STEP 04" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
+      <StepSection step="STEP 03" title="현장 위치" desc="주소를 검색하거나 지도를 눌러 위치를 지정하세요.">
         <KakaoMapPicker
           value={{ lat: f.lat, lng: f.lng, address: f.address }}
           onChange={(v) => setF((p) => ({ ...p, lat: v.lat, lng: v.lng, address: v.address }))}
@@ -450,7 +433,7 @@ export function SiteForm({
         </div>
       </StepSection>
 
-      <StepSection step="STEP 05" title="공사 기간">
+      <StepSection step="STEP 04" title="공사 기간">
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label>시작일</Label>

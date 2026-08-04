@@ -22,12 +22,14 @@ type SearchUser = {
 const ROLE_BADGE: Record<string, string> = {
   contractor_manager: "bg-[#002A80] text-white",
   supervisor: "bg-emerald-600 text-white",
+  assistant_supervisor: "bg-teal-500 text-white",
   client_manager: "bg-[#0033A0] text-white",
   client_viewer: "bg-neutral-500 text-white",
 };
 const ROLE_LABEL: Record<string, string> = {
   contractor_manager: "시공사",
-  supervisor: "농어촌공사",
+  supervisor: "공사감독원",
+  assistant_supervisor: "보조공사감독원",
   client_manager: "발주처",
   client_viewer: "열람",
 };
@@ -74,13 +76,13 @@ export function ParticipantManager({ siteId, canManage }: { siteId: string; canM
     }
   }
 
-  async function invite(userId: string) {
+  async function invite(userId: string, role?: string) {
     setBusy(true);
     try {
       const res = await fetch(`/api/sites/${siteId}/participants`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId, role }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -152,14 +154,35 @@ export function ParticipantManager({ siteId, canManage }: { siteId: string; canM
                       {u.roleLabel} · {u.affiliation}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => invite(u.id)}
-                    disabled={busy}
-                    className="rounded bg-[#002A80] px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
-                  >
-                    초대
-                  </button>
+                  {u.role === "contractor" ? (
+                    <button
+                      type="button"
+                      onClick={() => invite(u.id)}
+                      disabled={busy}
+                      className="rounded bg-[#002A80] px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      초대
+                    </button>
+                  ) : (
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => invite(u.id, "supervisor")}
+                        disabled={busy}
+                        className="rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                      >
+                        공사감독원
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => invite(u.id, "assistant_supervisor")}
+                        disabled={busy}
+                        className="rounded bg-teal-500 px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                      >
+                        보조
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
