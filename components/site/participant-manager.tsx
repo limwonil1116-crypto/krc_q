@@ -97,6 +97,24 @@ export function ParticipantManager({ siteId, canManage }: { siteId: string; canM
     }
   }
 
+  async function changeRole(userId: string, role: string) {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/sites/${siteId}/participants`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, role }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "직책 변경 실패");
+        return;
+      }
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
   async function remove(userId: string, name: string) {
     if (!confirm(`${name} 님을 이 현장에서 내보낼까요?`)) return;
     setBusy(true);
@@ -208,6 +226,36 @@ export function ParticipantManager({ siteId, canManage }: { siteId: string; canM
                   {p.isOwner && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">현장 생성자</span>}
                   <span className="text-xs text-neutral-400">{p.affiliation}</span>
                 </div>
+                {canManage && (p.participantRole === "supervisor" || p.participantRole === "assistant_supervisor") && (
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => changeRole(p.userId, "supervisor")}
+                      disabled={busy || p.participantRole === "supervisor"}
+                      className={
+                        "rounded px-2 py-1 text-xs font-semibold disabled:opacity-100 " +
+                        (p.participantRole === "supervisor"
+                          ? "bg-emerald-600 text-white"
+                          : "border border-emerald-600 text-emerald-700 hover:bg-emerald-50")
+                      }
+                    >
+                      공사감독원
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => changeRole(p.userId, "assistant_supervisor")}
+                      disabled={busy || p.participantRole === "assistant_supervisor"}
+                      className={
+                        "rounded px-2 py-1 text-xs font-semibold disabled:opacity-100 " +
+                        (p.participantRole === "assistant_supervisor"
+                          ? "bg-teal-500 text-white"
+                          : "border border-teal-500 text-teal-600 hover:bg-teal-50")
+                      }
+                    >
+                      보조
+                    </button>
+                  </div>
+                )}
                 {canManage && !p.isOwner && (
                   <button
                     type="button"

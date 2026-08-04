@@ -130,6 +130,33 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 }
 
 // DELETE: 참여자 내보내기 (body: { userId })
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id: siteId } = await params;
+  const session = await auth();
+  const role = session?.user?.role;
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+  const perm = await canManage(session.user.id, siteId, role);
+  if (!perm.site) return NextResponse.json({ error: "현장을 찾을 수 없습니다." }, { status: 404 });
+  if (!perm.ok) return NextResponse.json({ error: "직책을 변경할 권한이 없습니다." }, { status: 403 });
+
+  const b = await req.json();
+  const targetUserId = (b.userId ?? "").trim();
+  const newRole = (b.role ?? "").trim();
+  if (!targetUserId) return NextResponse.json({ error: "대상을 선택하세요." }, { status: 400 });
+  const allowed = ["supervisor", "assistant_supervisor", "contractor_manager", "client_manager", "client_viewer"];
+  if (!allowed.includes(newRole)) {
+    return NextResponse.json({ error: "허용되지 않는 직책입니다." }, { status: 400 });
+  }
+  await db
+    .update(siteParticipants)
+    .set({ participantRole: newRole as "contractor_manager" | "supervisor" | "assistant_supervisor" | "client_viewer" | "client_manager" })
+    .where(and(eq(siteParticipants.siteId, siteId), eq(siteParticipants.userId, targetUserId)));
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: siteId } = await params;
   const session = await auth();
