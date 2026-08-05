@@ -109,6 +109,57 @@ export function InspectionForm({
   const [busy, setBusy] = useState(false);
   const [showConsent, setShowConsent] = useState(false);
 
+  // 기존 검측요청서(임시저장 draft 포함) 다시 열 때 내용 복원
+  const draftLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!initialReqId || draftLoadedRef.current) return;
+    draftLoadedRef.current = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/inspections?id=${initialReqId}`);
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok || !d.ok || !d.request) return;
+        const r = d.request as {
+          locationWork?: string | null;
+          inspectionPart?: string | null;
+          inspectionMatter?: string | null;
+          requestNo?: string | null;
+          contractorAgentName?: string | null;
+          contractorCheckerName?: string | null;
+          contractorSignature?: string | null;
+          supervisorId?: string | null;
+          isRecheck?: boolean | null;
+        };
+        setForm((f) => ({
+          ...f,
+          locationWork: r.locationWork || f.locationWork,
+          inspectionPart: r.inspectionPart || "",
+          inspectionMatter: r.inspectionMatter || "",
+          requestNo: r.requestNo || "",
+          contractorAgentName: r.contractorAgentName || "",
+          contractorCheckerName: r.contractorCheckerName || "",
+          contractorSignature: r.contractorSignature || "",
+          supervisorId: r.supervisorId || "",
+          isRecheck: !!r.isRecheck,
+        }));
+        const cls: Array<{ items?: Array<{ checkItem?: string; standard?: string; contractorResult?: string; contractorNote?: string }> }> = d.checklists || [];
+        const loaded = cls.flatMap((cl) => cl.items || []);
+        if (loaded.length > 0) {
+          setItems(
+            loaded.map((it) => ({
+              checkItem: it.checkItem || "",
+              standard: it.standard || "",
+              contractorResult: it.contractorResult || "",
+              contractorNote: it.contractorNote || "",
+            }))
+          );
+        }
+      } catch {
+        // 로드 실패 시 빈 폼 유지
+      }
+    })();
+  }, [initialReqId]);
+
   // 제출 전 검증 -> 통과하면 책임고지 모달 열기
   function tryOpenConsent() {
     if (!selectedDate) {
