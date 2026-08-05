@@ -110,10 +110,9 @@ export function InspectionForm({
   const [showConsent, setShowConsent] = useState(false);
 
   // 기존 검측요청서(임시저장 draft 포함) 다시 열 때 내용 복원
-  const draftLoadedRef = useRef(false);
   useEffect(() => {
-    if (!initialReqId || draftLoadedRef.current) return;
-    draftLoadedRef.current = true;
+    if (!initialReqId) return;
+    let cancelled = false;
     (async () => {
       try {
         const res = await fetch(`/api/inspections?id=${initialReqId}`);
@@ -129,7 +128,13 @@ export function InspectionForm({
           contractorSignature?: string | null;
           supervisorId?: string | null;
           isRecheck?: boolean | null;
+          subTypeId?: string | null;
+          inspectionDate?: string | null;
         };
+        if (cancelled) return;
+        // 세부공종·검측일자 연동 (F1 내용 자동연계)
+        if (r.subTypeId) setSubTypeId(r.subTypeId);
+        if (r.inspectionDate) setSelectedDate(r.inspectionDate);
         setForm((f) => ({
           ...f,
           locationWork: r.locationWork || f.locationWork,
@@ -158,6 +163,9 @@ export function InspectionForm({
         // 로드 실패 시 빈 폼 유지
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [initialReqId]);
 
   // 제출 전 검증 -> 통과하면 책임고지 모달 열기
