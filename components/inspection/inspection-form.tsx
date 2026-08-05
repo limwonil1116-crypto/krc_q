@@ -445,26 +445,32 @@ export function InspectionForm({
         </Link>
       </div>
 
-      {/* 기존 요청서 목록 */}
+      {/* 기존 요청서 목록 (드롭다운) */}
       {existingRequests.length > 0 && (
         <div className="mb-4 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
-          <p className="mb-2 text-xs font-semibold text-neutral-600">기존 검측 요청</p>
-          <div className="space-y-1">
+          <label className="mb-1 block text-xs font-semibold text-neutral-600">
+            기존 검측 요청 ({existingRequests.length}건) — 선택하면 이어서 작성
+          </label>
+          <select
+            value={initialReqId || ""}
+            onChange={(e) => {
+              const rid = e.target.value;
+              if (rid) {
+                router.push(
+                  `/contractor/sites/${siteId}/structures/${siteStructureId}/inspection?reqId=${rid}`
+                );
+              }
+            }}
+            className="w-full rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm"
+          >
+            <option value="">기존 검측 요청 선택…</option>
             {existingRequests.map((r) => (
-              <Link
-                key={r.id}
-                href={`/contractor/sites/${siteId}/structures/${siteStructureId}/inspection?reqId=${r.id}`}
-                className="flex items-center justify-between rounded border border-neutral-200 bg-white px-2 py-1.5 text-sm hover:bg-neutral-50"
-              >
-                <span>
-                  {r.inspectionDate} · {r.inspectionMatter || "(제목없음)"}
-                </span>
-                <span className="rounded bg-[#002A80]/10 px-1.5 py-0.5 text-xs text-[#002A80]">
-                  {STATUS_LABEL[r.status] || r.status}
-                </span>
-              </Link>
+              <option key={r.id} value={r.id}>
+                {r.inspectionDate} · {r.inspectionMatter || "(제목없음)"} [
+                {STATUS_LABEL[r.status] || r.status}]
+              </option>
             ))}
-          </div>
+          </select>
         </div>
       )}
 
