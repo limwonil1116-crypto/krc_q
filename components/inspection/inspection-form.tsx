@@ -463,7 +463,11 @@ export function InspectionForm({
             value={initialReqId || ""}
             onChange={(e) => {
               const rid = e.target.value;
-              if (rid) {
+              if (rid === "__new__") {
+                router.push(
+                  `/contractor/sites/${siteId}/structures/${siteStructureId}/inspection`
+                );
+              } else if (rid) {
                 router.push(
                   `/contractor/sites/${siteId}/structures/${siteStructureId}/inspection?reqId=${rid}`
                 );
@@ -471,7 +475,8 @@ export function InspectionForm({
             }}
             className="w-full rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm"
           >
-            <option value="">기존 검측 요청 선택…</option>
+            <option value="">선택하세요…</option>
+            <option value="__new__">➕ 새로 작성하기</option>
             {existingRequests.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.inspectionDate} · {r.inspectionMatter || "(제목없음)"} [
