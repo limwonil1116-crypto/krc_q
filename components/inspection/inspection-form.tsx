@@ -28,7 +28,7 @@ type AssetRow = {
   fileName?: string | null;
   mimeType?: string | null;
 };
-type ReqRow = { id: string; inspectionDate: string | null; inspectionMatter: string | null; status: string };
+type ReqRow = { id: string; inspectionDate: string | null; inspectionMatter: string | null; status: string; subTypeId?: string | null };
 type Site = { projectName: string; districtName: string; address: string; contractorCompany: string | null } | null;
 
 const STATUS_LABEL: Record<string, string> = {
@@ -589,10 +589,12 @@ export function InspectionForm({
               <h3 className="text-base font-bold text-[#0033A0]">이전 검측 체크리스트 불러오기</h3>
               <p className="mt-1 text-xs text-neutral-500">검사항목과 기준만 가져옵니다. 검측 결과는 새로 체크하세요.</p>
               <div className="mt-3 max-h-72 space-y-1.5 overflow-y-auto">
-                {existingRequests.length === 0 && (
-                  <p className="py-6 text-center text-sm text-neutral-400">이전 검측요청서가 없습니다.</p>
+                {existingRequests.filter((r) => !subTypeId || (r.subTypeId || "") === subTypeId).length === 0 && (
+                  <p className="py-6 text-center text-sm text-neutral-400">같은 세부공종의 이전 검측요청서가 없습니다.</p>
                 )}
-                {existingRequests.map((r) => (
+                {existingRequests
+                  .filter((r) => !subTypeId || (r.subTypeId || "") === subTypeId)
+                  .map((r) => (
                   <button
                     key={r.id}
                     type="button"

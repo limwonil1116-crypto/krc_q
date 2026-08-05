@@ -106,6 +106,7 @@ export default async function InspectionPage({
       inspectionDate: inspectionRequests.inspectionDate,
       inspectionMatter: inspectionRequests.inspectionMatter,
       status: inspectionRequests.status,
+      subTypeId: inspectionRequests.subTypeId,
     })
     .from(inspectionRequests)
     .where(eq(inspectionRequests.siteStructureId, structureId))
