@@ -92,7 +92,7 @@ export default async function MyPage() {
         <MypageForm
           initial={{ name: u.name, phone: u.phone ?? "", role: u.role, branch: u.branch ?? "" }}
           hasPassword={!!u.passwordHash}
-          editableRole={u.role === "contractor" || u.role === "client"}
+          editableRole={true}
         />
       </main>
     </div>

@@ -72,8 +72,8 @@ export async function PATCH(req: Request) {
     updates.phone = body.phone.trim() || null;
   }
 
-  // 분류(role) 변경 — contractor / client 만 본인이 변경 가능 (admin/supervisor 는 변경 불가)
-  if (typeof body.role === "string" && (me.role === "contractor" || me.role === "client")) {
+  // 분류(role) 변경 — 본인이 시공사/한국농어촌공사 로 변경 가능
+  if (typeof body.role === "string") {
     if (body.role !== "contractor" && body.role !== "client") {
       return NextResponse.json({ ok: false, error: "분류 값이 올바르지 않습니다." }, { status: 400 });
     }
