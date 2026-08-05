@@ -240,7 +240,7 @@ export function ParticipantManager({ siteId, canManage }: { siteId: string; canM
                   {p.isOwner && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">현장 생성자</span>}
                   <span className="text-xs text-neutral-400">{p.affiliation}</span>
                 </div>
-                {canManage && !p.isOwner && (() => {
+                {canManage && (() => {
                   const opts =
                     p.accountRole === "contractor" ? CONTRACTOR_ROLES : KRC_ROLES;
                   return (
