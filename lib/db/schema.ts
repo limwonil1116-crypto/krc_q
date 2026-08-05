@@ -121,7 +121,7 @@ export const siteParticipants = pgTable("site_participants", {
   siteId: uuid("site_id").notNull().references(() => constructionSites.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   participantRole: text("participant_role")
-    .$type<"contractor_manager" | "supervisor" | "assistant_supervisor" | "client_viewer" | "client_manager">()
+    .$type<"contractor_manager" | "supervisor" | "assistant_supervisor" | "client_viewer" | "client_manager" | "site_agent" | "site_manager" | "quality_manager" | "foreman" | "other">()
     .notNull(),
   receiveEmail: boolean("receive_email").notNull().default(true),
   receivePush: boolean("receive_push").notNull().default(true),

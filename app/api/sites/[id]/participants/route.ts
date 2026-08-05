@@ -72,6 +72,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       userId: r.userId,
       name: r.name,
       participantRole: r.participantRole,
+      accountRole: r.role,
       roleLabel,
       affiliation: orgName || r.branch || roleLabel,
       isOwner: r.userId === createdBy,
@@ -145,7 +146,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const targetUserId = (b.userId ?? "").trim();
   const newRole = (b.role ?? "").trim();
   if (!targetUserId) return NextResponse.json({ error: "대상을 선택하세요." }, { status: 400 });
-  const allowed = ["supervisor", "assistant_supervisor", "contractor_manager", "client_manager", "client_viewer"];
+  const allowed = ["supervisor", "assistant_supervisor", "contractor_manager", "client_manager", "client_viewer", "site_agent", "site_manager", "quality_manager", "foreman", "other"];
   if (!allowed.includes(newRole)) {
     return NextResponse.json({ error: "허용되지 않는 직책입니다." }, { status: 400 });
   }

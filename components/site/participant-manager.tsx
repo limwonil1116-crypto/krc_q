@@ -7,6 +7,7 @@ type Participant = {
   userId: string;
   name: string;
   participantRole: string;
+  accountRole?: string;
   roleLabel: string;
   affiliation: string;
   isOwner: boolean;
@@ -25,6 +26,11 @@ const ROLE_BADGE: Record<string, string> = {
   assistant_supervisor: "bg-teal-500 text-white",
   client_manager: "bg-[#0033A0] text-white",
   client_viewer: "bg-neutral-500 text-white",
+  site_agent: "bg-[#002A80] text-white",
+  site_manager: "bg-blue-600 text-white",
+  quality_manager: "bg-indigo-500 text-white",
+  foreman: "bg-slate-500 text-white",
+  other: "bg-neutral-400 text-white",
 };
 const ROLE_LABEL: Record<string, string> = {
   contractor_manager: "시공사",
@@ -32,7 +38,15 @@ const ROLE_LABEL: Record<string, string> = {
   assistant_supervisor: "보조공사감독원",
   client_manager: "발주처",
   client_viewer: "열람",
+  site_agent: "현장대리인",
+  site_manager: "현장소장",
+  quality_manager: "품질관리자",
+  foreman: "작업반장",
+  other: "기타",
 };
+// 소속별 지정 가능 직책
+const KRC_ROLES = ["supervisor", "assistant_supervisor"];
+const CONTRACTOR_ROLES = ["site_agent", "site_manager", "quality_manager", "foreman", "other"];
 
 export function ParticipantManager({ siteId, canManage }: { siteId: string; canManage: boolean }) {
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -226,36 +240,29 @@ export function ParticipantManager({ siteId, canManage }: { siteId: string; canM
                   {p.isOwner && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">현장 생성자</span>}
                   <span className="text-xs text-neutral-400">{p.affiliation}</span>
                 </div>
-                {canManage && (p.participantRole === "supervisor" || p.participantRole === "assistant_supervisor") && (
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => changeRole(p.userId, "supervisor")}
-                      disabled={busy || p.participantRole === "supervisor"}
-                      className={
-                        "rounded px-2 py-1 text-xs font-semibold disabled:opacity-100 " +
-                        (p.participantRole === "supervisor"
-                          ? "bg-emerald-600 text-white"
-                          : "border border-emerald-600 text-emerald-700 hover:bg-emerald-50")
-                      }
+                {canManage && !p.isOwner && (() => {
+                  const opts =
+                    p.accountRole === "contractor" ? CONTRACTOR_ROLES : KRC_ROLES;
+                  return (
+                    <select
+                      value={p.participantRole}
+                      disabled={busy}
+                      onChange={(e) => changeRole(p.userId, e.target.value)}
+                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-semibold text-neutral-700 disabled:opacity-50"
                     >
-                      공사감독원
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => changeRole(p.userId, "assistant_supervisor")}
-                      disabled={busy || p.participantRole === "assistant_supervisor"}
-                      className={
-                        "rounded px-2 py-1 text-xs font-semibold disabled:opacity-100 " +
-                        (p.participantRole === "assistant_supervisor"
-                          ? "bg-teal-500 text-white"
-                          : "border border-teal-500 text-teal-600 hover:bg-teal-50")
-                      }
-                    >
-                      보조
-                    </button>
-                  </div>
-                )}
+                      {!opts.includes(p.participantRole) && (
+                        <option value={p.participantRole}>
+                          {ROLE_LABEL[p.participantRole] || p.participantRole}
+                        </option>
+                      )}
+                      {opts.map((r) => (
+                        <option key={r} value={r}>
+                          {ROLE_LABEL[r]}
+                        </option>
+                      ))}
+                    </select>
+                  );
+                })()}
                 {canManage && !p.isOwner && (
                   <button
                     type="button"
