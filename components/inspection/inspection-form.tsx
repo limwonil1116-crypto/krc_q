@@ -314,38 +314,7 @@ export function InspectionForm({
       inspectionPart: part || f.inspectionPart,
       inspectionMatter: matter || f.inspectionMatter,
     }));
-    const work = matter || subTypeName || typeName;
-    if (!work) return;
-    (async () => {
-      setAiBusy(true);
-      try {
-        const res = await fetch("/api/ai/checklist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            workName: work,
-            subTypeName,
-            subTypeId: subTypeId || "",
-            context: part ? `검측부위: ${part}` : "",
-          }),
-        });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          setItems(
-            (data.items || []).map((x: { check_item: string; standard: string }) => ({
-              checkItem: x.check_item,
-              standard: x.standard || "",
-              contractorResult: "",
-              contractorNote: "",
-            }))
-          );
-        }
-      } catch {
-        // ignore
-      } finally {
-        setAiBusy(false);
-      }
-    })();
+    // 체크리스트는 자동 생성하지 않음 (AI 생성 버튼으로 수동 생성 — 처음 로딩 속도 개선)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoFill, dayRec]);
 
