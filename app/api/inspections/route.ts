@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, isNull } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import {
@@ -197,8 +197,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "제출하려면 현장대리인 서명이 필요합니다." }, { status: 400 });
     }
 
-    // 기존 요청서 (id 있으면 업데이트)
-    const existingId = (b.id ?? "").trim();
+    // 기존 요청서 (id 있으면 업데이트). 임시저장이고 id가 없으면 같은 구조물+세부공종의 draft를 찾아 덮어씀 (draft 1개만 유지)
+    let existingId = (b.id ?? "").trim();
+    if (!existingId && !doSubmit) {
+      const [draftRow] = await db
+        .select({ id: inspectionRequests.id })
+        .from(inspectionRequests)
+        .where(
+          and(
+            eq(inspectionRequests.siteStructureId, siteStructureId),
+            reqValues.subTypeId
+              ? eq(inspectionRequests.subTypeId, reqValues.subTypeId)
+              : isNull(inspectionRequests.subTypeId),
+            eq(inspectionRequests.status, "draft")
+          )
+        )
+        .limit(1);
+      if (draftRow) existingId = draftRow.id;
+    }
     let requestId: string;
     if (existingId) {
       await db

@@ -191,7 +191,9 @@ export function InspectionForm({
 
   // 체크리스트 항목 (시공자 1차 체크)
   type ClItem = { checkItem: string; standard: string; contractorResult: string; contractorNote: string };
-  const [items, setItems] = useState<ClItem[]>([]);
+  const [items, setItems] = useState<ClItem[]>([
+    { checkItem: "", standard: "", contractorResult: "", contractorNote: "" },
+  ]);
   const [aiBusy, setAiBusy] = useState(false);
 
   const subTypeName = useMemo(
@@ -358,6 +360,7 @@ export function InspectionForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: initialReqId || undefined,
           siteStructureId,
           submit,
           subTypeId: subTypeId || null,
