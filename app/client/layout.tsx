@@ -17,6 +17,9 @@ export default async function RoleLayout({ children }: { children: React.ReactNo
           <img src="/krc-logo-white.png" alt="한국농어촌공사" className="h-5 w-auto sm:h-6" />
         </div>
         <div className="flex items-center gap-3 text-sm">
+          {session.user.role === "admin" && (
+            <a href="/admin" className="rounded bg-[#FE5000] px-3 py-1 font-semibold hover:bg-[#e04800]">관리자 콘솔</a>
+          )}
           {session.user.role === "admin" && <AdminModeSwitcher current="client" />}
           <Link href="/mypage" className="rounded bg-white/15 px-3 py-1 hover:bg-white/25">{session.user.name} 님</Link>
           <form

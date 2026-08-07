@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         name: companyName,
         type: "contractor",
         businessNumber: businessNumber || null,
-        status: "pending",
+        status: "active",
       })
       .returning();
 
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         name,
         phone: phone || null,
         role: "contractor",
-        status: "pending",
+        status: "active",
       })
       .returning();
 
