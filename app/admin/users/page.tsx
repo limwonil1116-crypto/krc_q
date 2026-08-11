@@ -57,7 +57,7 @@ export default function AdminUsersPage() {
 
   // 수정 모달
   const [editRow, setEditRow] = useState<Row | null>(null);
-  const [ef, setEf] = useState({ name: "", phone: "", role: "", branch: "" });
+  const [ef, setEf] = useState({ name: "", email: "", phone: "", role: "", branch: "" });
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -106,7 +106,7 @@ export default function AdminUsersPage() {
 
   function openEdit(u: Row) {
     setEditRow(u);
-    setEf({ name: u.name, phone: u.phone || "", role: u.role, branch: u.branch || "" });
+    setEf({ name: u.name, email: u.email || "", phone: u.phone || "", role: u.role, branch: u.branch || "" });
   }
   async function saveEdit() {
     if (!editRow) return;
@@ -118,6 +118,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({
           id: editRow.id,
           name: ef.name,
+          email: ef.email,
           phone: ef.phone,
           role: ef.role,
           branch: ef.branch,
@@ -282,6 +283,10 @@ export default function AdminUsersPage() {
                 <input value={ef.name} onChange={(e) => setEf({ ...ef, name: e.target.value })} className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm" />
               </div>
               <div className="space-y-1">
+                <label className="text-xs font-bold text-neutral-500">이메일</label>
+                <input value={ef.email} onChange={(e) => setEf({ ...ef, email: e.target.value })} placeholder="example@ekr.or.kr" className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm" />
+              </div>
+              <div className="space-y-1">
                 <label className="text-xs font-bold text-neutral-500">전화번호</label>
                 <input value={ef.phone} onChange={(e) => setEf({ ...ef, phone: e.target.value })} className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm" />
               </div>
@@ -289,8 +294,7 @@ export default function AdminUsersPage() {
                 <label className="text-xs font-bold text-neutral-500">소속</label>
                 <select value={ef.role} onChange={(e) => setEf({ ...ef, role: e.target.value })} className="w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm">
                   <option value="contractor">시공사</option>
-                  <option value="supervisor">공사감독원</option>
-                  <option value="client">발주처(농어촌공사)</option>
+                  <option value="client">한국농어촌공사</option>
                   <option value="admin">관리자</option>
                 </select>
               </div>

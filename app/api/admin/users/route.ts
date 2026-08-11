@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, eq, ilike, or, desc, inArray } from "drizzle-orm";
+import { and, eq, ilike, or, desc, inArray, ne } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import {
@@ -120,6 +120,20 @@ export async function PATCH(req: Request) {
     patch.name = name;
   }
   if (b.phone !== undefined) patch.phone = (b.phone ?? "").trim() || null;
+  if (b.email !== undefined) {
+    const email = (b.email ?? "").trim().toLowerCase() || null;
+    if (email) {
+      const dup = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.email, email), ne(users.id, id)))
+        .limit(1);
+      if (dup.length) {
+        return NextResponse.json({ error: "이미 사용 중인 이메일입니다." }, { status: 400 });
+      }
+    }
+    patch.email = email;
+  }
   if (b.branch !== undefined) patch.branch = (b.branch ?? "").trim() || null;
   if (b.role !== undefined) {
     const role = (b.role ?? "").trim();
