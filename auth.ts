@@ -49,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               kakaoId,
               name: (user?.name as string) ?? "카카오사용자",
               role: "contractor",
-              status: "active", // 가입 즉시 이용 가능 (별도 승인 불필요)
+              status: "pending", // 온보딩(이메일·암호·소속 설정) 전 상태 → 온보딩 완료 시 active
             })
             .returning();
           u = ins[0];
