@@ -12,10 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
     const userId = session.user.id;
+    // 소속 기관이 없어도 현장 등록 허용 (org 정보는 있으면 기록, 없으면 null)
     const orgId = await getMyOrgId(userId);
-    if (!orgId) {
-      return NextResponse.json({ error: "소속 기관 정보를 찾을 수 없습니다." }, { status: 400 });
-    }
 
     const b = await req.json();
     const districtName = (b.districtName ?? "").trim();

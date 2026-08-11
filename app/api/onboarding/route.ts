@@ -14,7 +14,14 @@ export async function POST(req: Request) {
     const userId = session.user.id;
 
     const b = await req.json();
-    const role = b.role === "client" ? "client" : "contractor";
+    const requestedRole = b.role === "client" ? "client" : "contractor";
+    // 관리자(admin) 계정은 온보딩을 다시 거쳐도 admin 권한을 유지
+    const [curUser] = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    const role = curUser?.role === "admin" ? "admin" : requestedRole;
     const name = (b.name ?? "").trim();
     const email = (b.email ?? "").trim().toLowerCase();
     const password = b.password ?? "";
