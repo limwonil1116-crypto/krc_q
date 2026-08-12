@@ -24,7 +24,7 @@ const ROLE_LABEL: Record<string, string> = {
   admin: "관리자",
 };
 const STATUS_LABEL: Record<string, string> = {
-  pending: "미승인",
+  pending: "미가입",
   active: "이용 중",
   suspended: "정지",
   deleted: "삭제됨",

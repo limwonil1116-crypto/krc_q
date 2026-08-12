@@ -15,7 +15,7 @@ const ROLE_LABEL: Record<string, string> = {
   admin: "운영관리자",
 };
 const STATUS_LABEL: Record<string, string> = {
-  pending: "승인대기",
+  pending: "미가입",
   active: "활성",
   suspended: "정지",
   deleted: "삭제됨",
@@ -90,7 +90,7 @@ export default async function MyPage() {
         </div>
 
         <MypageForm
-          initial={{ name: u.name, phone: u.phone ?? "", role: u.role, branch: u.branch ?? "" }}
+          initial={{ name: u.name, email: u.email ?? "", phone: u.phone ?? "", role: u.role, branch: u.branch ?? "" }}
           hasPassword={!!u.passwordHash}
           editableRole={true}
         />

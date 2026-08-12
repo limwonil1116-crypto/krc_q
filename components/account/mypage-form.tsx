@@ -13,12 +13,13 @@ export function MypageForm({
   hasPassword,
   editableRole,
 }: {
-  initial: { name: string; phone: string; role: string; branch: string };
+  initial: { name: string; email: string; phone: string; role: string; branch: string };
   hasPassword: boolean;
   editableRole: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState(initial.name);
+  const [email, setEmail] = useState(initial.email);
   const [phone, setPhone] = useState(initial.phone);
   const [role, setRole] = useState<"contractor" | "client">(
     initial.role === "client" ? "client" : "contractor"
@@ -52,7 +53,7 @@ export function MypageForm({
     }
     setLoading(true);
     try {
-      const payload: Record<string, string> = { name: name.trim(), phone: phone.trim() };
+      const payload: Record<string, string> = { name: name.trim(), email: email.trim(), phone: phone.trim() };
       if (editableRole) {
         payload.role = role;
         if (role === "client") payload.branch = branch;
@@ -148,6 +149,11 @@ export function MypageForm({
     <div className="space-y-4">
       <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
         <div className="space-y-1">
+          <Label>이메일 (아이디)</Label>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@ekr.or.kr" />
+          <p className="text-xs text-neutral-400">이메일을 등록하면 이메일 로그인도 사용할 수 있습니다.</p>
+        </div>
+        <div className="space-y-1">
           <Label>성명 *</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="홍길동" />
         </div>
@@ -206,22 +212,24 @@ export function MypageForm({
         </ActionButton>
       </div>
 
-      {hasPassword && (
+      {(
         <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
           <button
             type="button"
             onClick={() => setPwOpen((v) => !v)}
             className="flex w-full items-center justify-between text-left"
           >
-            <span className="font-semibold text-[#0A2540]">비밀번호 변경</span>
+            <span className="font-semibold text-[#0A2540]">{hasPassword ? "비밀번호 변경" : "비밀번호 설정"}</span>
             <span className="text-neutral-400">{pwOpen ? "▲" : "▼"}</span>
           </button>
           {pwOpen && (
             <div className="space-y-3 border-t border-neutral-100 pt-3">
-              <div className="space-y-1">
-                <Label>현재 비밀번호</Label>
-                <Input type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} />
-              </div>
+              {hasPassword && (
+                <div className="space-y-1">
+                  <Label>현재 비밀번호</Label>
+                  <Input type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} />
+                </div>
+              )}
               <div className="space-y-1">
                 <Label>새 비밀번호</Label>
                 <Input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="6자 이상" />
