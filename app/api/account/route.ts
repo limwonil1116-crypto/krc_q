@@ -115,3 +115,16 @@ export async function PATCH(req: Request) {
   await db.update(users).set(updates).where(eq(users.id, session.user.id));
   return NextResponse.json({ ok: true });
 }
+
+// DELETE /api/account — 회원 탈퇴 (소프트 삭제: status=deleted, 로그인 차단)
+export async function DELETE() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+  await db
+    .update(users)
+    .set({ status: "deleted", updatedAt: new Date() })
+    .where(eq(users.id, session.user.id));
+  return NextResponse.json({ ok: true });
+}

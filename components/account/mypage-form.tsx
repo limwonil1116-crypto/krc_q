@@ -81,6 +81,29 @@ export function MypageForm({
     }
   }
 
+  const [withdrawing, setWithdrawing] = useState(false);
+  async function withdraw() {
+    const ok1 = confirm("정말 탈퇴하시겠습니까?\n\n탈퇴하면 이 계정으로 로그인할 수 없습니다.");
+    if (!ok1) return;
+    const ok2 = confirm("마지막 확인입니다.\n\n정말로 회원 탈퇴를 진행할까요?");
+    if (!ok2) return;
+    setWithdrawing(true);
+    try {
+      const res = await fetch("/api/account", { method: "DELETE" });
+      if (res.ok) {
+        alert("탈퇴가 완료되었습니다. 로그인 화면으로 이동합니다.");
+        window.location.href = "/api/auth/signout?callbackUrl=/login";
+      } else {
+        const d = await res.json().catch(() => ({}));
+        alert(d.error || "탈퇴 처리에 실패했습니다.");
+        setWithdrawing(false);
+      }
+    } catch {
+      alert("네트워크 오류로 탈퇴하지 못했습니다.");
+      setWithdrawing(false);
+    }
+  }
+
   async function changePassword() {
     setPwMsg("");
     setPwErr("");
@@ -216,6 +239,21 @@ export function MypageForm({
           )}
         </div>
       )}
+
+      <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4">
+        <p className="text-sm font-bold text-red-700">회원 탈퇴</p>
+        <p className="mt-1 text-xs text-red-500">
+          탈퇴하면 이 계정으로 더 이상 로그인할 수 없습니다. 신중히 결정해 주세요.
+        </p>
+        <button
+          type="button"
+          onClick={withdraw}
+          disabled={withdrawing}
+          className="mt-3 rounded-md border border-red-400 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
+        >
+          {withdrawing ? "탈퇴 처리 중..." : "회원 탈퇴"}
+        </button>
+      </div>
     </div>
   );
 }
