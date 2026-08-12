@@ -153,3 +153,31 @@ export async function PATCH(req: Request) {
   await db.update(users).set(patch).where(eq(users.id, id));
   return NextResponse.json({ ok: true });
 }
+
+// DELETE /api/admin/users?id=xxx — 가입자 완전 삭제 (DB에서 제거) — 관리자 전용
+export async function DELETE(req: Request) {
+  const session = await auth();
+  if (session?.user?.role !== "admin") {
+    return NextResponse.json({ error: "관리자만 접근할 수 있습니다." }, { status: 403 });
+  }
+  const { searchParams } = new URL(req.url);
+  const id = (searchParams.get("id") ?? "").trim();
+  if (!id) {
+    return NextResponse.json({ error: "대상이 필요합니다." }, { status: 400 });
+  }
+  const [target] = await db.select({ role: users.role }).from(users).where(eq(users.id, id)).limit(1);
+  if (!target) {
+    return NextResponse.json({ error: "대상을 찾을 수 없습니다." }, { status: 404 });
+  }
+  if (target.role === "admin") {
+    return NextResponse.json({ error: "관리자 계정은 삭제할 수 없습니다." }, { status: 400 });
+  }
+  // 감독으로 지정된 검측요청서의 supervisor 참조 해제 (외래키 NO ACTION 대비)
+  await db
+    .update(inspectionRequests)
+    .set({ supervisorId: null })
+    .where(eq(inspectionRequests.supervisorId, id));
+  // siteParticipants / organizationMembers 는 onDelete CASCADE 로 자동 삭제됨
+  await db.delete(users).where(eq(users.id, id));
+  return NextResponse.json({ ok: true });
+}
