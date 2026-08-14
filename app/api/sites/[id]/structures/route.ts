@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { constructionSites, siteStructures } from "@/lib/db/schema";
+import { constructionSites, siteStructures, siteParticipants } from "@/lib/db/schema";
 import { getMyOrgId } from "@/lib/org";
 
 async function canEdit(userId: string, siteId: string) {
@@ -10,8 +10,17 @@ async function canEdit(userId: string, siteId: string) {
   const site = rows[0];
   if (!site) return { ok: false as const, status: 404, error: "현장을 찾을 수 없습니다." };
   const orgId = await getMyOrgId(userId);
-  const owns =
+  let owns =
     site.createdBy === userId || (!!orgId && (site.contractorOrgId === orgId || site.clientOrgId === orgId));
+  // 현장 참여자로 초대된 사람(현장소장 등)도 등록·편집 허용
+  if (!owns) {
+    const part = await db
+      .select({ id: siteParticipants.id })
+      .from(siteParticipants)
+      .where(and(eq(siteParticipants.siteId, siteId), eq(siteParticipants.userId, userId)))
+      .limit(1);
+    if (part.length) owns = true;
+  }
   if (!owns) return { ok: false as const, status: 403, error: "권한이 없습니다." };
   return { ok: true as const, status: 200, error: "" };
 }
