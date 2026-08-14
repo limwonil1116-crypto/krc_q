@@ -29,6 +29,45 @@ export function KakaoMapPicker({
   const markerObj = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
+  const [locked, setLocked] = useState(false);
+  const lockedRef = useRef(false);
+  lockedRef.current = locked;
+
+  const useMyLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      alert("이 기기에서는 위치 정보를 사용할 수 없습니다.");
+      return;
+    }
+    if (lockedRef.current) {
+      alert("위치가 고정되어 있습니다. 먼저 고정을 해제해 주세요.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const kakao = window.kakao;
+        if (!kakao || !mapObj.current) return;
+        const coords = new kakao.maps.LatLng(lat, lng);
+        mapObj.current.setCenter(coords);
+        mapObj.current.setLevel(3);
+        markerObj.current.setPosition(coords);
+        markerObj.current.setMap(mapObj.current);
+        const geocoder = new kakao.maps.services.Geocoder();
+        geocoder.coord2Address(lng, lat, (res: any, status: any) => {
+          const addr =
+            status === kakao.maps.services.Status.OK
+              ? res[0].road_address?.address_name || res[0].address?.address_name || ""
+              : "";
+          onChange({ lat, lng, address: addr });
+        });
+      },
+      () => {
+        alert("현재 위치를 가져오지 못했습니다. 위치 권한을 확인해 주세요.");
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
+  }, [onChange]);
 
   const captureVworld = useCallback(async (): Promise<string | null> => {
     const key = process.env.NEXT_PUBLIC_VWORLD_API_KEY;
@@ -140,6 +179,7 @@ export function KakaoMapPicker({
 
       const geocoder = new kakao.maps.services.Geocoder();
       kakao.maps.event.addListener(map, "click", (mouseEvent: any) => {
+        if (lockedRef.current) return; // 위치 고정 상태면 클릭 무시
         const latlng = mouseEvent.latLng;
         marker.setPosition(latlng);
         marker.setMap(map);
@@ -225,6 +265,26 @@ export function KakaoMapPicker({
         <PrimaryButton type="button" onClick={search}>
           검색
         </PrimaryButton>
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={useMyLocation}
+          className="flex-1 rounded-md border border-[#0033A0] px-3 py-2 text-sm font-semibold text-[#0033A0] hover:bg-[#EAF0FB]"
+        >
+          현재 내 위치
+        </button>
+        <button
+          type="button"
+          onClick={() => setLocked((v) => !v)}
+          className={
+            locked
+              ? "flex-1 rounded-md border border-[#FE5000] bg-[#FFF4EC] px-3 py-2 text-sm font-semibold text-[#FE5000]"
+              : "flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-600 hover:bg-neutral-100"
+          }
+        >
+          {locked ? "위치 고정됨 (해제)" : "위치 고정"}
+        </button>
       </div>
       <div ref={mapRef} className="h-64 w-full rounded-xl border border-neutral-200 bg-neutral-100" />
       <p className="text-xs text-neutral-500">
