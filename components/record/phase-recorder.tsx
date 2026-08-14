@@ -832,6 +832,19 @@ export function PhaseRecorder({
     }
   }
 
+  async function removeAllAssets(items: { id: string }[], label: string) {
+    if (items.length === 0) return;
+    if (!confirm(`${label} ${items.length}개를 모두 삭제할까요? 되돌릴 수 없습니다.`)) return;
+    try {
+      for (const it of items) {
+        await fetch(`/api/assets/${it.id}`, { method: "DELETE" });
+      }
+      router.refresh();
+    } catch {
+      alert("전체 삭제 중 오류가 발생했습니다.");
+    }
+  }
+
   async function removeAsset(id: string) {
     if (!confirm("이 파일을 삭제할까요?")) return;
     try {
@@ -1043,9 +1056,20 @@ export function PhaseRecorder({
                     accept="image/*"
                     className="hidden"
                     disabled={uploading}
+                    multiple
                     onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) setEditTarget({ phaseId: p.id, file: f });
+                      const files = Array.from(e.target.files ?? []);
+                      if (files.length === 1) {
+                        // 1장이면 편집기로 (화살표·박스 표기)
+                        setEditTarget({ phaseId: p.id, file: files[0] });
+                      } else if (files.length > 1) {
+                        // 여러 장이면 편집 없이 전부 바로 등록 (편집은 개별로 다시 선택)
+                        (async () => {
+                          for (const f of files) {
+                            await upload(p.id, "photo", f);
+                          }
+                        })();
+                      }
                       e.target.value = "";
                     }}
                   />
@@ -1059,9 +1083,14 @@ export function PhaseRecorder({
                     accept="video/*"
                     className="hidden"
                     disabled={uploading}
+                    multiple
                     onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) upload(p.id, "video", f);
+                      const files = Array.from(e.target.files ?? []);
+                      (async () => {
+                        for (const f of files) {
+                          await upload(p.id, "video", f);
+                        }
+                      })();
                       e.target.value = "";
                     }}
                   />
@@ -1070,6 +1099,21 @@ export function PhaseRecorder({
                 {uploading && <span className="text-xs text-neutral-500">업로드 중...</span>}
               </div>
 
+              {list.length > 0 && (step === 1 ? photos.length > 0 : videos.length > 0) && (
+                <div className="mb-1 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      step === 1
+                        ? removeAllAssets(photos, "사진")
+                        : removeAllAssets(videos, "영상")
+                    }
+                    className="rounded-md border border-[#D33] px-2 py-1 text-xs font-semibold text-[#D33] hover:bg-[#FDECEC]"
+                  >
+                    전체 삭제
+                  </button>
+                </div>
+              )}
               {list.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {step === 1 && photos.map((a) => (
