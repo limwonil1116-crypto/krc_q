@@ -889,7 +889,9 @@ export function PhaseRecorder({
   const r = p ? recMap.get(p.id) : undefined;
   const list = p ? assetMap.get(p.id) || [] : [];
   const photos = list.filter((a) => a.assetType === "photo");
-  const videos = list.filter((a) => a.assetType === "video");
+  const videos = list.filter(
+    (a) => a.assetType === "video" && !(a.fileName || "").startsWith("[최종영상]")
+  );
   const uploading = p ? busy === p.id : false;
   const isLast = step === phases.length - 1;
 
