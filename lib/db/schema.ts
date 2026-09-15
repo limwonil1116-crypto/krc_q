@@ -134,6 +134,7 @@ export const siteStructures = pgTable("site_structures", {
   structureTypeId: uuid("structure_type_id").notNull().references(() => structureTypes.id),
   name: varchar("name", { length: 150 }).notNull(),
   locationDescription: text("location_description"),
+  usageType: text("usage_type"),
   hasStructure: boolean("has_structure").notNull().default(true),
   notApplicableReason: text("not_applicable_reason"),
   status: text("status").$type<"active" | "not_applicable" | "completed" | "archived">().notNull().default("active"),

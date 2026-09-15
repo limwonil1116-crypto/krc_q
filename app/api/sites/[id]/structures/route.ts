@@ -50,6 +50,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         structureTypeId,
         name,
         locationDescription: (b.locationDescription ?? "").trim() || null,
+        usageType: (b.usageType ?? "").trim() || null,
         status: "active",
         createdBy: session.user.id,
       })

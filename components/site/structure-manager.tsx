@@ -219,6 +219,8 @@ export function StructureManager({
   const [catId, setCatId] = useState("");
   const [name, setName] = useState("");
   const [loc, setLoc] = useState("");
+  const [usage, setUsage] = useState("");
+  const isBuilding = categories.find((c) => c.id === catId)?.code === "BUILDING";
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [mapVal, setMapVal] = useState<{ lat: number | null; lng: number | null; address: string }>({
@@ -263,7 +265,7 @@ export function StructureManager({
       const res = await fetch(`/api/sites/${siteId}/structures`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ structureTypeId: catId, name: name.trim(), locationDescription: loc.trim() }),
+        body: JSON.stringify({ structureTypeId: catId, name: name.trim(), locationDescription: loc.trim(), usageType: usage.trim() }),
       });
       let data: { ok?: boolean; error?: string } = {};
       try {
@@ -416,6 +418,16 @@ export function StructureManager({
                 />
               </div>
             </div>
+            {isBuilding && (
+              <div className="space-y-1">
+                <Label>용도 (건축물)</Label>
+                <Input
+                  value={usage}
+                  onChange={(e) => setUsage(e.target.value)}
+                  placeholder="예: 창고, 사무실, 주택, 관리사"
+                />
+              </div>
+            )}
             {error && <p className="text-sm text-red-600">{error}</p>}
             <ActionButton className="w-full" onClick={add} disabled={loading}>
               {loading ? "추가 중..." : "+ 구조물 추가"}
