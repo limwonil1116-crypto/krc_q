@@ -280,6 +280,7 @@ export function PhaseRecorder({
   const [form, setForm] = useState({
     textDescription: "",
     inspectionContent: "",
+    etcTitle: "",
     partFromMain: "",
     partFromSub: "",
     partToMain: "",
@@ -428,6 +429,7 @@ export function PhaseRecorder({
         address: "",
         textDescription: "",
         inspectionContent: "",
+        etcTitle: "",
         partFromMain: "",
         partFromSub: "",
         partToMain: "",
@@ -624,6 +626,7 @@ export function PhaseRecorder({
       address: r?.locationAddress ?? "",
       textDescription: r?.textDescription ?? "",
       inspectionContent: r?.inspectionContent ?? "",
+      etcTitle: r?.title ?? "",
       partFromMain: r?.inspectionPartFromMain != null ? String(r.inspectionPartFromMain) : "",
       partFromSub: r?.inspectionPartFromSub != null ? String(r.inspectionPartFromSub) : "",
       partToMain: r?.inspectionPartToMain != null ? String(r.inspectionPartToMain) : "",
@@ -672,6 +675,7 @@ export function PhaseRecorder({
       address: rec?.locationAddress ?? "",
       textDescription: rec?.textDescription ?? "",
       inspectionContent: rec?.inspectionContent ?? "",
+      etcTitle: rec?.title ?? "",
       partFromMain: rec?.inspectionPartFromMain != null ? String(rec.inspectionPartFromMain) : "",
       partFromSub: rec?.inspectionPartFromSub != null ? String(rec.inspectionPartFromSub) : "",
       partToMain: rec?.inspectionPartToMain != null ? String(rec.inspectionPartToMain) : "",
@@ -747,6 +751,7 @@ export function PhaseRecorder({
           longitude: i === 0 && typeof form.lng === "number" ? form.lng : null,
           locationAddress: i === 0 ? (form.address || null) : null,
           textDescription: form.textDescription,
+          title: (subTypes.find((t) => t.id === subTypeId)?.name || "") === "기타" ? (form.etcTitle || null) : null,
           notApplicable: form.notApplicable,
           notApplicableReason: form.notApplicableReason,
           inspectionContent: i === 0 ? form.inspectionContent : null,
@@ -1185,6 +1190,17 @@ export function PhaseRecorder({
                               </button>
                             ))}
                           </div>
+                          {(subTypes.find((t) => t.id === subTypeId)?.name || "") === "기타" && (
+                            <div className="mt-2 space-y-1">
+                              <Label>공종명 직접 입력 (기타)</Label>
+                              <input
+                                className={inpCls}
+                                value={form.etcTitle}
+                                onChange={(e) => setForm((f) => ({ ...f, etcTitle: e.target.value }))}
+                                placeholder="예: 방수공사, 타일공사 등 실제 공종명"
+                              />
+                            </div>
+                          )}
                         </div>
                         <div className="space-y-1">
                           <Label>검측내용</Label>
