@@ -287,3 +287,14 @@ export const checklistItems = pgTable("checklist_items", {
   supervisorNote: text("supervisor_note"),
   sortOrder: integer("sort_order").notNull().default(0),
 });
+
+export const checklistPresets = pgTable("checklist_presets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subTypeId: uuid("sub_type_id").notNull().references(() => structureTypes.id, { onDelete: "cascade" }),
+  itemNo: integer("item_no").notNull().default(0),
+  checkItem: text("check_item").notNull(),
+  standard: text("standard"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
